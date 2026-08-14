@@ -26,7 +26,13 @@ class RestApi {
 	 * Register Meditaj REST routes.
 	 */
 	public static function register_routes() {
-		$controller = new RestControllerDoctors();
-		$controller->register_routes();
+		$doctors = new RestControllerDoctors();
+		$doctors->register_routes();
+
+		$booking = new RestControllerBooking();
+		$booking->register_routes();
+
+		$payment = new RestControllerPayment();
+		$payment->register_routes();
 	}
 }

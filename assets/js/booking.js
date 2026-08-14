@@ -697,10 +697,56 @@ document.addEventListener('DOMContentLoaded', function() {
 				files: state.files
 			};
 
-			console.log('Confirmed Booking Payload (Post /appointments):', payload);
+			const btnConfirm = document.getElementById('btn-confirm-booking');
+			btnConfirm.disabled = true;
+			btnConfirm.textContent = 'Processing Booking...';
 
-			// Render Success popup card
-			renderSuccessScreen(payload, doc);
+			// 1. Send request to create appointment
+			fetch(meditajSettings.restUrl + 'appointments', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-WP-Nonce': meditajSettings.nonce
+				},
+				body: JSON.stringify(payload)
+			})
+			.then(res => {
+				if (!res.ok) {
+					return res.json().then(err => { throw new Error(err.message || 'Booking conflict or database error.'); });
+				}
+				return res.json();
+			})
+			.then(data => {
+				btnConfirm.textContent = 'Redirecting to Payment...';
+				const appointmentId = data.appointment_id;
+
+				// 2. Initialize payment session
+				return fetch(meditajSettings.restUrl + 'payment/init', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-WP-Nonce': meditajSettings.nonce
+					},
+					body: JSON.stringify({ appointment_id: appointmentId })
+				});
+			})
+			.then(res => {
+				if (!res.ok) {
+					return res.json().then(err => { throw new Error(err.message || 'Payment initiation failed.'); });
+				}
+				return res.json();
+			})
+			.then(paymentData => {
+				// Success: redirect to gateway page
+				sessionStorage.removeItem('meditaj_booking_state');
+				window.location.href = paymentData.payment_url;
+			})
+			.catch(err => {
+				console.error('Error during booking integration:', err);
+				alert('Booking failed: ' + err.message);
+				btnConfirm.disabled = false;
+				btnConfirm.textContent = 'Confirm Booking';
+			});
 		});
 	}
 

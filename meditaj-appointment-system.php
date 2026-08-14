@@ -22,6 +22,17 @@ define( 'MEDITAJ_VERSION', '1.0.0' );
 define( 'MEDITAJ_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MEDITAJ_URL', plugin_dir_url( __FILE__ ) );
 
+// SSLCommerz Payout Credentials
+if ( ! defined( 'MEDITAJ_SSL_STORE_ID' ) ) {
+	define( 'MEDITAJ_SSL_STORE_ID', 'testbox' );
+}
+if ( ! defined( 'MEDITAJ_SSL_STORE_PASSWD' ) ) {
+	define( 'MEDITAJ_SSL_STORE_PASSWD', 'testbox@ssl' );
+}
+if ( ! defined( 'MEDITAJ_SSL_SANDBOX' ) ) {
+	define( 'MEDITAJ_SSL_SANDBOX', true );
+}
+
 /**
  * Register Autoloader for Meditaj Namespaced Classes.
  * Maps e.g. \Meditaj\DB to includes/class-db.php.
