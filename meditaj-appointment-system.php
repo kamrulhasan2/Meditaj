@@ -1,0 +1,82 @@
+<?php
+/**
+ * Plugin Name: Meditaj - Doctor Calling & Appointment System
+ * Plugin URI:  https://example.com/meditaj
+ * Description: Telemedicine and doctor appointment booking platform with Agora video integration and local payment options.
+ * Version:     1.0.0
+ * Author:      Antigravity
+ * Text Domain: meditaj
+ * Domain Path: /languages
+ * Requires at least: 5.8
+ * Requires PHP: 7.4
+ *
+ * @package Meditaj
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
+// Define constants.
+define( 'MEDITAJ_VERSION', '1.0.0' );
+define( 'MEDITAJ_PATH', plugin_dir_path( __FILE__ ) );
+define( 'MEDITAJ_URL', plugin_dir_url( __FILE__ ) );
+
+/**
+ * Register Autoloader for Meditaj Namespaced Classes.
+ * Maps e.g. \Meditaj\DB to includes/class-db.php.
+ */
+spl_autoload_register(
+	function ( $class ) {
+		$prefix   = 'Meditaj\\';
+		$base_dir = MEDITAJ_PATH . 'includes/';
+
+		$len = strlen( $prefix );
+		if ( strncmp( $prefix, $class, $len ) !== 0 ) {
+			return;
+		}
+
+		$relative_class = substr( $class, $len );
+
+		// Convert PascalCase / camelCase to wordpress lowercase hyphenated filename.
+		// e.g. RestControllerDoctors -> class-rest-controller-doctors.php
+		$filename = 'class-' . strtolower( preg_replace( '/([a-z])([A-Z])/', '$1-$2', $relative_class ) ) . '.php';
+
+		$file = $base_dir . $filename;
+
+		if ( file_exists( $file ) ) {
+			require_once $file;
+		}
+	}
+);
+
+// Register Activation and Deactivation Hooks.
+register_activation_hook( __FILE__, 'meditaj_activate_plugin' );
+register_deactivation_hook( __FILE__, 'meditaj_deactivate_plugin' );
+
+/**
+ * Plugin activation operations.
+ */
+function meditaj_activate_plugin() {
+	// Create Database Tables.
+	\Meditaj\DB::create_tables();
+
+	// Setup Roles and Capabilities.
+	\Meditaj\Roles::add_roles();
+
+	// Register CPT and taxonomy definitions so rewrite rules flush properly.
+	\Meditaj\CPT::register_post_types();
+	\Meditaj\CPT::register_taxonomies();
+	flush_rewrite_rules();
+}
+
+/**
+ * Plugin deactivation operations.
+ */
+function meditaj_deactivate_plugin() {
+	// Tables and roles are kept intact to preserve data during update/deactivation.
+	flush_rewrite_rules();
+}
+
+// Bootstrap Components.
+\Meditaj\CPT::init();
