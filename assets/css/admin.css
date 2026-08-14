@@ -1,0 +1,194 @@
+/**
+ * Meditaj Admin Dashboard Stylesheet
+ */
+
+/* Container and layout */
+.meditaj-admin-wrap {
+	margin: 20px 20px 0 0;
+	max-width: 1200px;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+.meditaj-admin-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 20px;
+	border-bottom: 1px solid #ccd0d4;
+	padding-bottom: 15px;
+}
+
+.meditaj-admin-title {
+	font-size: 24px;
+	font-weight: 600;
+	color: #1d2327;
+	margin: 0;
+}
+
+/* Status Badges */
+.meditaj-status-badge {
+	display: inline-block;
+	padding: 4px 10px;
+	border-radius: 12px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.meditaj-status-badge.status-approved {
+	background-color: #dcfce7;
+	color: #166534;
+	border: 1px solid #bbf7d0;
+}
+
+.meditaj-status-badge.status-pending {
+	background-color: #ffedd5;
+	color: #9a3412;
+	border: 1px solid #fed7aa;
+}
+
+.meditaj-status-badge.status-rejected {
+	background-color: #fee2e2;
+	color: #991b1b;
+	border: 1px solid #fecaca;
+}
+
+/* Add Doctor Form Layout */
+.meditaj-form-card {
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+	border-radius: 8px;
+	padding: 24px;
+	margin-top: 20px;
+}
+
+.meditaj-form-section {
+	margin-bottom: 30px;
+}
+
+.meditaj-form-section-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: #0f766e; /* Teal */
+	margin-bottom: 15px;
+	border-left: 4px solid #0f766e;
+	padding-left: 10px;
+}
+
+.meditaj-form-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 20px;
+}
+
+.meditaj-form-grid.full-width {
+	grid-template-columns: 1fr;
+}
+
+.meditaj-form-field {
+	display: flex;
+	flex-direction: column;
+}
+
+.meditaj-form-field.span-2 {
+	grid-column: span 2;
+}
+
+.meditaj-form-field label {
+	font-weight: 600;
+	margin-bottom: 6px;
+	color: #2c3338;
+}
+
+.meditaj-form-field input[type="text"],
+.meditaj-form-field input[type="email"],
+.meditaj-form-field input[type="password"],
+.meditaj-form-field input[type="number"],
+.meditaj-form-field select,
+.meditaj-form-field textarea {
+	padding: 8px 12px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
+	font-size: 14px;
+	line-height: 1.5;
+	background-color: #fff;
+	color: #2c3338;
+	transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.meditaj-form-field input:focus,
+.meditaj-form-field select:focus,
+.meditaj-form-field textarea:focus {
+	border-color: #0f766e;
+	box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.15);
+	outline: none;
+}
+
+/* Submit and Utility Buttons */
+.meditaj-btn-primary {
+	background-color: #0f766e !important;
+	color: #fff !important;
+	border-color: #0f766e !important;
+	padding: 6px 20px !important;
+	height: auto !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	border-radius: 4px !important;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.meditaj-btn-primary:hover {
+	background-color: #0d5e57 !important;
+	border-color: #0d5e57 !important;
+}
+
+.meditaj-placeholder-card {
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	border-radius: 8px;
+	padding: 50px 20px;
+	text-align: center;
+	margin-top: 20px;
+}
+
+.meditaj-placeholder-card h2 {
+	color: #50575e;
+	font-size: 20px;
+	margin-bottom: 10px;
+}
+
+.meditaj-placeholder-card p {
+	color: #8c8f94;
+	font-size: 14px;
+}
+
+/* List Table enhancements */
+.meditaj-doctor-photo {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 1px solid #ccd0d4;
+	background-color: #f0f0f1;
+}
+
+.meditaj-doctor-photo-placeholder {
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	border: 1px solid #ccd0d4;
+	background-color: #e2e8f0;
+	color: #64748b;
+	font-weight: bold;
+}
+
+/* Make row actions always visible to improve usability and accessibility */
+.meditaj-admin-wrap .row-actions {
+	position: static !important;
+	visibility: visible !important;
+}

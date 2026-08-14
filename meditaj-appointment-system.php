@@ -67,6 +67,10 @@ function meditaj_activate_plugin() {
 	// Register CPT and taxonomy definitions so rewrite rules flush properly.
 	\Meditaj\CPT::register_post_types();
 	\Meditaj\CPT::register_taxonomies();
+
+	// Seed dummy doctors for testing.
+	\Meditaj\DB::seed_dummy_doctors();
+
 	flush_rewrite_rules();
 }
 
@@ -78,5 +82,19 @@ function meditaj_deactivate_plugin() {
 	flush_rewrite_rules();
 }
 
+// Enqueue Admin Stylesheet.
+add_action(
+	'admin_enqueue_scripts',
+	function ( $hook ) {
+		// Only enqueue on Meditaj admin pages or doctor post edit screens.
+		if ( false !== strpos( $hook, 'meditaj' ) || ( ( 'post.php' === $hook || 'post-new.php' === $hook ) && 'doctors' === get_post_type() ) ) {
+			wp_enqueue_style( 'meditaj-admin-style', MEDITAJ_URL . 'assets/css/admin.css', array(), MEDITAJ_VERSION );
+		}
+	}
+);
+
 // Bootstrap Components.
 \Meditaj\CPT::init();
+\Meditaj\AdminMenu::init();
+\Meditaj\AdminDoctors::init();
+

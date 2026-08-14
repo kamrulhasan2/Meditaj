@@ -185,4 +185,214 @@ class DB {
 
 		delete_option( self::DB_VERSION_OPTION );
 	}
+
+	/**
+	 * Seed dummy doctors for testing.
+	 */
+	public static function seed_dummy_doctors() {
+		global $wpdb;
+		$table_meta = self::get_table( 'doctors_meta' );
+
+		// Check if dummy data already exists
+		$count = $wpdb->get_var( "SELECT COUNT(*) FROM $table_meta" );
+		if ( $count > 0 ) {
+			return;
+		}
+
+		// Ensure taxonomy and post type are registered
+		if ( ! taxonomy_exists( 'specialty' ) ) {
+			\Meditaj\CPT::register_taxonomies();
+		}
+		if ( ! post_type_exists( 'doctors' ) ) {
+			\Meditaj\CPT::register_post_types();
+		}
+
+		// Define specialties
+		$specialties   = array( 'Cardiology', 'Neurology', 'Pediatrics' );
+		$specialty_ids = array();
+		foreach ( $specialties as $spec ) {
+			$term = term_exists( $spec, 'specialty' );
+			if ( ! $term ) {
+				$term = wp_insert_term( $spec, 'specialty' );
+			}
+			if ( ! is_wp_error( $term ) ) {
+				$specialty_ids[ $spec ] = isset( $term['term_id'] ) ? $term['term_id'] : $term;
+			}
+		}
+
+		// Define dummy doctors data
+		$dummy_data = array(
+			array(
+				'username'            => 'doctor_cardio',
+				'email'               => 'cardio@example.com',
+				'display_name'        => 'Dr. Anisur Rahman',
+				'specialty'           => 'Cardiology',
+				'bio'                 => 'Senior Cardiologist with over 15 years of experience in cardiovascular diseases, angioplasty, and pacemaker implantations.',
+				'provider_type'       => 'doctor',
+				'bmdc_license_no'     => 'A-12345',
+				'degree'              => 'MBBS, FCPS (Cardiology)',
+				'designation'         => 'Senior Cardiologist',
+				'consultation_fee'    => 1000.00,
+				'instant_call_fee'    => 1200.00,
+				'experience_years'    => 15,
+				'is_online'           => 1,
+				'verification_status' => 'approved',
+				'mobile_banking_type' => 'bkash',
+				'mobile_banking_no'   => '01712345678',
+			),
+			array(
+				'username'            => 'doctor_neuro',
+				'email'               => 'neuro@example.com',
+				'display_name'        => 'Dr. Nusrat Jahan',
+				'specialty'           => 'Neurology',
+				'bio'                 => 'Consultant Neurologist specializing in stroke management, brain disorders, epilepsy, and neuromuscular diseases.',
+				'provider_type'       => 'doctor',
+				'bmdc_license_no'     => 'A-67890',
+				'degree'              => 'MBBS, MD (Neurology)',
+				'designation'         => 'Consultant Neurologist',
+				'consultation_fee'    => 1500.00,
+				'instant_call_fee'    => 1800.00,
+				'experience_years'    => 10,
+				'is_online'           => 0,
+				'verification_status' => 'approved',
+				'mobile_banking_type' => 'nagad',
+				'mobile_banking_no'   => '01812345678',
+			),
+			array(
+				'username'            => 'doctor_pedia',
+				'email'               => 'pedia@example.com',
+				'display_name'        => 'Dr. Tanvir Hasan',
+				'specialty'           => 'Pediatrics',
+				'bio'                 => 'Associate Professor of Pediatrics. Specialized in neonatology, child growth monitoring, and pediatric critical care.',
+				'provider_type'       => 'doctor',
+				'bmdc_license_no'     => 'A-54321',
+				'degree'              => 'MBBS, MD (Pediatrics)',
+				'designation'         => 'Associate Professor',
+				'consultation_fee'    => 800.00,
+				'instant_call_fee'    => 1000.00,
+				'experience_years'    => 8,
+				'is_online'           => 1,
+				'verification_status' => 'pending',
+				'mobile_banking_type' => 'rocket',
+				'mobile_banking_no'   => '01912345678',
+			),
+		);
+
+		$now = current_time( 'mysql' );
+
+		foreach ( $dummy_data as $doctor ) {
+			// Check if user exists
+			$user_id = username_exists( $doctor['username'] );
+			if ( ! $user_id && false === email_exists( $doctor['email'] ) ) {
+				$user_id = wp_create_user( $doctor['username'], 'password123', $doctor['email'] );
+				if ( is_wp_error( $user_id ) ) {
+					continue;
+				}
+				// Set display name and role
+				wp_update_user(
+					array(
+						'ID'           => $user_id,
+						'display_name' => $doctor['display_name'],
+						'role'         => 'meditaj_doctor',
+					)
+				);
+			} else {
+				// Re-fetch user ID if they existed
+				if ( ! $user_id ) {
+					$user    = get_user_by( 'email', $doctor['email'] );
+					$user_id = $user ? $user->ID : 0;
+				}
+				if ( $user_id ) {
+					// Ensure they have the correct role
+					$u = new \WP_User( $user_id );
+					$u->set_role( 'meditaj_doctor' );
+				}
+			}
+
+			if ( ! $user_id ) {
+				continue;
+			}
+
+			// Create CPT doctors post
+			$existing_post = get_posts(
+				array(
+					'post_type'   => 'doctors',
+					'author'      => $user_id,
+					'post_status' => 'any',
+					'numberposts' => 1,
+				)
+			);
+
+			if ( empty( $existing_post ) ) {
+				$post_id = wp_insert_post(
+					array(
+						'post_title'   => $doctor['display_name'],
+						'post_content' => $doctor['bio'],
+						'post_status'  => 'publish',
+						'post_type'    => 'doctors',
+						'post_author'  => $user_id,
+					)
+				);
+			} else {
+				$post_id = $existing_post[0]->ID;
+			}
+
+			if ( is_wp_error( $post_id ) || ! $post_id ) {
+				continue;
+			}
+
+			// Associate Specialty term
+			if ( isset( $specialty_ids[ $doctor['specialty'] ] ) ) {
+				wp_set_object_terms( $post_id, (int) $specialty_ids[ $doctor['specialty'] ], 'specialty' );
+			}
+
+			// Check if metadata row already exists in table
+			$meta_id = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $table_meta WHERE post_id = %d", $post_id ) );
+
+			if ( ! $meta_id ) {
+				$wpdb->insert(
+					$table_meta,
+					array(
+						'post_id'             => $post_id,
+						'user_id'             => $user_id,
+						'provider_type'       => $doctor['provider_type'],
+						'bmdc_license_no'     => $doctor['bmdc_license_no'],
+						'degree'              => $doctor['degree'],
+						'designation'         => $doctor['designation'],
+						'consultation_fee'    => $doctor['consultation_fee'],
+						'instant_call_fee'    => $doctor['instant_call_fee'],
+						'experience_years'    => $doctor['experience_years'],
+						'is_online'           => $doctor['is_online'],
+						'verification_status' => $doctor['verification_status'],
+						'bank_account_name'   => 'Test Bank Account',
+						'bank_account_no'     => '1234567890',
+						'mobile_banking_type' => $doctor['mobile_banking_type'],
+						'mobile_banking_no'   => $doctor['mobile_banking_no'],
+						'certificate_files'   => wp_json_encode( array() ),
+						'created_at'          => $now,
+					),
+					array(
+						'%d',
+						'%d',
+						'%s',
+						'%s',
+						'%s',
+						'%s',
+						'%f',
+						'%f',
+						'%d',
+						'%d',
+						'%s',
+						'%s',
+						'%s',
+						'%s',
+						'%s',
+						'%s',
+						'%s',
+					)
+				);
+			}
+		}
+	}
 }
+
