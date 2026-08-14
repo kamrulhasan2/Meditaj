@@ -17,7 +17,7 @@ class DB {
 	/**
 	 * Current database schema version.
 	 */
-	const DB_VERSION = '1.0.0';
+	const DB_VERSION = '1.1.0';
 
 	/**
 	 * Get custom table names.
@@ -62,8 +62,9 @@ class DB {
   id bigint(20) NOT NULL AUTO_INCREMENT,
   post_id bigint(20) NOT NULL,
   user_id bigint(20) NOT NULL,
-  provider_type enum('doctor','medical_professional') NOT NULL,
+  provider_type varchar(50) DEFAULT 'doctor' NOT NULL,
   bmdc_license_no varchar(50) NOT NULL,
+  bmdc_expiry_date date DEFAULT NULL,
   degree varchar(255) NOT NULL,
   designation varchar(255) NOT NULL,
   consultation_fee decimal(10,2) NOT NULL,
@@ -73,10 +74,18 @@ class DB {
   avg_rating decimal(2,1) DEFAULT 0.0 NOT NULL,
   total_reviews int(11) DEFAULT 0 NOT NULL,
   verification_status enum('pending','approved','rejected') DEFAULT 'pending' NOT NULL,
-  bank_account_name varchar(255) NOT NULL,
-  bank_account_no varchar(100) NOT NULL,
-  mobile_banking_type enum('bkash','nagad','rocket') NOT NULL,
-  mobile_banking_no varchar(20) NOT NULL,
+  mobile varchar(20) DEFAULT NULL,
+  nid varchar(50) DEFAULT NULL,
+  nationality varchar(100) DEFAULT NULL,
+  organization varchar(255) DEFAULT NULL,
+  follow_up_days int(11) DEFAULT 0 NOT NULL,
+  follow_up_cost decimal(10,2) DEFAULT 0.00 NOT NULL,
+  bank_account_name varchar(255) DEFAULT NULL,
+  bank_account_no varchar(100) DEFAULT NULL,
+  bank_branch_name varchar(255) DEFAULT NULL,
+  bank_routing_number varchar(50) DEFAULT NULL,
+  mobile_banking_type enum('bkash','nagad','rocket') DEFAULT NULL,
+  mobile_banking_no varchar(20) DEFAULT NULL,
   certificate_files text NOT NULL,
   created_at datetime NOT NULL,
   PRIMARY KEY  (id),
@@ -168,6 +177,12 @@ class DB {
 		foreach ( $sql as $query ) {
 			dbDelta( $query );
 		}
+
+		// Run manual ALTER TABLE columns queries to ensure these columns allow NULL since dbDelta doesn't change NOT NULL to NULL easily.
+		$wpdb->query( "ALTER TABLE {$tables['doctors_meta']} MODIFY bank_account_name varchar(255) DEFAULT NULL" );
+		$wpdb->query( "ALTER TABLE {$tables['doctors_meta']} MODIFY bank_account_no varchar(100) DEFAULT NULL" );
+		$wpdb->query( "ALTER TABLE {$tables['doctors_meta']} MODIFY mobile_banking_type enum('bkash','nagad','rocket') DEFAULT NULL" );
+		$wpdb->query( "ALTER TABLE {$tables['doctors_meta']} MODIFY mobile_banking_no varchar(20) DEFAULT NULL" );
 
 		update_option( self::DB_VERSION_OPTION, self::DB_VERSION );
 	}
@@ -357,6 +372,7 @@ class DB {
 						'user_id'             => $user_id,
 						'provider_type'       => $doctor['provider_type'],
 						'bmdc_license_no'     => $doctor['bmdc_license_no'],
+						'bmdc_expiry_date'    => '2028-12-31',
 						'degree'              => $doctor['degree'],
 						'designation'         => $doctor['designation'],
 						'consultation_fee'    => $doctor['consultation_fee'],
@@ -364,8 +380,16 @@ class DB {
 						'experience_years'    => $doctor['experience_years'],
 						'is_online'           => $doctor['is_online'],
 						'verification_status' => $doctor['verification_status'],
-						'bank_account_name'   => 'Test Bank Account',
+						'mobile'              => '01711112222',
+						'nid'                 => '123456789012',
+						'nationality'         => 'Bangladeshi',
+						'organization'        => 'Dhaka Medical College',
+						'follow_up_days'      => 7,
+						'follow_up_cost'      => 200.00,
+						'bank_account_name'   => 'Dr. Test Account',
 						'bank_account_no'     => '1234567890',
+						'bank_branch_name'    => 'Dhanmondi Branch',
+						'bank_routing_number' => '123456789',
 						'mobile_banking_type' => $doctor['mobile_banking_type'],
 						'mobile_banking_no'   => $doctor['mobile_banking_no'],
 						'certificate_files'   => wp_json_encode( array() ),
@@ -378,10 +402,19 @@ class DB {
 						'%s',
 						'%s',
 						'%s',
+						'%s',
 						'%f',
 						'%f',
 						'%d',
 						'%d',
+						'%s',
+						'%s',
+						'%s',
+						'%s',
+						'%s',
+						'%d',
+						'%f',
+						'%s',
 						'%s',
 						'%s',
 						'%s',

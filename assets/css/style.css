@@ -1,0 +1,364 @@
+/**
+ * Meditaj Frontend Stylesheet
+ */
+
+/* Main Container */
+.meditaj-registration-container {
+	max-width: 800px;
+	margin: 40px auto;
+	padding: 40px;
+	background: #ffffff;
+	border-radius: 16px;
+	box-shadow: 0 10px 30px rgba(15, 118, 110, 0.05), 0 1px 3px rgba(0, 0, 0, 0.02);
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	color: #334155;
+	border: 1px solid #f1f5f9;
+}
+
+/* Header styling */
+.meditaj-register-header {
+	text-align: center;
+	margin-bottom: 40px;
+}
+
+.meditaj-register-tagline {
+	display: inline-block;
+	font-size: 13px;
+	font-weight: 700;
+	color: #0d9488;
+	text-transform: uppercase;
+	letter-spacing: 1.5px;
+	margin-bottom: 8px;
+}
+
+.meditaj-register-title {
+	font-size: 32px;
+	font-weight: 800;
+	color: #0f172a;
+	margin: 0 0 10px 0;
+	letter-spacing: -0.5px;
+}
+
+.meditaj-register-desc {
+	font-size: 15px;
+	color: #64748b;
+	margin: 0;
+}
+
+/* Form sections */
+.meditaj-card-section {
+	background: #f8fafc;
+	border: 1px solid #e2e8f0;
+	border-radius: 12px;
+	padding: 24px;
+	margin-bottom: 30px;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.meditaj-card-section:hover {
+	border-color: #cbd5e1;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
+}
+
+.meditaj-section-title {
+	display: flex;
+	align-items: center;
+	font-size: 18px;
+	font-weight: 700;
+	color: #0f172a;
+	margin: 0 0 20px 0;
+}
+
+.meditaj-step-num {
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	width: 26px;
+	height: 26px;
+	border-radius: 50%;
+	background-color: #0f766e;
+	color: #ffffff;
+	font-size: 13px;
+	font-weight: 700;
+	margin-right: 10px;
+}
+
+/* Fields Grid & inputs */
+.meditaj-fields-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 20px;
+}
+
+.meditaj-fields-grid.profile-fields,
+.meditaj-fields-grid.meta-fields {
+	grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 640px) {
+	.meditaj-fields-grid {
+		grid-template-columns: 1fr !important;
+	}
+	.meditaj-field.span-full {
+		grid-column: span 1 !important;
+	}
+}
+
+.meditaj-field {
+	display: flex;
+	flex-direction: column;
+}
+
+.meditaj-field.span-full {
+	grid-column: span 2;
+}
+
+.meditaj-field label {
+	font-size: 14px;
+	font-weight: 600;
+	color: #475569;
+	margin-bottom: 6px;
+}
+
+.meditaj-field input[type="text"],
+.meditaj-field input[type="email"],
+.meditaj-field input[type="password"],
+.meditaj-field input[type="number"],
+.meditaj-field select,
+.meditaj-field textarea {
+	padding: 10px 14px;
+	border: 1px solid #cbd5e1;
+	border-radius: 8px;
+	font-size: 14px;
+	background-color: #ffffff;
+	color: #1e293b;
+	transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.meditaj-field input:focus,
+.meditaj-field select:focus,
+.meditaj-field textarea:focus {
+	border-color: #0f766e;
+	box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+	outline: none;
+}
+
+/* Custom Modern File Upload & Toggle Buttons Styling */
+.meditaj-hidden-file-input {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
+	cursor: pointer;
+	z-index: 10;
+}
+
+.meditaj-modern-upload-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 15px;
+	margin-top: 5px;
+	position: relative;
+}
+
+.meditaj-modern-upload-label {
+	padding: 8px 16px;
+	border: 1px solid #cbd5e1;
+	border-radius: 6px;
+	background-color: #f8fafc;
+	color: #334155;
+	font-size: 13px;
+	font-weight: 600;
+	cursor: pointer;
+	display: inline-block;
+	transition: all 0.2s ease;
+	user-select: none;
+}
+
+.meditaj-modern-upload-label:hover {
+	background-color: #cbd5e1;
+	border-color: #94a3b8;
+}
+
+.meditaj-file-name {
+	font-size: 13px;
+	color: #64748b;
+}
+
+/* Modern Toggle Buttons */
+.meditaj-toggle-buttons {
+	display: flex;
+	gap: 8px;
+	margin-top: 5px;
+}
+
+.meditaj-toggle-btn {
+	padding: 8px 18px;
+	border: 1px solid #cbd5e1;
+	background-color: #f8fafc;
+	color: #475569;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 13px;
+	font-weight: 600;
+	transition: all 0.25s ease;
+}
+
+.meditaj-toggle-btn:hover {
+	background-color: #f1f5f9;
+	color: #1e293b;
+	border-color: #94a3b8;
+}
+
+.meditaj-toggle-btn.active {
+	background-color: #0f766e;
+	color: #ffffff;
+	border-color: #0f766e;
+	box-shadow: 0 4px 10px rgba(15, 118, 110, 0.2);
+}
+
+/* Modern Attachment Box */
+.meditaj-modern-attachment-box {
+	border: 1px dashed #cbd5e1;
+	border-radius: 8px;
+	background-color: #f8fafc;
+	padding: 20px;
+	text-align: left;
+	position: relative;
+	transition: border-color 0.2s;
+}
+
+.meditaj-modern-attachment-box:hover {
+	border-color: #0d9488;
+}
+
+.meditaj-attachment-uploader {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+	position: relative;
+}
+
+.meditaj-attachment-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	margin-right: 5px;
+}
+
+.meditaj-attachment-label {
+	font-size: 14px;
+	font-weight: 600;
+	color: #475569;
+}
+
+.meditaj-attachment-help {
+	font-size: 12px;
+	color: #64748b;
+	margin: 0;
+}
+
+/* Submit Block */
+.meditaj-submit-wrap {
+	text-align: center;
+	margin-top: 30px;
+}
+
+.meditaj-btn-register {
+	background-color: #0f766e;
+	color: #ffffff;
+	border: none;
+	border-radius: 8px;
+	padding: 14px 32px;
+	font-size: 16px;
+	font-weight: 700;
+	cursor: pointer;
+	box-shadow: 0 4px 14px rgba(15, 118, 110, 0.3);
+	transition: background-color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.meditaj-btn-register:hover {
+	background-color: #0d9488;
+	transform: translateY(-1px);
+	box-shadow: 0 6px 20px rgba(13, 148, 136, 0.4);
+}
+
+.meditaj-btn-register:active {
+	transform: translateY(0);
+}
+
+/* Alerts */
+.meditaj-alert {
+	display: flex;
+	align-items: flex-start;
+	background-color: #fef2f2;
+	border: 1px solid #fecaca;
+	border-radius: 8px;
+	padding: 16px;
+	margin-bottom: 30px;
+	color: #991b1b;
+}
+
+.meditaj-alert-icon {
+	width: 20px;
+	height: 20px;
+	margin-right: 12px;
+	flex-shrink: 0;
+	color: #dc2626;
+}
+
+.meditaj-alert-content {
+	font-size: 14px;
+}
+
+.meditaj-alert-content ul {
+	margin: 5px 0 0 0;
+	padding-left: 20px;
+}
+
+/* Success Card */
+.meditaj-success-card {
+	text-align: center;
+	padding: 40px 20px;
+}
+
+.meditaj-success-icon {
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	background-color: #dcfce7;
+	color: #15803d;
+	margin-bottom: 24px;
+}
+
+.meditaj-success-icon svg {
+	width: 32px;
+	height: 32px;
+}
+
+.meditaj-success-card h2 {
+	font-size: 24px;
+	font-weight: 800;
+	color: #0f172a;
+	margin: 0 0 12px 0;
+}
+
+.meditaj-success-msg {
+	font-size: 16px;
+	color: #475569;
+	max-width: 500px;
+	margin: 0 auto 16px auto;
+	line-height: 1.6;
+}
+
+.meditaj-success-sub {
+	font-size: 13px;
+	color: #94a3b8;
+	margin: 0;
+}

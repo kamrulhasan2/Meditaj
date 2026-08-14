@@ -93,8 +93,29 @@ add_action(
 	}
 );
 
+// Enqueue Frontend Stylesheet.
+add_action(
+	'wp_enqueue_scripts',
+	function () {
+		wp_enqueue_style( 'meditaj-style', MEDITAJ_URL . 'assets/css/style.css', array(), MEDITAJ_VERSION );
+	}
+);
+
+// Auto-upgrade database schema if DB_VERSION changes.
+add_action(
+	'plugins_loaded',
+	function () {
+		if ( get_option( \Meditaj\DB::DB_VERSION_OPTION ) !== \Meditaj\DB::DB_VERSION ) {
+			\Meditaj\DB::create_tables();
+		}
+	}
+);
+
 // Bootstrap Components.
 \Meditaj\CPT::init();
+\Meditaj\Roles::init();
+\Meditaj\Shortcodes::init();
 \Meditaj\AdminMenu::init();
 \Meditaj\AdminDoctors::init();
+
 

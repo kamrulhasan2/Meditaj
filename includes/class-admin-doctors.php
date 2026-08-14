@@ -363,14 +363,55 @@ class AdminDoctors {
 	}
 
 	/**
-	 * Listen and process GET actions in administration panel.
+	 * Listen and process admin actions (GET and POST).
 	 */
 	public static function process_admin_actions() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
-		if ( ! isset( $_GET['page'] ) || 'meditaj-doctors' !== $_GET['page'] ) {
+		// Handle POST rejection.
+		if ( isset( $_POST['meditaj_reject_submit'] ) ) {
+			$id = isset( $_POST['doctor_id'] ) ? intval( $_POST['doctor_id'] ) : 0;
+			if ( ! $id ) {
+				return;
+			}
+			if ( ! isset( $_POST['meditaj_reject_nonce'] ) || ! wp_verify_nonce( $_POST['meditaj_reject_nonce'], 'meditaj_reject_doctor_' . $id ) ) {
+				wp_die( esc_html__( 'Security check failed.', 'meditaj' ) );
+			}
+
+			global $wpdb;
+			$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+			$doctor     = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_meta WHERE id = %d", $id ) );
+			if ( ! $doctor ) {
+				return;
+			}
+
+			$reason = isset( $_POST['rejection_reason'] ) ? sanitize_text_field( $_POST['rejection_reason'] ) : '';
+
+			// Update status in custom table.
+			$wpdb->update( $table_meta, array( 'verification_status' => 'rejected' ), array( 'id' => $id ) );
+
+			// Draft/Trash CPT post if needed (let's keep it draft).
+			wp_update_post(
+				array(
+					'ID'          => $doctor->post_id,
+					'post_status' => 'draft',
+				)
+			);
+
+			// Send rejection email.
+			$user_data = get_userdata( $doctor->user_id );
+			if ( $user_data ) {
+				\Meditaj\Notifications::send_doctor_rejection_email( $user_data->user_email, $user_data->display_name, $reason );
+			}
+
+			wp_safe_redirect( add_query_arg( 'message', 'rejected', wp_get_referer() ) );
+			exit;
+		}
+
+		// Handle GET actions.
+		if ( ! isset( $_GET['page'] ) || ! in_array( $_GET['page'], array( 'meditaj-doctors', 'meditaj-pending' ), true ) ) {
 			return;
 		}
 
@@ -393,14 +434,45 @@ class AdminDoctors {
 		switch ( $action ) {
 			case 'approve':
 				check_admin_referer( 'meditaj_approve_doctor_' . $id );
+
+				// Update verification status.
 				$wpdb->update( $table_meta, array( 'verification_status' => 'approved' ), array( 'id' => $id ) );
-				wp_safe_redirect( admin_url( 'admin.php?page=meditaj-doctors&message=approved' ) );
+
+				// Publish the corresponding post.
+				wp_update_post(
+					array(
+						'ID'          => $doctor->post_id,
+						'post_status' => 'publish',
+					)
+				);
+
+				// Send notification email.
+				$user_data = get_userdata( $doctor->user_id );
+				if ( $user_data ) {
+					\Meditaj\Notifications::send_doctor_approval_email( $user_data->user_email, $user_data->display_name );
+				}
+
+				wp_safe_redirect( add_query_arg( 'message', 'approved', wp_get_referer() ) );
 				exit;
 
 			case 'reject':
 				check_admin_referer( 'meditaj_reject_doctor_' . $id );
+
 				$wpdb->update( $table_meta, array( 'verification_status' => 'rejected' ), array( 'id' => $id ) );
-				wp_safe_redirect( admin_url( 'admin.php?page=meditaj-doctors&message=rejected' ) );
+
+				wp_update_post(
+					array(
+						'ID'          => $doctor->post_id,
+						'post_status' => 'draft',
+					)
+				);
+
+				$user_data = get_userdata( $doctor->user_id );
+				if ( $user_data ) {
+					\Meditaj\Notifications::send_doctor_rejection_email( $user_data->user_email, $user_data->display_name, '' );
+				}
+
+				wp_safe_redirect( add_query_arg( 'message', 'rejected', wp_get_referer() ) );
 				exit;
 
 			case 'delete':
@@ -413,10 +485,148 @@ class AdminDoctors {
 				// Clean SQL Meta row.
 				$wpdb->delete( $table_meta, array( 'id' => $id ) );
 
-				wp_safe_redirect( admin_url( 'admin.php?page=meditaj-doctors&message=deleted' ) );
+				wp_safe_redirect( add_query_arg( 'message', 'deleted', wp_get_referer() ) );
 				exit;
 		}
 	}
+
+	/**
+	 * Render Pending Verifications Page.
+	 */
+	public static function render_pending_verifications_page() {
+		global $wpdb;
+		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+
+		// Query pending doctors only.
+		$query = "SELECT m.*, p.post_title 
+			FROM $table_meta m 
+			JOIN {$wpdb->posts} p ON m.post_id = p.ID 
+			WHERE p.post_type = 'doctors' AND m.verification_status = 'pending' 
+			ORDER BY m.id DESC";
+
+		$pending_doctors = $wpdb->get_results( $query );
+
+		$message = isset( $_GET['message'] ) ? sanitize_text_field( $_GET['message'] ) : '';
+		?>
+		<div class="wrap meditaj-admin-wrap">
+			<div class="meditaj-admin-header">
+				<h1 class="meditaj-admin-title"><?php esc_html_e( 'Pending Verifications', 'meditaj' ); ?></h1>
+			</div>
+
+			<?php if ( 'approved' === $message ) : ?>
+				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Doctor application successfully approved and user notified.', 'meditaj' ); ?></p></div>
+			<?php elseif ( 'rejected' === $message ) : ?>
+				<div class="notice notice-warning is-dismissible"><p><?php esc_html_e( 'Doctor application successfully rejected and user notified.', 'meditaj' ); ?></p></div>
+			<?php elseif ( 'deleted' === $message ) : ?>
+				<div class="notice notice-info is-dismissible"><p><?php esc_html_e( 'Doctor profile successfully deleted.', 'meditaj' ); ?></p></div>
+			<?php endif; ?>
+
+			<table class="wp-list-table widefat fixed striped table-view-list posts">
+				<thead>
+					<tr>
+						<th scope="col" style="width: 80px;"><?php esc_html_e( 'Photo', 'meditaj' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Name', 'meditaj' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Specialty', 'meditaj' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Degrees / Qualifications', 'meditaj' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'BMDC Registration No', 'meditaj' ); ?></th>
+						<th scope="col" style="width: 250px;"><?php esc_html_e( 'Certificate Files', 'meditaj' ); ?></th>
+						<th scope="col" style="width: 320px;"><?php esc_html_e( 'Actions', 'meditaj' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php if ( empty( $pending_doctors ) ) : ?>
+						<tr>
+							<td colspan="7" style="text-align: center; padding: 20px;">
+								<strong><?php esc_html_e( 'No pending verification requests found.', 'meditaj' ); ?></strong>
+							</td>
+						</tr>
+					<?php else : ?>
+						<?php foreach ( $pending_doctors as $doctor ) : ?>
+							<tr>
+								<td>
+									<?php
+									$thumbnail = get_the_post_thumbnail_url( $doctor->post_id, 'thumbnail' );
+									if ( $thumbnail ) :
+										?>
+										<img src="<?php echo esc_url( $thumbnail ); ?>" class="meditaj-doctor-photo" alt="<?php echo esc_attr( $doctor->post_title ); ?>">
+									<?php else : ?>
+										<?php
+										$initials = '';
+										$parts    = explode( ' ', $doctor->post_title );
+										foreach ( $parts as $part ) {
+											if ( 'Dr.' === $part ) {
+												continue;
+											}
+											$initials .= substr( $part, 0, 1 );
+										}
+										$initials = substr( $initials, 0, 2 );
+										?>
+										<div class="meditaj-doctor-photo-placeholder"><?php echo esc_html( strtoupper( $initials ) ); ?></div>
+									<?php endif; ?>
+								</td>
+								<td>
+									<strong><a href="<?php echo esc_url( get_edit_post_link( $doctor->post_id ) ); ?>"><?php echo esc_html( $doctor->post_title ); ?></a></strong>
+									<div class="row-actions" style="position: static !important; visibility: visible !important;">
+										<span class="edit"><a href="<?php echo esc_url( get_edit_post_link( $doctor->post_id ) ); ?>"><?php esc_html_e( 'Edit CPT', 'meditaj' ); ?></a></span>
+									</div>
+								</td>
+								<td>
+									<?php
+									$terms = wp_get_post_terms( $doctor->post_id, 'specialty' );
+									if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
+										$names = wp_list_pluck( $terms, 'name' );
+										echo esc_html( implode( ', ', $names ) );
+									} else {
+										esc_html_e( 'Unassigned', 'meditaj' );
+									}
+									?>
+								</td>
+								<td><?php echo esc_html( $doctor->degree ); ?></td>
+								<td><code><?php echo esc_html( $doctor->bmdc_license_no ); ?></code></td>
+								<td>
+									<?php
+									$certs = json_decode( $doctor->certificate_files, true );
+									if ( ! empty( $certs ) ) {
+										foreach ( $certs as $cert_id ) {
+											$url  = wp_get_attachment_url( $cert_id );
+											$mime = get_post_mime_type( $cert_id );
+											if ( $mime && strpos( $mime, 'image' ) !== false ) {
+												echo sprintf( '<a href="%1$s" target="_blank"><img src="%1$s" style="max-width: 80px; max-height: 80px; border: 1px solid #ccd0d4; border-radius: 4px; padding: 2px; margin-right: 5px;" alt="Certificate"/></a>', esc_url( $url ) );
+											} else {
+												echo sprintf( '<a href="%1$s" target="_blank" class="button button-secondary" style="font-size:11px; height:auto; line-height:1.5; padding: 4px 8px; margin-right: 5px;">%2$s</a>', esc_url( $url ), esc_html__( 'View Document', 'meditaj' ) );
+											}
+										}
+									} else {
+										esc_html_e( 'No certificate uploaded', 'meditaj' );
+									}
+									?>
+								</td>
+								<td>
+									<?php
+									$approve_url = wp_nonce_url( admin_url( 'admin.php?page=meditaj-pending&action=approve&id=' . $doctor->id ), 'meditaj_approve_doctor_' . $doctor->id );
+									?>
+									<a href="<?php echo esc_url( $approve_url ); ?>" class="button button-primary" style="background-color: green; border-color: green; color: #fff; margin-right: 5px; vertical-align:middle;">
+										<?php esc_html_e( 'Approve', 'meditaj' ); ?>
+									</a>
+
+									<form method="post" style="display: inline-block; vertical-align:middle;">
+										<?php wp_nonce_field( 'meditaj_reject_doctor_' . $doctor->id, 'meditaj_reject_nonce' ); ?>
+										<input type="hidden" name="doctor_id" value="<?php echo esc_attr( $doctor->id ); ?>">
+										<input type="text" name="rejection_reason" placeholder="<?php esc_attr_e( 'Rejection reason...', 'meditaj' ); ?>" style="width: 140px; font-size:11px; height:30px; vertical-align:middle; margin-right:2px;" required>
+										<button type="submit" name="meditaj_reject_submit" class="button button-link-delete" style="color: red; border: 1px solid red; height:30px; vertical-align:middle; padding: 0 8px; border-radius: 3px; cursor:pointer; background: none;">
+											<?php esc_html_e( 'Reject', 'meditaj' ); ?>
+										</button>
+									</form>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					<?php endif; ?>
+				</tbody>
+			</table>
+		</div>
+		<?php
+	}
+
 
 	/**
 	 * Register Custom Meta Box on Doctors CPT edit screen.
@@ -447,6 +657,7 @@ class AdminDoctors {
 		// Set default values.
 		$provider_type       = $meta ? $meta->provider_type : 'doctor';
 		$bmdc_license_no     = $meta ? $meta->bmdc_license_no : '';
+		$bmdc_expiry_date    = $meta ? $meta->bmdc_expiry_date : '';
 		$degree              = $meta ? $meta->degree : '';
 		$designation         = $meta ? $meta->designation : '';
 		$consultation_fee    = $meta ? $meta->consultation_fee : 0.00;
@@ -454,8 +665,16 @@ class AdminDoctors {
 		$experience_years    = $meta ? $meta->experience_years : 0;
 		$is_online           = $meta ? $meta->is_online : 0;
 		$verification_status = $meta ? $meta->verification_status : 'pending';
+		$mobile              = $meta ? $meta->mobile : '';
+		$nid                 = $meta ? $meta->nid : '';
+		$nationality         = $meta ? $meta->nationality : '';
+		$organization        = $meta ? $meta->organization : '';
+		$follow_up_days      = $meta ? $meta->follow_up_days : 0;
+		$follow_up_cost      = $meta ? $meta->follow_up_cost : 0.00;
 		$bank_account_name   = $meta ? $meta->bank_account_name : '';
 		$bank_account_no     = $meta ? $meta->bank_account_no : '';
+		$bank_branch_name    = $meta ? $meta->bank_branch_name : '';
+		$bank_routing_number = $meta ? $meta->bank_routing_number : '';
 		$mobile_banking_type = $meta ? $meta->mobile_banking_type : 'bkash';
 		$mobile_banking_no   = $meta ? $meta->mobile_banking_no : '';
 		?>
@@ -474,11 +693,39 @@ class AdminDoctors {
 				</select>
 			</div>
 			<div class="meditaj-mb-field">
-				<label for="mb_bmdc_license_no"><?php esc_html_e( 'BMDC Registration No', 'meditaj' ); ?></label>
+				<label for="mb_verification_status"><?php esc_html_e( 'Verification Status', 'meditaj' ); ?></label>
+				<select name="mb_verification_status" id="mb_verification_status">
+					<option value="pending" <?php selected( $verification_status, 'pending' ); ?>><?php esc_html_e( 'Pending', 'meditaj' ); ?></option>
+					<option value="approved" <?php selected( $verification_status, 'approved' ); ?>><?php esc_html_e( 'Approved', 'meditaj' ); ?></option>
+					<option value="rejected" <?php selected( $verification_status, 'rejected' ); ?>><?php esc_html_e( 'Rejected', 'meditaj' ); ?></option>
+				</select>
+			</div>
+			<div class="meditaj-mb-field">
+				<label for="mb_mobile"><?php esc_html_e( 'Mobile Number', 'meditaj' ); ?></label>
+				<input type="text" name="mb_mobile" id="mb_mobile" value="<?php echo esc_attr( $mobile ); ?>">
+			</div>
+			<div class="meditaj-mb-field">
+				<label for="mb_nid"><?php esc_html_e( 'NID Number', 'meditaj' ); ?></label>
+				<input type="text" name="mb_nid" id="mb_nid" value="<?php echo esc_attr( $nid ); ?>">
+			</div>
+			<div class="meditaj-mb-field">
+				<label for="mb_nationality"><?php esc_html_e( 'Nationality', 'meditaj' ); ?></label>
+				<input type="text" name="mb_nationality" id="mb_nationality" value="<?php echo esc_attr( $nationality ); ?>">
+			</div>
+			<div class="meditaj-mb-field">
+				<label for="mb_organization"><?php esc_html_e( 'Organization', 'meditaj' ); ?></label>
+				<input type="text" name="mb_organization" id="mb_organization" value="<?php echo esc_attr( $organization ); ?>">
+			</div>
+			<div class="meditaj-mb-field">
+				<label for="mb_bmdc_license_no"><?php esc_html_e( 'BMDC Registration Code', 'meditaj' ); ?></label>
 				<input type="text" name="mb_bmdc_license_no" id="mb_bmdc_license_no" value="<?php echo esc_attr( $bmdc_license_no ); ?>">
 			</div>
 			<div class="meditaj-mb-field">
-				<label for="mb_degree"><?php esc_html_e( 'Degrees / Qualifications', 'meditaj' ); ?></label>
+				<label for="mb_bmdc_expiry_date"><?php esc_html_e( 'BMDC Expiry Date', 'meditaj' ); ?></label>
+				<input type="date" name="mb_bmdc_expiry_date" id="mb_bmdc_expiry_date" value="<?php echo esc_attr( $bmdc_expiry_date ); ?>">
+			</div>
+			<div class="meditaj-mb-field">
+				<label for="mb_degree"><?php esc_html_e( 'Degrees / Academic Titles', 'meditaj' ); ?></label>
 				<input type="text" name="mb_degree" id="mb_degree" value="<?php echo esc_attr( $degree ); ?>">
 			</div>
 			<div class="meditaj-mb-field">
@@ -490,15 +737,7 @@ class AdminDoctors {
 				<input type="number" name="mb_experience_years" id="mb_experience_years" value="<?php echo esc_attr( $experience_years ); ?>">
 			</div>
 			<div class="meditaj-mb-field">
-				<label for="mb_verification_status"><?php esc_html_e( 'Verification Status', 'meditaj' ); ?></label>
-				<select name="mb_verification_status" id="mb_verification_status">
-					<option value="pending" <?php selected( $verification_status, 'pending' ); ?>><?php esc_html_e( 'Pending', 'meditaj' ); ?></option>
-					<option value="approved" <?php selected( $verification_status, 'approved' ); ?>><?php esc_html_e( 'Approved', 'meditaj' ); ?></option>
-					<option value="rejected" <?php selected( $verification_status, 'rejected' ); ?>><?php esc_html_e( 'Rejected', 'meditaj' ); ?></option>
-				</select>
-			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_consultation_fee"><?php esc_html_e( 'Scheduled Consultation Fee (BDT)', 'meditaj' ); ?></label>
+				<label for="mb_consultation_fee"><?php esc_html_e( 'Consultation Fee (BDT)', 'meditaj' ); ?></label>
 				<input type="number" name="mb_consultation_fee" id="mb_consultation_fee" step="0.01" value="<?php echo esc_attr( $consultation_fee ); ?>">
 			</div>
 			<div class="meditaj-mb-field">
@@ -513,12 +752,28 @@ class AdminDoctors {
 				</select>
 			</div>
 			<div class="meditaj-mb-field">
+				<label for="mb_follow_up_days"><?php esc_html_e( 'Follow Up Days', 'meditaj' ); ?></label>
+				<input type="number" name="mb_follow_up_days" id="mb_follow_up_days" value="<?php echo esc_attr( $follow_up_days ); ?>">
+			</div>
+			<div class="meditaj-mb-field">
+				<label for="mb_follow_up_cost"><?php esc_html_e( 'Follow Up Cost (BDT)', 'meditaj' ); ?></label>
+				<input type="number" name="mb_follow_up_cost" id="mb_follow_up_cost" step="0.01" value="<?php echo esc_attr( $follow_up_cost ); ?>">
+			</div>
+			<div class="meditaj-mb-field">
 				<label for="mb_bank_account_name"><?php esc_html_e( 'Bank Account Name', 'meditaj' ); ?></label>
 				<input type="text" name="mb_bank_account_name" id="mb_bank_account_name" value="<?php echo esc_attr( $bank_account_name ); ?>">
 			</div>
 			<div class="meditaj-mb-field">
 				<label for="mb_bank_account_no"><?php esc_html_e( 'Bank Account Number', 'meditaj' ); ?></label>
 				<input type="text" name="mb_bank_account_no" id="mb_bank_account_no" value="<?php echo esc_attr( $bank_account_no ); ?>">
+			</div>
+			<div class="meditaj-mb-field">
+				<label for="mb_bank_branch_name"><?php esc_html_e( 'Bank Branch Name', 'meditaj' ); ?></label>
+				<input type="text" name="mb_bank_branch_name" id="mb_bank_branch_name" value="<?php echo esc_attr( $bank_branch_name ); ?>">
+			</div>
+			<div class="meditaj-mb-field">
+				<label for="mb_bank_routing_number"><?php esc_html_e( 'Bank Routing Number', 'meditaj' ); ?></label>
+				<input type="text" name="mb_bank_routing_number" id="mb_bank_routing_number" value="<?php echo esc_attr( $bank_routing_number ); ?>">
 			</div>
 			<div class="meditaj-mb-field">
 				<label for="mb_mobile_banking_type"><?php esc_html_e( 'Mobile Payout Wallet', 'meditaj' ); ?></label>
@@ -563,6 +818,7 @@ class AdminDoctors {
 		// Gather inputs.
 		$provider_type       = sanitize_text_field( $_POST['mb_provider_type'] );
 		$bmdc_license_no     = sanitize_text_field( $_POST['mb_bmdc_license_no'] );
+		$bmdc_expiry_date    = sanitize_text_field( $_POST['mb_bmdc_expiry_date'] );
 		$degree              = sanitize_text_field( $_POST['mb_degree'] );
 		$designation         = sanitize_text_field( $_POST['mb_designation'] );
 		$experience_years    = intval( $_POST['mb_experience_years'] );
@@ -570,8 +826,16 @@ class AdminDoctors {
 		$consultation_fee    = floatval( $_POST['mb_consultation_fee'] );
 		$instant_call_fee    = floatval( $_POST['mb_instant_call_fee'] );
 		$is_online           = intval( $_POST['mb_is_online'] );
+		$mobile              = sanitize_text_field( $_POST['mb_mobile'] );
+		$nid                 = sanitize_text_field( $_POST['mb_nid'] );
+		$nationality         = sanitize_text_field( $_POST['mb_nationality'] );
+		$organization        = sanitize_text_field( $_POST['mb_organization'] );
+		$follow_up_days      = intval( $_POST['mb_follow_up_days'] );
+		$follow_up_cost      = floatval( $_POST['mb_follow_up_cost'] );
 		$bank_account_name   = sanitize_text_field( $_POST['mb_bank_account_name'] );
 		$bank_account_no     = sanitize_text_field( $_POST['mb_bank_account_no'] );
+		$bank_branch_name    = sanitize_text_field( $_POST['mb_bank_branch_name'] );
+		$bank_routing_number = sanitize_text_field( $_POST['mb_bank_routing_number'] );
 		$mobile_banking_type = sanitize_text_field( $_POST['mb_mobile_banking_type'] );
 		$mobile_banking_no   = sanitize_text_field( $_POST['mb_mobile_banking_no'] );
 
@@ -584,6 +848,7 @@ class AdminDoctors {
 		$data = array(
 			'provider_type'       => $provider_type,
 			'bmdc_license_no'     => $bmdc_license_no,
+			'bmdc_expiry_date'    => $bmdc_expiry_date ? $bmdc_expiry_date : null,
 			'degree'              => $degree,
 			'designation'         => $designation,
 			'experience_years'    => $experience_years,
@@ -591,8 +856,16 @@ class AdminDoctors {
 			'consultation_fee'    => $consultation_fee,
 			'instant_call_fee'    => $instant_call_fee,
 			'is_online'           => $is_online,
+			'mobile'              => $mobile,
+			'nid'                 => $nid,
+			'nationality'         => $nationality,
+			'organization'        => $organization,
+			'follow_up_days'      => $follow_up_days,
+			'follow_up_cost'      => $follow_up_cost,
 			'bank_account_name'   => $bank_account_name,
 			'bank_account_no'     => $bank_account_no,
+			'bank_branch_name'    => $bank_branch_name,
+			'bank_routing_number' => $bank_routing_number,
 			'mobile_banking_type' => $mobile_banking_type,
 			'mobile_banking_no'   => $mobile_banking_no,
 		);

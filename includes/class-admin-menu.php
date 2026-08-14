@@ -56,7 +56,7 @@ class AdminMenu {
 			__( 'Pending Verifications', 'meditaj' ),
 			'manage_options',
 			'meditaj-pending',
-			array( __CLASS__, 'render_pending_page' )
+			array( '\Meditaj\AdminDoctors', 'render_pending_verifications_page' )
 		);
 
 		add_submenu_page(
@@ -104,22 +104,7 @@ class AdminMenu {
 		<?php
 	}
 
-	/**
-	 * Render Pending Verifications page placeholder.
-	 */
-	public static function render_pending_page() {
-		?>
-		<div class="wrap meditaj-admin-wrap">
-			<div class="meditaj-admin-header">
-				<h1 class="meditaj-admin-title"><?php esc_html_e( 'Pending Verifications', 'meditaj' ); ?></h1>
-			</div>
-			<div class="meditaj-placeholder-card">
-				<h2><?php esc_html_e( 'Verification Queue', 'meditaj' ); ?></h2>
-				<p><?php esc_html_e( 'Pending doctor license and certificate approval queue will be displayed here in Phase 2.', 'meditaj' ); ?></p>
-			</div>
-		</div>
-		<?php
-	}
+
 
 	/**
 	 * Render Patients page placeholder.
