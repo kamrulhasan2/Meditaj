@@ -117,5 +117,6 @@ add_action(
 \Meditaj\Shortcodes::init();
 \Meditaj\AdminMenu::init();
 \Meditaj\AdminDoctors::init();
+\Meditaj\RestApi::init();
 
 

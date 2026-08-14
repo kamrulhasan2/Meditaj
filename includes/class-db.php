@@ -207,12 +207,7 @@ class DB {
 	public static function seed_dummy_doctors() {
 		global $wpdb;
 		$table_meta = self::get_table( 'doctors_meta' );
-
-		// Check if dummy data already exists
-		$count = $wpdb->get_var( "SELECT COUNT(*) FROM $table_meta" );
-		if ( $count > 0 ) {
-			return;
-		}
+		$now        = current_time( 'mysql' );
 
 		// Ensure taxonomy and post type are registered
 		if ( ! taxonomy_exists( 'specialty' ) ) {
@@ -221,6 +216,10 @@ class DB {
 		if ( ! post_type_exists( 'doctors' ) ) {
 			\Meditaj\CPT::register_post_types();
 		}
+
+		// Check if dummy doctor meta already exists
+		$count = $wpdb->get_var( "SELECT COUNT(*) FROM $table_meta" );
+		if ( 0 === intval( $count ) ) {
 
 		// Define specialties
 		$specialties   = array( 'Cardiology', 'Neurology', 'Pediatrics' );
@@ -422,6 +421,91 @@ class DB {
 						'%s',
 						'%s',
 						'%s',
+					)
+				);
+			}
+		}
+		} // End of if ( 0 === intval( $count ) ).
+
+		// Seed dummy schedules if empty.
+		$table_schedules = self::get_table( 'schedules' );
+		$schedules_count = $wpdb->get_var( "SELECT COUNT(*) FROM $table_schedules" );
+		if ( 0 === intval( $schedules_count ) ) {
+			// Find our doctor post IDs by post titles.
+			$doctor_posts = get_posts(
+				array(
+					'post_type'   => 'doctors',
+					'post_status' => 'any',
+					'numberposts' => -1,
+				)
+			);
+
+			foreach ( $doctor_posts as $post ) {
+				$doc_id = $post->ID;
+				if ( false !== strpos( $post->post_title, 'Anisur' ) ) {
+					// Seed schedule: Monday (1) 09:00 - 12:00 (30 min).
+					$wpdb->insert(
+						$table_schedules,
+						array(
+							'doctor_id'         => $doc_id,
+							'day_of_week'       => 1, // Monday.
+							'start_time'        => '09:00:00',
+							'end_time'          => '12:00:00',
+							'slot_duration_min' => 30,
+							'is_active'         => 1,
+						)
+					);
+					// Seed schedule: Wednesday (3) 14:00 - 17:00 (30 min).
+					$wpdb->insert(
+						$table_schedules,
+						array(
+							'doctor_id'         => $doc_id,
+							'day_of_week'       => 3, // Wednesday.
+							'start_time'        => '14:00:00',
+							'end_time'          => '17:00:00',
+							'slot_duration_min' => 30,
+							'is_active'         => 1,
+						)
+					);
+				} elseif ( false !== strpos( $post->post_title, 'Nusrat' ) ) {
+					// Seed schedule: Tuesday (2) 10:00 - 13:00 (30 min).
+					$wpdb->insert(
+						$table_schedules,
+						array(
+							'doctor_id'         => $doc_id,
+							'day_of_week'       => 2, // Tuesday.
+							'start_time'        => '10:00:00',
+							'end_time'          => '13:00:00',
+							'slot_duration_min' => 30,
+							'is_active'         => 1,
+						)
+					);
+				}
+			}
+		}
+
+		// Seed dummy appointment if empty (to test slot subtraction).
+		$table_appointments = self::get_table( 'appointments' );
+		$appointments_count = $wpdb->get_var( "SELECT COUNT(*) FROM $table_appointments" );
+		if ( 0 === intval( $appointments_count ) ) {
+			// Find Dr. Anisur.
+			$anisur = get_page_by_title( 'Dr. Anisur Rahman', OBJECT, 'doctors' );
+			if ( $anisur ) {
+				// Seed an appointment for Dr. Anisur on next Monday at 09:30:00.
+				$next_monday = date( 'Y-m-d', strtotime( 'next monday' ) );
+				$wpdb->insert(
+					$table_appointments,
+					array(
+						'doctor_id'        => $anisur->ID,
+						'patient_user_id'  => 2, // Dummy patient.
+						'appointment_type' => 'scheduled',
+						'appointment_date' => $next_monday,
+						'appointment_time' => '09:30:00',
+						'status'           => 'confirmed',
+						'payment_status'   => 'paid',
+						'amount'           => 1000.00,
+						'created_at'       => $now,
+						'updated_at'       => $now,
 					)
 				);
 			}
