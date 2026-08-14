@@ -28,6 +28,7 @@ class Shortcodes {
 	 */
 	public static function init() {
 		add_shortcode( 'meditaj_doctor_registration', array( __CLASS__, 'render_registration_shortcode' ) );
+		add_shortcode( 'meditaj_booking_flow', array( __CLASS__, 'render_booking_shortcode' ) );
 		add_action( 'template_redirect', array( __CLASS__, 'process_registration_form' ) );
 	}
 
@@ -297,5 +298,26 @@ class Shortcodes {
 	 */
 	public static function is_success() {
 		return self::$success;
+	}
+
+	/**
+	 * Render the booking flow shortcode content.
+	 */
+	public static function render_booking_shortcode() {
+		wp_enqueue_script( 'meditaj-booking-js', MEDITAJ_URL . 'assets/js/booking.js', array(), MEDITAJ_VERSION, true );
+
+		// Localize parameters for AJAX requests.
+		wp_localize_script(
+			'meditaj-booking-js',
+			'meditajSettings',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'meditaj/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+			)
+		);
+
+		ob_start();
+		include MEDITAJ_PATH . 'templates/booking-flow.php';
+		return ob_get_clean();
 	}
 }
