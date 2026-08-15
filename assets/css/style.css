@@ -1328,26 +1328,31 @@
 	padding-bottom: 4px;
 }
 
-.tab-trigger {
-	padding: 12px 20px;
-	background: none;
-	border: none;
-	border-bottom: 2px solid transparent;
-	font-size: 14px;
-	font-weight: 700;
-	color: #64748b;
-	cursor: pointer;
-	transition: all 0.2s;
-	white-space: nowrap;
+.meditaj-dashboard-tabs button.tab-trigger {
+	padding: 12px 20px !important;
+	background: transparent !important;
+	border: none !important;
+	border-bottom: 2px solid transparent !important;
+	font-size: 14px !important;
+	font-weight: 700 !important;
+	color: #64748b !important;
+	cursor: pointer !important;
+	transition: all 0.2s !important;
+	white-space: nowrap !important;
+	box-shadow: none !important;
+	border-radius: 0 !important;
+	line-height: 1.5 !important;
 }
 
-.tab-trigger:hover {
-	color: #0f766e;
+.meditaj-dashboard-tabs button.tab-trigger:hover {
+	color: #0f766e !important;
+	background: transparent !important;
 }
 
-.tab-trigger.active {
-	color: #0f766e;
-	border-bottom-color: #0f766e;
+.meditaj-dashboard-tabs button.tab-trigger.active {
+	color: #0f766e !important;
+	border-bottom: 2px solid #0f766e !important;
+	background: transparent !important;
 }
 
 /* Tab panes */
