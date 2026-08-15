@@ -97,7 +97,7 @@ class AdminDoctors {
 			<div class="meditaj-form-card">
 				<form method="post" enctype="multipart/form-data">
 					<?php wp_nonce_field( 'meditaj_add_doctor', 'meditaj_add_doctor_nonce' ); ?>
-
+ 
 					<!-- SECTION 1: WordPress User Credentials -->
 					<div class="meditaj-form-section">
 						<h3 class="meditaj-form-section-title"><?php esc_html_e( '1. User Account Credentials', 'meditaj' ); ?></h3>
@@ -116,7 +116,7 @@ class AdminDoctors {
 							</div>
 						</div>
 					</div>
-
+ 
 					<!-- SECTION 2: Doctor Profile details -->
 					<div class="meditaj-form-section">
 						<h3 class="meditaj-form-section-title"><?php esc_html_e( '2. Profile Information', 'meditaj' ); ?></h3>
@@ -145,13 +145,32 @@ class AdminDoctors {
 									<option value="medical_professional"><?php esc_html_e( 'Medical Professional', 'meditaj' ); ?></option>
 								</select>
 							</div>
+							<div class="meditaj-form-field">
+								<label for="mobile"><?php esc_html_e( 'Mobile *', 'meditaj' ); ?></label>
+								<input type="text" name="mobile" id="mobile" required value="<?php echo isset( $_POST['mobile'] ) ? esc_attr( $_POST['mobile'] ) : ''; ?>">
+							</div>
+							<div class="meditaj-form-field">
+								<label for="nid"><?php esc_html_e( 'NID *', 'meditaj' ); ?></label>
+								<input type="text" name="nid" id="nid" required value="<?php echo isset( $_POST['nid'] ) ? esc_attr( $_POST['nid'] ) : ''; ?>">
+							</div>
+							<div class="meditaj-form-field">
+								<label for="nationality"><?php esc_html_e( 'Nationality *', 'meditaj' ); ?></label>
+								<select name="nationality" id="nationality" required>
+									<option value="Bangladeshi"><?php esc_html_e( 'Bangladeshi', 'meditaj' ); ?></option>
+									<option value="Other"><?php esc_html_e( 'Other', 'meditaj' ); ?></option>
+								</select>
+							</div>
+							<div class="meditaj-form-field">
+								<label for="organization"><?php esc_html_e( 'Organization', 'meditaj' ); ?></label>
+								<input type="text" name="organization" id="organization" value="<?php echo isset( $_POST['organization'] ) ? esc_attr( $_POST['organization'] ) : ''; ?>">
+							</div>
 							<div class="meditaj-form-field span-2">
 								<label for="doctor_bio"><?php esc_html_e( 'Biography / Experience Overview', 'meditaj' ); ?></label>
 								<textarea name="doctor_bio" id="doctor_bio" rows="4"><?php echo isset( $_POST['doctor_bio'] ) ? esc_textarea( $_POST['doctor_bio'] ) : ''; ?></textarea>
 							</div>
 						</div>
 					</div>
-
+ 
 					<!-- SECTION 3: Professional Metadata -->
 					<div class="meditaj-form-section">
 						<h3 class="meditaj-form-section-title"><?php esc_html_e( '3. Professional Metadata & Pricing', 'meditaj' ); ?></h3>
@@ -159,6 +178,10 @@ class AdminDoctors {
 							<div class="meditaj-form-field">
 								<label for="bmdc_license_no"><?php esc_html_e( 'BMDC Registration No *', 'meditaj' ); ?></label>
 								<input type="text" name="bmdc_license_no" id="bmdc_license_no" required value="<?php echo isset( $_POST['bmdc_license_no'] ) ? esc_attr( $_POST['bmdc_license_no'] ) : ''; ?>">
+							</div>
+							<div class="meditaj-form-field">
+								<label for="bmdc_expiry_date"><?php esc_html_e( 'BMDC Expiry Date *', 'meditaj' ); ?></label>
+								<input type="date" name="bmdc_expiry_date" id="bmdc_expiry_date" required value="<?php echo isset( $_POST['bmdc_expiry_date'] ) ? esc_attr( $_POST['bmdc_expiry_date'] ) : ''; ?>">
 							</div>
 							<div class="meditaj-form-field">
 								<label for="degree"><?php esc_html_e( 'Degrees / Qualifications (comma separated) *', 'meditaj' ); ?></label>
@@ -180,21 +203,57 @@ class AdminDoctors {
 								<label for="instant_call_fee"><?php esc_html_e( 'Instant Call Fee (BDT) *', 'meditaj' ); ?></label>
 								<input type="number" name="instant_call_fee" id="instant_call_fee" min="0" step="0.01" required value="<?php echo isset( $_POST['instant_call_fee'] ) ? esc_attr( $_POST['instant_call_fee'] ) : ''; ?>">
 							</div>
+							<div class="meditaj-form-field">
+								<label for="follow_up_days"><?php esc_html_e( 'Follow up days *', 'meditaj' ); ?></label>
+								<input type="number" name="follow_up_days" id="follow_up_days" min="0" required value="<?php echo isset( $_POST['follow_up_days'] ) ? esc_attr( $_POST['follow_up_days'] ) : ''; ?>">
+							</div>
+							<div class="meditaj-form-field">
+								<label for="follow_up_cost"><?php esc_html_e( 'Follow up cost *', 'meditaj' ); ?></label>
+								<input type="number" name="follow_up_cost" id="follow_up_cost" min="0" step="0.01" required value="<?php echo isset( $_POST['follow_up_cost'] ) ? esc_attr( $_POST['follow_up_cost'] ) : ''; ?>">
+							</div>
 						</div>
 					</div>
-
+ 
 					<!-- SECTION 4: Payment Payout accounts -->
 					<div class="meditaj-form-section">
 						<h3 class="meditaj-form-section-title"><?php esc_html_e( '4. Bank & Mobile Payout Settings', 'meditaj' ); ?></h3>
-						<div class="meditaj-form-grid">
+						
+						<div class="meditaj-form-grid" style="margin-bottom: 20px;">
 							<div class="meditaj-form-field">
-								<label for="bank_account_name"><?php esc_html_e( 'Bank Account Name', 'meditaj' ); ?></label>
-								<input type="text" name="bank_account_name" id="bank_account_name" value="<?php echo isset( $_POST['bank_account_name'] ) ? esc_attr( $_POST['bank_account_name'] ) : ''; ?>">
+								<label for="payout_type"><?php esc_html_e( 'Payout Method', 'meditaj' ); ?></label>
+								<select name="payout_type" id="payout_type">
+									<option value="bank" <?php selected( isset( $_POST['payout_type'] ) ? $_POST['payout_type'] : 'bank', 'bank' ); ?>><?php esc_html_e( 'Bank Account', 'meditaj' ); ?></option>
+									<option value="mobile" <?php selected( isset( $_POST['payout_type'] ) ? $_POST['payout_type'] : 'bank', 'mobile' ); ?>><?php esc_html_e( 'Mobile Banking', 'meditaj' ); ?></option>
+								</select>
+							</div>
+						</div>
+
+						<!-- Bank Payout Fields -->
+						<div class="meditaj-form-grid" id="sec_bank_fields">
+							<div class="meditaj-form-field">
+								<label for="bank_name"><?php esc_html_e( 'Bank Name', 'meditaj' ); ?></label>
+								<input type="text" name="bank_name" id="bank_name" value="<?php echo isset( $_POST['bank_name'] ) ? esc_attr( $_POST['bank_name'] ) : ''; ?>">
+							</div>
+							<div class="meditaj-form-field">
+								<label for="bank_branch"><?php esc_html_e( 'Branch Name', 'meditaj' ); ?></label>
+								<input type="text" name="bank_branch" id="bank_branch" value="<?php echo isset( $_POST['bank_branch'] ) ? esc_attr( $_POST['bank_branch'] ) : ''; ?>">
 							</div>
 							<div class="meditaj-form-field">
 								<label for="bank_account_no"><?php esc_html_e( 'Bank Account Number', 'meditaj' ); ?></label>
 								<input type="text" name="bank_account_no" id="bank_account_no" value="<?php echo isset( $_POST['bank_account_no'] ) ? esc_attr( $_POST['bank_account_no'] ) : ''; ?>">
 							</div>
+							<div class="meditaj-form-field">
+								<label for="bank_account_name"><?php esc_html_e( 'Bank Account Name', 'meditaj' ); ?></label>
+								<input type="text" name="bank_account_name" id="bank_account_name" value="<?php echo isset( $_POST['bank_account_name'] ) ? esc_attr( $_POST['bank_account_name'] ) : ''; ?>">
+							</div>
+							<div class="meditaj-form-field">
+								<label for="bank_routing_number"><?php esc_html_e( 'Routing Number', 'meditaj' ); ?></label>
+								<input type="text" name="bank_routing_number" id="bank_routing_number" value="<?php echo isset( $_POST['bank_routing_number'] ) ? esc_attr( $_POST['bank_routing_number'] ) : ''; ?>">
+							</div>
+						</div>
+
+						<!-- Mobile Payout Fields -->
+						<div class="meditaj-form-grid" id="sec_mobile_fields" style="display: none;">
 							<div class="meditaj-form-field">
 								<label for="mobile_banking_type"><?php esc_html_e( 'Mobile Banking Wallet', 'meditaj' ); ?></label>
 								<select name="mobile_banking_type" id="mobile_banking_type">
@@ -209,16 +268,36 @@ class AdminDoctors {
 							</div>
 						</div>
 					</div>
-
+ 
 					<p class="submit">
 						<input type="submit" name="meditaj_add_doctor_submit" id="submit" class="button button-primary meditaj-btn-primary" value="<?php esc_attr_e( 'Create Doctor Profile', 'meditaj' ); ?>">
 					</p>
 				</form>
 			</div>
 		</div>
+		<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			const payoutType = document.getElementById('payout_type');
+			const bankSec = document.getElementById('sec_bank_fields');
+			const mobileSec = document.getElementById('sec_mobile_fields');
+			
+			function togglePayoutFields() {
+				if (payoutType.value === 'bank') {
+					bankSec.style.display = 'grid';
+					mobileSec.style.display = 'none';
+				} else {
+					bankSec.style.display = 'none';
+					mobileSec.style.display = 'grid';
+				}
+			}
+			
+			payoutType.addEventListener('change', togglePayoutFields);
+			togglePayoutFields();
+		});
+		</script>
 		<?php
 	}
-
+ 
 	/**
 	 * Process form submission to register a doctor, create post, and meta entries atomically.
 	 *
@@ -226,7 +305,7 @@ class AdminDoctors {
 	 */
 	private static function handle_add_doctor_submission() {
 		global $wpdb;
-
+ 
 		// 1. Gather & Sanitize inputs.
 		$username      = sanitize_user( $_POST['doctor_username'] );
 		$email         = sanitize_email( $_POST['doctor_email'] );
@@ -235,37 +314,50 @@ class AdminDoctors {
 		$bio           = wp_kses_post( $_POST['doctor_bio'] );
 		$provider_type = sanitize_text_field( $_POST['provider_type'] );
 		$specialty_id  = intval( $_POST['specialty_id'] );
-
+ 
 		$license           = sanitize_text_field( $_POST['bmdc_license_no'] );
+		$bmdc_expiry_date  = sanitize_text_field( $_POST['bmdc_expiry_date'] );
 		$degree            = sanitize_text_field( $_POST['degree'] );
 		$designation       = sanitize_text_field( $_POST['designation'] );
 		$experience        = intval( $_POST['experience_years'] );
 		$consultation_fee  = floatval( $_POST['consultation_fee'] );
 		$instant_call_fee  = floatval( $_POST['instant_call_fee'] );
+		
+		$mobile            = sanitize_text_field( $_POST['mobile'] );
+		$nid               = sanitize_text_field( $_POST['nid'] );
+		$nationality       = sanitize_text_field( $_POST['nationality'] );
+		$organization      = sanitize_text_field( $_POST['organization'] );
+		$follow_up_days    = intval( $_POST['follow_up_days'] );
+		$follow_up_cost    = floatval( $_POST['follow_up_cost'] );
+
+		$payout_type       = sanitize_text_field( $_POST['payout_type'] );
+		$bank_name         = sanitize_text_field( $_POST['bank_name'] );
+		$bank_branch       = sanitize_text_field( $_POST['bank_branch'] );
 		$bank_acc_name     = sanitize_text_field( $_POST['bank_account_name'] );
 		$bank_acc_no       = sanitize_text_field( $_POST['bank_account_no'] );
+		$bank_routing      = sanitize_text_field( $_POST['bank_routing_number'] );
 		$mobile_wallet     = sanitize_text_field( $_POST['mobile_banking_type'] );
 		$mobile_wallet_no  = sanitize_text_field( $_POST['mobile_banking_no'] );
-
+ 
 		// 2. Form validation.
-		if ( empty( $username ) || empty( $email ) || empty( $password ) || empty( $doctor_name ) || empty( $license ) ) {
+		if ( empty( $username ) || empty( $email ) || empty( $password ) || empty( $doctor_name ) || empty( $license ) || empty( $bmdc_expiry_date ) || empty( $mobile ) || empty( $nid ) ) {
 			return new \WP_Error( 'missing_fields', __( 'Please fill in all required fields.', 'meditaj' ) );
 		}
-
+ 
 		if ( username_exists( $username ) ) {
 			return new \WP_Error( 'username_taken', __( 'Username is already taken.', 'meditaj' ) );
 		}
-
+ 
 		if ( email_exists( $email ) ) {
 			return new \WP_Error( 'email_taken', __( 'Email address is already in use.', 'meditaj' ) );
 		}
-
+ 
 		// 3. User Creation.
 		$user_id = wp_create_user( $username, $password, $email );
 		if ( is_wp_error( $user_id ) ) {
 			return $user_id;
 		}
-
+ 
 		wp_update_user(
 			array(
 				'ID'           => $user_id,
@@ -273,7 +365,7 @@ class AdminDoctors {
 				'role'         => 'meditaj_doctor',
 			)
 		);
-
+ 
 		// 4. Post CPT Creation.
 		$post_id = wp_insert_post(
 			array(
@@ -284,29 +376,29 @@ class AdminDoctors {
 				'post_author'  => $user_id,
 			)
 		);
-
+ 
 		if ( is_wp_error( $post_id ) ) {
 			// Rollback user.
 			require_once ABSPATH . 'wp-admin/includes/user.php';
 			wp_delete_user( $user_id );
 			return $post_id;
 		}
-
+ 
 		// Set profile thumbnail if uploaded.
 		if ( ! empty( $_FILES['doctor_photo']['name'] ) ) {
 			require_once ABSPATH . 'wp-admin/includes/image.php';
 			require_once ABSPATH . 'wp-admin/includes/file.php';
 			require_once ABSPATH . 'wp-admin/includes/media.php';
-
+ 
 			$attachment_id = media_handle_upload( 'doctor_photo', $post_id );
 			if ( ! is_wp_error( $attachment_id ) ) {
 				set_post_thumbnail( $post_id, $attachment_id );
 			}
 		}
-
+ 
 		// Associate Taxonomy term.
 		wp_set_object_terms( $post_id, $specialty_id, 'specialty' );
-
+ 
 		// 5. Custom Table insertion.
 		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
 		$inserted   = $wpdb->insert(
@@ -316,6 +408,7 @@ class AdminDoctors {
 				'user_id'             => $user_id,
 				'provider_type'       => $provider_type,
 				'bmdc_license_no'     => $license,
+				'bmdc_expiry_date'    => $bmdc_expiry_date,
 				'degree'              => $degree,
 				'designation'         => $designation,
 				'consultation_fee'    => $consultation_fee,
@@ -323,10 +416,18 @@ class AdminDoctors {
 				'experience_years'    => $experience,
 				'is_online'           => 0,
 				'verification_status' => 'pending', // Starts pending.
-				'bank_account_name'   => $bank_acc_name,
-				'bank_account_no'     => $bank_acc_no,
-				'mobile_banking_type' => $mobile_wallet,
-				'mobile_banking_no'   => $mobile_wallet_no,
+				'mobile'              => $mobile,
+				'nid'                 => $nid,
+				'nationality'         => $nationality,
+				'organization'        => $organization,
+				'follow_up_days'      => $follow_up_days,
+				'follow_up_cost'      => $follow_up_cost,
+				'bank_account_name'   => 'bank' === $payout_type ? $bank_acc_name : null,
+				'bank_account_no'     => 'bank' === $payout_type ? $bank_acc_no : null,
+				'bank_branch_name'    => 'bank' === $payout_type ? $bank_name : null,
+				'bank_routing_number' => 'bank' === $payout_type ? $bank_routing : null,
+				'mobile_banking_type' => 'mobile' === $payout_type ? $mobile_wallet : null,
+				'mobile_banking_no'   => 'mobile' === $payout_type ? $mobile_wallet_no : null,
 				'certificate_files'   => wp_json_encode( array() ),
 				'created_at'          => current_time( 'mysql' ),
 			),
@@ -337,10 +438,19 @@ class AdminDoctors {
 				'%s',
 				'%s',
 				'%s',
+				'%s',
 				'%f',
 				'%f',
 				'%d',
 				'%d',
+				'%s',
+				'%s',
+				'%s',
+				'%s',
+				'%s',
+				'%d',
+				'%f',
+				'%s',
 				'%s',
 				'%s',
 				'%s',
