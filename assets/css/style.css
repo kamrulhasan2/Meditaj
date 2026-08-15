@@ -861,31 +861,44 @@
 	margin-bottom: 20px;
 }
 
-.type-toggle-btn {
-	flex-grow: 1;
-	padding: 12px;
-	border: 1px solid #cbd5e1;
-	background-color: #f8fafc;
-	color: #475569;
-	font-weight: 700;
-	border-radius: 8px;
-	cursor: pointer;
-	transition: all 0.2s;
+/* Type Toggle Buttons */
+.booking-type-toggles button.type-toggle-btn {
+	flex-grow: 1 !important;
+	padding: 12px !important;
+	border: 1px solid #cbd5e1 !important;
+	background-color: #f8fafc !important;
+	color: #475569 !important;
+	font-weight: 700 !important;
+	border-radius: 8px !important;
+	cursor: pointer !important;
+	transition: all 0.2s !important;
+	box-shadow: none !important;
+	line-height: 1.5 !important;
 }
 
-.type-toggle-btn:hover {
-	background-color: #f1f5f9;
+.booking-type-toggles button.type-toggle-btn:hover {
+	background-color: #f1f5f9 !important;
+	color: #1e293b !important;
+	border-color: #94a3b8 !important;
 }
 
-.type-toggle-btn.active {
-	background-color: #0f766e;
-	color: #ffffff;
-	border-color: #0f766e;
+.booking-type-toggles button.type-toggle-btn.active {
+	background-color: #0f766e !important;
+	color: #ffffff !important;
+	border-color: #0f766e !important;
 }
 
-.type-toggle-btn.disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
+.booking-type-toggles button.type-toggle-btn.active:hover {
+	background-color: #0d9488 !important;
+	color: #ffffff !important;
+	border-color: #0d9488 !important;
+}
+
+.booking-type-toggles button.type-toggle-btn.disabled {
+	opacity: 0.5 !important;
+	cursor: not-allowed !important;
+	background-color: #e2e8f0 !important;
+	color: #94a3b8 !important;
 }
 
 .booking-calendar-wrapper input[type="date"] {
@@ -906,36 +919,47 @@
 	margin-top: 10px;
 }
 
-.meditaj-slot-pill {
-	padding: 8px;
-	background-color: #ffffff;
-	border: 1px solid #cbd5e1;
-	border-radius: 6px;
-	font-size: 12px;
-	font-weight: 700;
-	color: #475569;
-	cursor: pointer;
-	text-align: center;
-	transition: all 0.15s;
+/* Hourly Slots Grid */
+.meditaj-slots-grid button.meditaj-slot-pill {
+	padding: 8px !important;
+	background-color: #ffffff !important;
+	border: 1px solid #cbd5e1 !important;
+	border-radius: 6px !important;
+	font-size: 12px !important;
+	font-weight: 700 !important;
+	color: #475569 !important;
+	cursor: pointer !important;
+	text-align: center !important;
+	transition: all 0.15s !important;
+	box-shadow: none !important;
+	line-height: 1.5 !important;
 }
 
-.meditaj-slot-pill:hover {
-	border-color: #0f766e;
-	color: #0f766e;
+.meditaj-slots-grid button.meditaj-slot-pill:hover {
+	border-color: #0f766e !important;
+	color: #0f766e !important;
+	background-color: #f0fdfa !important;
 }
 
-.meditaj-slot-pill.active {
-	background-color: #0f766e;
-	color: #ffffff;
-	border-color: #0f766e;
+.meditaj-slots-grid button.meditaj-slot-pill.active {
+	background-color: #0f766e !important;
+	color: #ffffff !important;
+	border-color: #0f766e !important;
 }
 
-.meditaj-slot-pill:disabled, .meditaj-slot-pill.booked {
-	background-color: #f1f5f9;
-	border-color: #e2e8f0;
-	color: #cbd5e1;
-	text-decoration: line-through;
-	cursor: not-allowed;
+.meditaj-slots-grid button.meditaj-slot-pill.active:hover {
+	background-color: #0d9488 !important;
+	color: #ffffff !important;
+	border-color: #0d9488 !important;
+}
+
+.meditaj-slots-grid button.meditaj-slot-pill:disabled,
+.meditaj-slots-grid button.meditaj-slot-pill.booked {
+	background-color: #f1f5f9 !important;
+	border-color: #e2e8f0 !important;
+	color: #cbd5e1 !important;
+	text-decoration: line-through !important;
+	cursor: not-allowed !important;
 }
 
 /* Checkout Summary Side Panel */
