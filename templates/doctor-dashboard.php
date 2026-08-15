@@ -129,31 +129,15 @@ $user = wp_get_current_user();
 					);
 					foreach ( $days as $num => $name ) :
 						?>
-					<div class="day-slot-row" data-day="<?php echo esc_attr( $num ); ?>">
-						<div class="day-label-column">
-							<label class="day-checkbox-wrapper">
-								<input type="checkbox" class="day-active-check">
-								<strong><?php echo esc_html( $name ); ?></strong>
-							</label>
+					<div class="day-slot-row" data-day="<?php echo esc_attr( $num ); ?>" style="display: flex; gap: 20px; border-bottom: 1px solid #f1f5f9; padding: 15px 0; align-items: flex-start; flex-wrap: wrap;">
+						<div class="day-label-column" style="flex: 0 0 150px; font-weight: bold; font-size: 16px; color: #1e293b; padding-top: 10px;">
+							<?php echo esc_html( $name ); ?>
 						</div>
-						<div class="time-inputs-column">
-							<div class="time-group">
-								<label>Start</label>
-								<input type="time" class="time-start" value="09:00">
+						<div class="day-blocks-column" style="flex-grow: 1;">
+							<div class="day-slots-blocks-container">
+								<!-- Slot blocks will be dynamically loaded/inserted here -->
 							</div>
-							<div class="time-group">
-								<label>End</label>
-								<input type="time" class="time-end" value="12:00">
-							</div>
-							<div class="time-group">
-								<label>Duration (Min)</label>
-								<select class="slot-duration">
-									<option value="15">15 Min</option>
-									<option value="30" selected>30 Min</option>
-									<option value="45">45 Min</option>
-									<option value="60">60 Min</option>
-								</select>
-							</div>
+							<button type="button" class="meditaj-add-slot-btn" style="margin-top: 8px; font-size: 13px; padding: 8px 16px; background: #e0f2fe; color: #0369a1; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s;">+ Add New Slot</button>
 						</div>
 					</div>
 					<?php endforeach; ?>

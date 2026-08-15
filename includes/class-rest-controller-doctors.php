@@ -301,7 +301,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 		$table_schedules = \Meditaj\DB::get_table( 'schedules' );
 		$schedules       = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT start_time, end_time, slot_duration_min FROM $table_schedules WHERE doctor_id = %d AND day_of_week = %d AND is_active = 1",
+				"SELECT start_time, end_time, slot_duration_min, break_duration_min FROM $table_schedules WHERE doctor_id = %d AND day_of_week = %d AND is_active = 1",
 				$doctor_id,
 				$day_of_week
 			)
@@ -316,13 +316,16 @@ class RestControllerDoctors extends WP_REST_Controller {
 		foreach ( $schedules as $rule ) {
 			$start = strtotime( $date . ' ' . $rule->start_time );
 			$end   = strtotime( $date . ' ' . $rule->end_time );
-			$step  = intval( $rule->slot_duration_min ) * 60; // in seconds
+			
+			$duration_sec = intval( $rule->slot_duration_min ) * 60;
+			$break_sec    = intval( isset( $rule->break_duration_min ) ? $rule->break_duration_min : 0 ) * 60;
+			$total_step   = $duration_sec + $break_sec;
 
-			if ( $step <= 0 ) {
+			if ( $duration_sec <= 0 ) {
 				continue;
 			}
 
-			for ( $time = $start; $time < $end; $time += $step ) {
+			for ( $time = $start; $time + $duration_sec <= $end; $time += $total_step ) {
 				$slots[] = date( 'H:i:s', $time );
 			}
 		}

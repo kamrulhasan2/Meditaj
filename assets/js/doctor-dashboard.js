@@ -173,7 +173,83 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	// 5. WEEKLY SLOTS GRID SCHEDULER
+	function createSlotBlock(startTime = '09:00', endTime = '12:00', duration = '30', breakTime = '0', isActive = true) {
+		const block = document.createElement('div');
+		block.className = 'time-slot-block';
+		block.style = 'display: flex; align-items: center; gap: 15px; margin-bottom: 10px; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; flex-wrap: wrap; width: 100%; box-sizing: border-box;';
+		
+		block.innerHTML = `
+			<!-- Active / Inactive Checkbox -->
+			<label style="display: flex; align-items: center; gap: 6px; font-weight: bold; margin-bottom: 0; cursor: pointer;">
+				<input type="checkbox" class="slot-active-check" ${isActive ? 'checked' : ''}>
+				Active
+			</label>
+			
+			<!-- Start Time -->
+			<div class="time-group" style="margin-bottom: 0; display: flex; flex-direction: column; gap: 4px;">
+				<label style="font-size: 11px; text-transform: uppercase; color: #64748b; display: block; font-weight: bold;">Start</label>
+				<input type="time" class="time-start" value="${startTime}" required style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; font-weight: 500;">
+			</div>
+			
+			<!-- End Time -->
+			<div class="time-group" style="margin-bottom: 0; display: flex; flex-direction: column; gap: 4px;">
+				<label style="font-size: 11px; text-transform: uppercase; color: #64748b; display: block; font-weight: bold;">End</label>
+				<input type="time" class="time-end" value="${endTime}" required style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; font-weight: 500;">
+			</div>
+			
+			<!-- Duration -->
+			<div class="time-group" style="margin-bottom: 0; display: flex; flex-direction: column; gap: 4px;">
+				<label style="font-size: 11px; text-transform: uppercase; color: #64748b; display: block; font-weight: bold;">Duration</label>
+				<select class="slot-duration" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; font-weight: 500;">
+					<option value="15" ${'15' == duration ? 'selected' : ''}>15 Min</option>
+					<option value="30" ${'30' == duration ? 'selected' : ''}>30 Min</option>
+					<option value="45" ${'45' == duration ? 'selected' : ''}>45 Min</option>
+					<option value="60" ${'60' == duration ? 'selected' : ''}>60 Min</option>
+				</select>
+			</div>
+			
+			<!-- Break Time (Optional) -->
+			<div class="time-group" style="margin-bottom: 0; display: flex; flex-direction: column; gap: 4px;">
+				<label style="font-size: 11px; text-transform: uppercase; color: #64748b; display: block; font-weight: bold;">Break (Optional)</label>
+				<select class="slot-break" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; font-weight: 500;">
+					<option value="0" ${'0' == breakTime ? 'selected' : ''}>No Break</option>
+					<option value="5" ${'5' == breakTime ? 'selected' : ''}>5 Min</option>
+					<option value="10" ${'10' == breakTime ? 'selected' : ''}>10 Min</option>
+					<option value="15" ${'15' == breakTime ? 'selected' : ''}>15 Min</option>
+					<option value="20" ${'20' == breakTime ? 'selected' : ''}>20 Min</option>
+					<option value="30" ${'30' == breakTime ? 'selected' : ''}>30 Min</option>
+				</select>
+			</div>
+			
+			<!-- Remove Button -->
+			<button type="button" class="meditaj-remove-slot-btn" style="background: #fee2e2 !important; color: #b91c1c !important; border: none !important; border-radius: 6px !important; padding: 6px 12px !important; cursor: pointer !important; font-size: 12px !important; font-weight: bold !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; height: 32px !important; margin-top: 15px !important; box-shadow: none !important;">✕ Remove</button>
+		`;
+
+		// Attach remove button listener
+		block.querySelector('.meditaj-remove-slot-btn').addEventListener('click', function() {
+			block.remove();
+		});
+
+		return block;
+	}
+
 	function loadWeeklySchedules() {
+		// First attach add button listeners (once)
+		document.querySelectorAll('.day-slot-row').forEach(row => {
+			const container = row.querySelector('.day-slots-blocks-container');
+			const addBtn = row.querySelector('.meditaj-add-slot-btn');
+			
+			// Prevent duplicate bindings
+			if (!addBtn.dataset.bound) {
+				addBtn.addEventListener('click', function() {
+					container.appendChild(createSlotBlock('09:00', '12:00', '30', '0', true));
+				});
+				addBtn.dataset.bound = 'true';
+			}
+			
+			container.innerHTML = ''; // clear loading state
+		});
+
 		fetch(meditajSettings.restUrl + 'doctor/me/slots', {
 			headers: { 'X-WP-Nonce': meditajSettings.nonce }
 		})
@@ -182,15 +258,16 @@ document.addEventListener('DOMContentLoaded', function() {
 			slots.forEach(slot => {
 				const row = document.querySelector(`.day-slot-row[data-day="${slot.day_of_week}"]`);
 				if ( row ) {
-					row.querySelector('.day-active-check').checked = true;
+					const container = row.querySelector('.day-slots-blocks-container');
 					
 					// Formats HH:MM:SS to HH:MM
 					const start = slot.start_time.substring(0, 5);
 					const end = slot.end_time.substring(0, 5);
+					const duration = slot.slot_duration_min;
+					const breakTime = slot.break_duration_min || 0;
+					const isActive = parseInt(slot.is_active) === 1;
 
-					row.querySelector('.time-start').value = start;
-					row.querySelector('.time-end').value = end;
-					row.querySelector('.slot-duration').value = slot.slot_duration_min;
+					container.appendChild(createSlotBlock(start, end, duration, breakTime, isActive));
 				}
 			});
 		})
@@ -204,15 +281,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		const slotsPayload = [];
 		document.querySelectorAll('.day-slot-row').forEach(row => {
-			const checked = row.querySelector('.day-active-check').checked;
-			if ( checked ) {
+			const day = parseInt(row.getAttribute('data-day'));
+			row.querySelectorAll('.time-slot-block').forEach(block => {
+				const isActive = block.querySelector('.slot-active-check').checked ? 1 : 0;
 				slotsPayload.push({
-					day_of_week: parseInt(row.getAttribute('data-day')),
-					start_time: row.querySelector('.time-start').value + ':00',
-					end_time: row.querySelector('.time-end').value + ':00',
-					slot_duration_min: parseInt(row.querySelector('.slot-duration').value)
+					day_of_week: day,
+					start_time: block.querySelector('.time-start').value + ':00',
+					end_time: block.querySelector('.time-end').value + ':00',
+					slot_duration_min: parseInt(block.querySelector('.slot-duration').value),
+					break_duration_min: parseInt(block.querySelector('.slot-break').value),
+					is_active: isActive
 				});
-			}
+			});
 		});
 
 		const saveBtn = slotsForm.querySelector('button[type="submit"]');

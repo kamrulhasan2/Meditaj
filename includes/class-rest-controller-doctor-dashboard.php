@@ -170,7 +170,7 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 
 		$slots = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT * FROM $table_schedules WHERE doctor_id = %d AND is_active = 1 ORDER BY day_of_week ASC, start_time ASC",
+				"SELECT * FROM $table_schedules WHERE doctor_id = %d ORDER BY day_of_week ASC, start_time ASC",
 				$doctor_id
 			)
 		);
@@ -209,6 +209,8 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 			$start    = sanitize_text_field( $slot['start_time'] );
 			$end      = sanitize_text_field( $slot['end_time'] );
 			$duration = intval( $slot['slot_duration_min'] );
+			$break    = isset( $slot['break_duration_min'] ) ? intval( $slot['break_duration_min'] ) : 0;
+			$active   = isset( $slot['is_active'] ) ? ( intval( $slot['is_active'] ) ? 1 : 0 ) : 1;
 
 			if ( $day < 1 || $day > 7 || empty( $start ) || empty( $end ) || $duration <= 0 ) {
 				continue; // Skip malformed rows.
@@ -217,14 +219,15 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 			$inserted = $wpdb->insert(
 				$table_schedules,
 				array(
-					'doctor_id'         => $doctor_id,
-					'day_of_week'       => $day,
-					'start_time'        => $start,
-					'end_time'          => $end,
-					'slot_duration_min' => $duration,
-					'is_active'         => 1,
+					'doctor_id'          => $doctor_id,
+					'day_of_week'        => $day,
+					'start_time'         => $start,
+					'end_time'           => $end,
+					'slot_duration_min'  => $duration,
+					'break_duration_min' => $break,
+					'is_active'          => $active,
 				),
-				array( '%d', '%d', '%s', '%s', '%d', '%d' )
+				array( '%d', '%d', '%s', '%s', '%d', '%d', '%d' )
 			);
 
 			if ( false === $inserted ) {

@@ -104,6 +104,7 @@ class DB {
   start_time time NOT NULL,
   end_time time NOT NULL,
   slot_duration_min int(11) NOT NULL,
+  break_duration_min int(11) DEFAULT 0 NOT NULL,
   is_active tinyint(1) DEFAULT 1 NOT NULL,
   PRIMARY KEY  (id),
   KEY doctor_id (doctor_id)
@@ -176,6 +177,13 @@ class DB {
 
 		foreach ( $sql as $query ) {
 			dbDelta( $query );
+		}
+
+		// Self-healing: Check if break_duration_min column exists, if not, add it.
+		$schedules_table = $tables['schedules'];
+		$has_break_col   = $wpdb->get_results( "SHOW COLUMNS FROM `$schedules_table` LIKE 'break_duration_min'" );
+		if ( empty( $has_break_col ) ) {
+			$wpdb->query( "ALTER TABLE `$schedules_table` ADD COLUMN `break_duration_min` int(11) DEFAULT 0 NOT NULL AFTER `slot_duration_min`" );
 		}
 
 		// Run manual ALTER TABLE columns queries to ensure these columns allow NULL since dbDelta doesn't change NOT NULL to NULL easily.
