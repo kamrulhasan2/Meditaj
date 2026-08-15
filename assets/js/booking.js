@@ -506,7 +506,8 @@ document.addEventListener('DOMContentLoaded', function() {
 						const pill = document.createElement('button');
 						pill.type = 'button';
 						pill.className = 'meditaj-slot-pill';
-						pill.textContent = slot.time.substring(0, 5); // display HH:MM
+						pill.setAttribute('data-time', slot.time);
+						pill.textContent = formatTime24To12(slot.time);
 
 						if ( ! slot.available ) {
 							pill.classList.add('booked');
@@ -607,7 +608,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			} else {
 				typeDisplay.textContent = translate('Scheduled Booking');
 				slotRow.style.display = 'flex';
-				const timeVal = state.slotTime ? state.slotTime.substring(0, 5) : '-';
+				const timeVal = state.slotTime ? formatTime24To12(state.slotTime) : '-';
 				clone.getElementById('summary-slot-time').textContent = state.date + ' @ ' + timeVal;
 			}
 
@@ -669,7 +670,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 			const activeSlotEl = document.querySelector('.meditaj-slot-pill.active');
 			if ( activeSlotEl ) {
-				state.slotTime = activeSlotEl.textContent.trim() + ':00';
+				state.slotTime = activeSlotEl.getAttribute('data-time');
 			}
 
 			// Validation check
@@ -828,6 +829,18 @@ document.addEventListener('DOMContentLoaded', function() {
 			};
 			render();
 		});
+	}
+
+	// Formats 24-hour time "16:30:00" or "16:30" to 12-hour "4:30 PM"
+	function formatTime24To12(time24) {
+		if (!time24) return '';
+		const parts = time24.split(':');
+		let hh = parseInt(parts[0], 10);
+		const mm = parts[1] ? parts[1].substring(0, 2) : '00';
+		const ampm = hh >= 12 ? 'PM' : 'AM';
+		hh = hh % 12;
+		hh = hh ? hh : 12; // the hour '0' should be '12'
+		return `${hh}:${mm} ${ampm}`;
 	}
 
 	// Bootstrap Render

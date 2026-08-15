@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 					tr.innerHTML = `
 						<td><strong>${app.family_member_name}</strong> <span class="relation-tag">${app.family_member_relation}</span></td>
-						<td>${app.appointment_time.substring(0, 5)}</td>
+						<td>${formatTime24To12(app.appointment_time)}</td>
 						<td><span class="symptom-notes-cell" title="${app.symptom_notes || ''}">${app.symptom_notes || '-'}</span></td>
 						<td>${app.amount} BDT</td>
 						<td>
@@ -161,7 +161,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					tr.innerHTML = `
 						<td><strong>${app.family_member_name}</strong> <span class="relation-tag">${app.family_member_relation}</span></td>
 						<td>${app.appointment_date}</td>
-						<td>${app.appointment_time.substring(0, 5)}</td>
+						<td>${formatTime24To12(app.appointment_time)}</td>
 						<td><span class="symptom-notes-cell" title="${app.symptom_notes || ''}">${app.symptom_notes || '-'}</span></td>
 						<td>${app.amount} BDT</td>
 					`;
@@ -416,6 +416,18 @@ document.addEventListener('DOMContentLoaded', function() {
 			saveProfileText(0);
 		}
 	});
+
+	// Formats 24-hour time "16:30:00" or "16:30" to 12-hour "4:30 PM"
+	function formatTime24To12(time24) {
+		if (!time24) return '';
+		const parts = time24.split(':');
+		let hh = parseInt(parts[0], 10);
+		const mm = parts[1] ? parts[1].substring(0, 2) : '00';
+		const ampm = hh >= 12 ? 'PM' : 'AM';
+		hh = hh % 12;
+		hh = hh ? hh : 12; // the hour '0' should be '12'
+		return `${hh}:${mm} ${ampm}`;
+	}
 
 	// Bootstrap Render
 	loadStats();

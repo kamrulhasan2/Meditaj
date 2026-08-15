@@ -58,7 +58,7 @@ if ( isset( $_GET['meditaj_payment'] ) ) {
 		$doctor_id = $appointment->doctor_id;
 		$doctor_title = get_the_title( $doctor_id );
 		$date = $appointment->appointment_date;
-		$time = substr( $appointment->appointment_time, 0, 5 );
+		$time = date( 'g:i A', strtotime( $appointment->appointment_time ) );
 		$patient_name = $appointment->family_member_name ? $appointment->family_member_name : wp_get_current_user()->display_name;
 		$relation = $appointment->family_member_relation ? $appointment->family_member_relation : 'Self';
 		$amount = $appointment->amount;
