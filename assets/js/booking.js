@@ -580,6 +580,15 @@ document.addEventListener('DOMContentLoaded', function() {
 		fileInput.addEventListener('change', function(e) {
 			if ( e.target.files.length > 0 ) {
 				const f = e.target.files[0];
+				const maxFileSize = 2 * 1024 * 1024; // 2MB
+				if ( f.size > maxFileSize ) {
+					alert('File size exceeds the 2MB limit. Please upload a smaller document.');
+					fileInput.value = ''; // clear input
+					fileNameDisplay.textContent = 'No file chosen';
+					state.files = [];
+					saveState();
+					return;
+				}
 				fileNameDisplay.textContent = f.name;
 				state.files = [ { name: f.name, size: f.size } ];
 			} else {

@@ -332,6 +332,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	fileInput.addEventListener('change', function(e) {
 		if ( e.target.files.length > 0 ) {
+			const maxFileSize = 2 * 1024 * 1024; // 2MB
+			if ( e.target.files[0].size > maxFileSize ) {
+				alert('Profile photo size exceeds 2MB limit. Please upload a smaller file.');
+				fileInput.value = ''; // clear input
+				fileNameDisplay.textContent = 'No file chosen';
+				return;
+			}
 			fileNameDisplay.textContent = e.target.files[0].name;
 		} else {
 			fileNameDisplay.textContent = 'No file chosen';
