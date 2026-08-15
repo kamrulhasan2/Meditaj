@@ -19,6 +19,17 @@ class Roles {
 	 */
 	public static function init() {
 		add_filter( 'wp_authenticate_user', array( __CLASS__, 'restrict_unapproved_doctors_login' ), 10, 2 );
+		add_action( 'init', array( __CLASS__, 'ensure_doctor_capabilities' ) );
+	}
+
+	/**
+	 * Ensure doctor roles have upload_files capability dynamically.
+	 */
+	public static function ensure_doctor_capabilities() {
+		$role = get_role( self::DOCTOR_ROLE );
+		if ( $role && ! $role->has_cap( 'upload_files' ) ) {
+			$role->add_cap( 'upload_files' );
+		}
 	}
 
 	/**
@@ -30,6 +41,7 @@ class Roles {
 			__( 'Meditaj Doctor', 'meditaj' ),
 			array(
 				'read'                            => true,
+				'upload_files'                    => true,
 				'meditaj_manage_own_appointments' => true,
 				'meditaj_manage_own_slots'        => true,
 			)

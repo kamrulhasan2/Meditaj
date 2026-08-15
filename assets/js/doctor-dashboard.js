@@ -300,18 +300,22 @@ document.addEventListener('DOMContentLoaded', function() {
 		// If a new photo is selected, upload it via WP Media REST API first
 		if ( fileInput.files.length > 0 ) {
 			const file = fileInput.files[0];
-			const formData = new FormData();
-			formData.append('file', file);
-			formData.append('title', 'Doctor Profile ' + meditajSettings.doctor.id);
 
 			fetch(meditajSettings.restUrl.replace('meditaj/v1/', 'wp/v2/media'), {
 				method: 'POST',
 				headers: {
-					'X-WP-Nonce': meditajSettings.nonce
+					'X-WP-Nonce': meditajSettings.nonce,
+					'Content-Disposition': 'attachment; filename="' + encodeURIComponent(file.name) + '"',
+					'Content-Type': file.type
 				},
-				body: formData
+				body: file
 			})
-			.then(res => res.json())
+			.then(res => {
+				if (!res.ok) {
+					return res.json().then(err => { throw new Error(err.message || 'Media REST error.'); });
+				}
+				return res.json();
+			})
 			.then(media => {
 				if ( media.id ) {
 					saveProfileText(media.id);
