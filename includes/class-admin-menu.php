@@ -97,23 +97,12 @@ class AdminMenu {
 	}
 
 	/**
-	 * Render Overview page placeholder.
+	 * Render Overview page callback.
 	 */
 	public static function render_overview_page() {
-		?>
-		<div class="wrap meditaj-admin-wrap">
-			<div class="meditaj-admin-header">
-				<h1 class="meditaj-admin-title"><?php esc_html_e( 'Meditaj Dashboard', 'meditaj' ); ?></h1>
-			</div>
-			<div class="meditaj-placeholder-card">
-				<h2><?php esc_html_e( 'System Overview', 'meditaj' ); ?></h2>
-				<p><?php esc_html_e( 'This page will show operational metrics and transaction graphs in Phase 8.', 'meditaj' ); ?></p>
-			</div>
-		</div>
-		<?php
+		require_once MEDITAJ_PATH . 'includes/class-admin-dashboard.php';
+		\Meditaj\AdminDashboard::render_dashboard();
 	}
-
-
 
 	/**
 	 * Render Patients page placeholder.
@@ -133,18 +122,70 @@ class AdminMenu {
 	}
 
 	/**
-	 * Render Appointments page placeholder.
+	 * Render Appointments page list table.
 	 */
 	public static function render_appointments_page() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$table_appointments = DB::get_table( 'appointments' );
+
+		// 1. Process Actions (Cancel / Complete)
+		if ( isset( $_GET['meditaj_action'] ) && isset( $_GET['appt_id'] ) ) {
+			$action  = sanitize_key( $_GET['meditaj_action'] );
+			$appt_id = intval( $_GET['appt_id'] );
+
+			if ( 'cancel' === $action && check_admin_referer( 'meditaj_cancel_appointment' ) ) {
+				$wpdb->update( $table_appointments, array( 'status' => 'cancelled' ), array( 'id' => $appt_id ) );
+				echo '<div class="notice notice-success is-dismissible" style="margin: 15px 0;"><p>' . esc_html__( 'Appointment successfully cancelled!', 'meditaj' ) . '</p></div>';
+			}
+
+			if ( 'complete' === $action && check_admin_referer( 'meditaj_complete_appointment' ) ) {
+				$wpdb->update( $table_appointments, array( 'status' => 'completed' ), array( 'id' => $appt_id ) );
+				echo '<div class="notice notice-success is-dismissible" style="margin: 15px 0;"><p>' . esc_html__( 'Appointment successfully marked as completed!', 'meditaj' ) . '</p></div>';
+			}
+		}
+
+		// 2. Process Bulk Actions
+		if ( ( isset( $_GET['action'] ) || isset( $_GET['action2'] ) ) && isset( $_GET['bulk-appointments'] ) ) {
+			$bulk_action = sanitize_key( ! empty( $_GET['action'] ) ? $_GET['action'] : $_GET['action2'] );
+			$appt_ids    = array_map( 'intval', $_GET['bulk-appointments'] );
+
+			if ( 'bulk-cancel' === $bulk_action ) {
+				foreach ( $appt_ids as $id ) {
+					$wpdb->update( $table_appointments, array( 'status' => 'cancelled' ), array( 'id' => $id ) );
+				}
+				echo '<div class="notice notice-success is-dismissible" style="margin: 15px 0;"><p>' . esc_html__( 'Selected appointments successfully cancelled!', 'meditaj' ) . '</p></div>';
+			}
+
+			if ( 'bulk-complete' === $bulk_action ) {
+				foreach ( $appt_ids as $id ) {
+					$wpdb->update( $table_appointments, array( 'status' => 'completed' ), array( 'id' => $id ) );
+				}
+				echo '<div class="notice notice-success is-dismissible" style="margin: 15px 0;"><p>' . esc_html__( 'Selected appointments marked as completed!', 'meditaj' ) . '</p></div>';
+			}
+		}
+
+		// 3. Render Table
+		require_once MEDITAJ_PATH . 'includes/class-admin-appointments.php';
+		$table = new AdminAppointmentsTable();
+		$table->prepare_items();
 		?>
 		<div class="wrap meditaj-admin-wrap">
-			<div class="meditaj-admin-header">
-				<h1 class="meditaj-admin-title"><?php esc_html_e( 'Appointments Manager', 'meditaj' ); ?></h1>
+			<div class="meditaj-admin-header" style="margin-bottom: 20px;">
+				<h1 class="meditaj-admin-title"><?php esc_html_e( 'Appointments Tracker Ledger', 'meditaj' ); ?></h1>
 			</div>
-			<div class="meditaj-placeholder-card">
-				<h2><?php esc_html_e( 'All Appointments', 'meditaj' ); ?></h2>
-				<p><?php esc_html_e( 'A full appointments tracking ledger with status filtering and logs will be displayed here in Phase 8.', 'meditaj' ); ?></p>
-			</div>
+
+			<form method="get" action="">
+				<input type="hidden" name="page" value="meditaj-appointments" />
+				<?php
+				$table->search_box( __( 'Search Patients/Txn ID', 'meditaj' ), 'meditaj_search_appt' );
+				$table->views();
+				$table->display();
+				?>
+			</form>
 		</div>
 		<?php
 	}

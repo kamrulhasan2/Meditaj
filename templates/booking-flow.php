@@ -49,13 +49,15 @@ if ( isset( $_GET['meditaj_payment'] ) ) {
 				array(
 					'appointment_id' => $appointment->id,
 					'doctor_id'      => $appointment->doctor_id,
-					'amount'         => $appointment->amount,
-					'payment_method' => 'sslcommerz',
+					'type'           => 'booking_payment',
+					'gateway'        => 'sslcommerz',
 					'gateway_txn_id' => 'LOCAL_DEV_' . $appointment->id . '_' . time(),
-					'payment_status' => 'success',
+					'amount'         => $appointment->amount,
+					'status'         => 'success',
+					'raw_payload'    => '{}',
 					'created_at'     => $now,
 				),
-				array( '%d', '%d', '%f', '%s', '%s', '%s', '%s' )
+				array( '%d', '%d', '%s', '%s', '%s', '%f', '%s', '%s', '%s' )
 			);
 
 			// Fetch the freshly updated appointment object.
