@@ -59,10 +59,14 @@ class AdminMenu {
 			array( '\Meditaj\AdminDoctors', 'render_pending_verifications_page' )
 		);
 
+		// Remove standard WordPress default CPT subpage.
+		remove_submenu_page( 'edit.php?post_type=doctors', 'post-new.php?post_type=doctors' );
+
+		// Register our custom layout form under Doctors CPT sidebar menu instead.
 		add_submenu_page(
-			'meditaj',
-			__( 'Add Doctor', 'meditaj' ),
-			__( 'Add Doctor', 'meditaj' ),
+			'edit.php?post_type=doctors',
+			__( 'Add New Doctor', 'meditaj' ),
+			__( 'Add New Doctor', 'meditaj' ),
 			'manage_options',
 			'meditaj-add-doctor',
 			array( '\Meditaj\AdminDoctors', 'render_add_doctor_page' )
