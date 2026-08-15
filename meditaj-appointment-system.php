@@ -1,10 +1,10 @@
 <?php
 /**
  * Plugin Name: Meditaj - Doctor Calling & Appointment System
- * Plugin URI:  https://example.com/meditaj
+ * Plugin URI:  https://github.com/kamrulhasan2/Meditaj
  * Description: Telemedicine and doctor appointment booking platform with Agora video integration and local payment options.
- * Version:     1.0.0
- * Author:      Antigravity
+ * Version:     1.0.1
+ * Author:      Kamrul Hasan
  * Text Domain: meditaj
  * Domain Path: /languages
  * Requires at least: 5.8
