@@ -616,7 +616,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			const patientRelationDisplay = clone.getElementById('summary-patient-relation');
 
 			if ( 'self' === state.patientType ) {
-				patientNameDisplay.textContent = wp.sanitize ? wp.sanitize.stripTags(wp_get_current_user_name()) : 'Registered Account User';
+				patientNameDisplay.textContent = (typeof wp !== 'undefined' && wp.sanitize) ? wp.sanitize.stripTags(wp_get_current_user_name()) : wp_get_current_user_name();
 				patientRelationDisplay.textContent = translate('Self');
 			} else {
 				patientNameDisplay.textContent = state.patientName || '-';
