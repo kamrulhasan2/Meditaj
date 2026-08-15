@@ -661,6 +661,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		// Booking Confirmation trigger
 		document.getElementById('btn-confirm-booking').addEventListener('click', function() {
+			// Synchronize inputs directly from DOM (bypasses browser input cache delays)
+			const dateInputEl = document.getElementById('booking-date');
+			if ( dateInputEl && dateInputEl.value ) {
+				state.date = dateInputEl.value;
+			}
+
+			const activeSlotEl = document.querySelector('.meditaj-slot-pill.active');
+			if ( activeSlotEl ) {
+				state.slotTime = activeSlotEl.textContent.trim() + ':00';
+			}
+
 			// Validation check
 			if ( 'scheduled' === state.bookingType ) {
 				if ( ! state.date ) {
