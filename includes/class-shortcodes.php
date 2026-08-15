@@ -112,6 +112,19 @@ class Shortcodes {
 			return;
 		}
 
+		// Pre-flight file upload error validations.
+		if ( isset( $_FILES['reg_certificate'] ) && $_FILES['reg_certificate']['error'] !== UPLOAD_ERR_OK ) {
+			self::$errors[] = __( 'Error uploading certificate file. Please verify the file is not corrupted and is under 2MB.', 'meditaj' );
+			return;
+		}
+
+		if ( isset( $_FILES['reg_photo'] ) && ! empty( $_FILES['reg_photo']['name'] ) ) {
+			if ( $_FILES['reg_photo']['error'] !== UPLOAD_ERR_OK ) {
+				self::$errors[] = __( 'Error uploading profile photo. Please verify the file is not corrupted and is under 2MB.', 'meditaj' );
+				return;
+			}
+		}
+
 		// Check file extension.
 		$cert_file = $_FILES['reg_certificate'];
 		$cert_ext  = strtolower( pathinfo( $cert_file['name'], PATHINFO_EXTENSION ) );
@@ -147,8 +160,9 @@ class Shortcodes {
 		);
 
 		if ( is_wp_error( $post_id ) ) {
-			require_once ABSPATH . 'wp-admin/includes/user.php';
-			wp_delete_user( $user_id );
+			global $wpdb;
+			$wpdb->delete( $wpdb->users, array( 'ID' => $user_id ), array( '%d' ) );
+			$wpdb->delete( $wpdb->usermeta, array( 'user_id' => $user_id ), array( '%d' ) );
 			self::$errors[] = $post_id->get_error_message();
 			return;
 		}
@@ -171,8 +185,9 @@ class Shortcodes {
 		if ( is_wp_error( $cert_id ) ) {
 			// Rollback.
 			wp_delete_post( $post_id, true );
-			require_once ABSPATH . 'wp-admin/includes/user.php';
-			wp_delete_user( $user_id );
+			global $wpdb;
+			$wpdb->delete( $wpdb->users, array( 'ID' => $user_id ), array( '%d' ) );
+			$wpdb->delete( $wpdb->usermeta, array( 'user_id' => $user_id ), array( '%d' ) );
 			self::$errors[] = __( 'Failed to save certificate attachment.', 'meditaj' );
 			return;
 		}
@@ -248,8 +263,9 @@ class Shortcodes {
 			// Rollback.
 			wp_delete_attachment( $cert_id, true );
 			wp_delete_post( $post_id, true );
-			require_once ABSPATH . 'wp-admin/includes/user.php';
-			wp_delete_user( $user_id );
+			global $wpdb;
+			$wpdb->delete( $wpdb->users, array( 'ID' => $user_id ), array( '%d' ) );
+			$wpdb->delete( $wpdb->usermeta, array( 'user_id' => $user_id ), array( '%d' ) );
 			self::$errors[] = __( 'Database write error. Registration failed.', 'meditaj' );
 			return;
 		}
