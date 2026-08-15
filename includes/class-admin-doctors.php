@@ -871,7 +871,26 @@ class AdminDoctors {
 		);
 
 		if ( $meta_id ) {
+			$old_status = $wpdb->get_var( $wpdb->prepare( "SELECT verification_status FROM $table_meta WHERE id = %d", $meta_id ) );
 			$wpdb->update( $table_meta, $data, array( 'id' => $meta_id ) );
+
+			if ( $old_status !== $verification_status ) {
+				$user_data = get_userdata( $author );
+				if ( $user_data ) {
+					if ( 'approved' === $verification_status ) {
+						\Meditaj\Notifications::send_doctor_approval_email( $user_data->user_email, $user_data->display_name );
+						// Remove this hook temporarily to avoid infinite save_post loop
+						remove_action( 'save_post_doctors', array( __CLASS__, 'save_doctors_meta_box' ) );
+						wp_update_post( array( 'ID' => $post_id, 'post_status' => 'publish' ) );
+						add_action( 'save_post_doctors', array( __CLASS__, 'save_doctors_meta_box' ) );
+					} elseif ( 'rejected' === $verification_status ) {
+						\Meditaj\Notifications::send_doctor_rejection_email( $user_data->user_email, $user_data->display_name, '' );
+						remove_action( 'save_post_doctors', array( __CLASS__, 'save_doctors_meta_box' ) );
+						wp_update_post( array( 'ID' => $post_id, 'post_status' => 'draft' ) );
+						add_action( 'save_post_doctors', array( __CLASS__, 'save_doctors_meta_box' ) );
+					}
+				}
+			}
 		} else {
 			$data['post_id']           = $post_id;
 			$data['user_id']           = $author;

@@ -19,7 +19,7 @@ class Notifications {
 	public static function send_doctor_approval_email( $email, $name ) {
 		$subject = sprintf( '[%s] %s', get_bloginfo( 'name' ), __( 'Your Doctor Profile Has Been Approved!', 'meditaj' ) );
 
-		$body  = sprintf( __( 'Dear %s,', 'meditaj' ), $name ) . "\r\n\r\n";
+		$body  = sprintf( __( 'Dear Dr. %s,', 'meditaj' ), $name ) . "\r\n\r\n";
 		$body .= __( 'Congratulations! Your medical provider profile has been verified and approved by our administrators.', 'meditaj' ) . "\r\n\r\n";
 		$body .= __( 'You can now log into your doctor dashboard and manage your slots and appointments.', 'meditaj' ) . "\r\n\r\n";
 		$body .= sprintf( __( 'Login Page: %s', 'meditaj' ), wp_login_url() ) . "\r\n\r\n";
@@ -42,7 +42,7 @@ class Notifications {
 	public static function send_doctor_rejection_email( $email, $name, $reason ) {
 		$subject = sprintf( '[%s] %s', get_bloginfo( 'name' ), __( 'Update on Your Doctor Application', 'meditaj' ) );
 
-		$body  = sprintf( __( 'Dear %s,', 'meditaj' ), $name ) . "\r\n\r\n";
+		$body  = sprintf( __( 'Dear Dr. %s,', 'meditaj' ), $name ) . "\r\n\r\n";
 		$body .= __( 'We regret to inform you that your doctor profile application has been rejected by our verification team.', 'meditaj' ) . "\r\n\r\n";
 
 		if ( ! empty( $reason ) ) {
@@ -59,5 +59,158 @@ class Notifications {
 		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
 
 		return wp_mail( $email, $subject, $body, $headers );
+	}
+
+	/**
+	 * Send booking confirmation emails to both patient and doctor.
+	 *
+	 * @param int $appointment_id Appointment ID.
+	 */
+	public static function send_booking_confirmation_emails( $appointment_id ) {
+		global $wpdb;
+		$table_appointments = DB::get_table( 'appointments' );
+		$table_doctors      = DB::get_table( 'doctors_meta' );
+
+		$appointment = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_appointments WHERE id = %d", $appointment_id ) );
+		if ( ! $appointment ) {
+			return;
+		}
+
+		// Get Doctor Info
+		$doctor_post_id = $appointment->doctor_id;
+		$doctor_title   = get_the_title( $doctor_post_id );
+		$doctor_meta    = $wpdb->get_row( $wpdb->prepare( "SELECT user_id FROM $table_doctors WHERE post_id = %d", $doctor_post_id ) );
+		
+		$doctor_email = '';
+		$doctor_name  = $doctor_title;
+		if ( $doctor_meta && $doctor_meta->user_id ) {
+			$doc_user = get_userdata( $doctor_meta->user_id );
+			if ( $doc_user ) {
+				$doctor_email = $doc_user->user_email;
+				$doctor_name  = $doc_user->display_name;
+			}
+		}
+
+		// Get Patient Info
+		$patient_email = '';
+		$patient_name  = $appointment->family_member_name;
+		$patient_user  = get_userdata( $appointment->patient_user_id );
+		if ( $patient_user ) {
+			$patient_email = $patient_user->user_email;
+			if ( empty( $patient_name ) ) {
+				$patient_name = $patient_user->display_name;
+			}
+		}
+
+		$time_formatted = date( 'g:i A', strtotime( $appointment->appointment_time ) );
+		$date_formatted = date( 'M d, Y', strtotime( $appointment->appointment_date ) );
+		$type_display   = 'instant' === $appointment->appointment_type ? __( 'Instant Video Call', 'meditaj' ) : __( 'Scheduled Consultation', 'meditaj' );
+
+		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
+
+		// 1. Email to Patient
+		if ( ! empty( $patient_email ) ) {
+			$subject = sprintf( '[%s] %s', get_bloginfo( 'name' ), __( 'Appointment Confirmed & Paid!', 'meditaj' ) );
+			$body  = sprintf( __( 'Dear %s,', 'meditaj' ), $patient_name ) . "\r\n\r\n";
+			$body .= sprintf( __( 'Your booking with Dr. %s has been confirmed.', 'meditaj' ), $doctor_title ) . "\r\n\r\n";
+			$body .= '--- ' . __( 'Consultation Details', 'meditaj' ) . " ---\r\n";
+			$body .= sprintf( __( 'Type: %s', 'meditaj' ), $type_display ) . "\r\n";
+			$body .= sprintf( __( 'Date: %s', 'meditaj' ), $date_formatted ) . "\r\n";
+			$body .= sprintf( __( 'Time: %s', 'meditaj' ), $time_formatted ) . "\r\n";
+			$body .= sprintf( __( 'Paid: %s BDT', 'meditaj' ), $appointment->amount ) . "\r\n\r\n";
+			
+			$body .= __( 'You can join the consultation call directly from your booking flow redirect receipt screen or patient registry page when the call starts.', 'meditaj' ) . "\r\n\r\n";
+			$body .= __( 'Regards,', 'meditaj' ) . "\r\n";
+			$body .= get_bloginfo( 'name' ) . ' ' . __( 'Team', 'meditaj' );
+
+			wp_mail( $patient_email, $subject, $body, $headers );
+		}
+
+		// 2. Email to Doctor
+		if ( ! empty( $doctor_email ) ) {
+			$subject = sprintf( '[%s] %s', get_bloginfo( 'name' ), __( 'New Appointment Confirmed!', 'meditaj' ) );
+			$body  = sprintf( __( 'Dear Dr. %s,', 'meditaj' ), $doctor_name ) . "\r\n\r\n";
+			$body .= sprintf( __( 'A new consultation has been booked and paid for by patient %s.', 'meditaj' ), $patient_name ) . "\r\n\r\n";
+			$body .= '--- ' . __( 'Consultation Details', 'meditaj' ) . " ---\r\n";
+			$body .= sprintf( __( 'Type: %s', 'meditaj' ), $type_display ) . "\r\n";
+			$body .= sprintf( __( 'Date: %s', 'meditaj' ), $date_formatted ) . "\r\n";
+			$body .= sprintf( __( 'Time: %s', 'meditaj' ), $time_formatted ) . "\r\n";
+			$body .= sprintf( __( 'Fee (Gross): %s BDT', 'meditaj' ), $appointment->amount ) . "\r\n\r\n";
+			
+			$body .= __( 'Please log into your dashboard to join the consultation call when scheduled.', 'meditaj' ) . "\r\n\r\n";
+			$body .= __( 'Regards,', 'meditaj' ) . "\r\n";
+			$body .= get_bloginfo( 'name' ) . ' ' . __( 'Team', 'meditaj' );
+
+			wp_mail( $doctor_email, $subject, $body, $headers );
+		}
+	}
+
+	/**
+	 * Send reminder emails to patient and doctor before a scheduled appointment.
+	 *
+	 * @param int $appointment_id Appointment ID.
+	 */
+	public static function send_appointment_reminder_emails( $appointment_id ) {
+		global $wpdb;
+		$table_appointments = DB::get_table( 'appointments' );
+		$table_doctors      = DB::get_table( 'doctors_meta' );
+
+		$appointment = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_appointments WHERE id = %d", $appointment_id ) );
+		if ( ! $appointment ) {
+			return;
+		}
+
+		// Get Doctor Info
+		$doctor_post_id = $appointment->doctor_id;
+		$doctor_title   = get_the_title( $doctor_post_id );
+		$doctor_meta    = $wpdb->get_row( $wpdb->prepare( "SELECT user_id FROM $table_doctors WHERE post_id = %d", $doctor_post_id ) );
+		
+		$doctor_email = '';
+		$doctor_name  = $doctor_title;
+		if ( $doctor_meta && $doctor_meta->user_id ) {
+			$doc_user = get_userdata( $doctor_meta->user_id );
+			if ( $doc_user ) {
+				$doctor_email = $doc_user->user_email;
+				$doctor_name  = $doc_user->display_name;
+			}
+		}
+
+		// Get Patient Info
+		$patient_email = '';
+		$patient_name  = $appointment->family_member_name;
+		$patient_user  = get_userdata( $appointment->patient_user_id );
+		if ( $patient_user ) {
+			$patient_email = $patient_user->user_email;
+			if ( empty( $patient_name ) ) {
+				$patient_name = $patient_user->display_name;
+			}
+		}
+
+		$time_formatted = date( 'g:i A', strtotime( $appointment->appointment_time ) );
+		$headers        = array( 'Content-Type: text/plain; charset=UTF-8' );
+
+		// Email to Patient
+		if ( ! empty( $patient_email ) ) {
+			$subject = sprintf( '[%s] %s', get_bloginfo( 'name' ), __( 'Reminder: Upcoming Consultation in 30 Minutes', 'meditaj' ) );
+			$body  = sprintf( __( 'Dear %s,', 'meditaj' ), $patient_name ) . "\r\n\r\n";
+			$body .= sprintf( __( 'This is a friendly reminder that your consultation with Dr. %s is scheduled to start in 30 minutes at %s.', 'meditaj' ), $doctor_title, $time_formatted ) . "\r\n\r\n";
+			$body .= __( 'Please prepare your camera and microphone, and log in to join the call room on time.', 'meditaj' ) . "\r\n\r\n";
+			$body .= __( 'Regards,', 'meditaj' ) . "\r\n";
+			$body .= get_bloginfo( 'name' ) . ' ' . __( 'Team', 'meditaj' );
+
+			wp_mail( $patient_email, $subject, $body, $headers );
+		}
+
+		// Email to Doctor
+		if ( ! empty( $doctor_email ) ) {
+			$subject = sprintf( '[%s] %s', get_bloginfo( 'name' ), __( 'Reminder: Upcoming Consultation in 30 Minutes', 'meditaj' ) );
+			$body  = sprintf( __( 'Dear Dr. %s,', 'meditaj' ), $doctor_name ) . "\r\n\r\n";
+			$body .= sprintf( __( 'This is a friendly reminder that your consultation with patient %s is scheduled to start in 30 minutes at %s.', 'meditaj' ), $patient_name, $time_formatted ) . "\r\n\r\n";
+			$body .= __( 'Please log into your doctor dashboard to join the video call room on time.', 'meditaj' ) . "\r\n\r\n";
+			$body .= __( 'Regards,', 'meditaj' ) . "\r\n";
+			$body .= get_bloginfo( 'name' ) . ' ' . __( 'Team', 'meditaj' );
+
+			wp_mail( $doctor_email, $subject, $body, $headers );
+		}
 	}
 }

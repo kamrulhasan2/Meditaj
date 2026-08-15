@@ -131,5 +131,9 @@ add_action(
 \Meditaj\AdminMenu::init();
 \Meditaj\AdminDoctors::init();
 \Meditaj\RestApi::init();
+\Meditaj\Cron::init();
+
+// Register cleanup on deactivation.
+register_deactivation_hook( __FILE__, array( '\Meditaj\Cron', 'clear_schedule' ) );
 
 

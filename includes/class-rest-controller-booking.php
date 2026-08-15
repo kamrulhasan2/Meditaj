@@ -74,6 +74,18 @@ class RestControllerBooking extends WP_REST_Controller {
 				),
 			)
 		);
+
+		register_rest_route(
+			$namespace,
+			'/appointments/(?P<id>\d+)/reviews',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'submit_review' ),
+					'permission_callback' => array( $this, 'check_logged_in_permission' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -397,5 +409,85 @@ class RestControllerBooking extends WP_REST_Controller {
 		);
 
 		return new WP_REST_Response( array( 'status' => 'success', 'appointment_status' => 'completed' ), 200 );
+	}
+
+	/**
+	 * Submit a review for a completed appointment.
+	 *
+	 * @param \WP_REST_Request $request Request object.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function submit_review( $request ) {
+		global $wpdb;
+		$appointment_id = intval( $request['id'] );
+		$params         = $request->get_json_params();
+		$rating         = isset( $params['rating'] ) ? intval( $params['rating'] ) : 0;
+		$comment        = isset( $params['comment'] ) ? sanitize_textarea_field( $params['comment'] ) : '';
+
+		if ( $rating < 1 || $rating > 5 ) {
+			return new \WP_Error( 'invalid_rating', __( 'Rating must be between 1 and 5.', 'meditaj' ), array( 'status' => 400 ) );
+		}
+
+		$table_appointments = DB::get_table( 'appointments' );
+		$table_reviews      = DB::get_table( 'reviews' );
+		$table_doctors_meta = DB::get_table( 'doctors_meta' );
+
+		// Fetch appointment
+		$appointment = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_appointments WHERE id = %d", $appointment_id ) );
+		if ( ! $appointment ) {
+			return new \WP_Error( 'not_found', __( 'Appointment not found.', 'meditaj' ), array( 'status' => 404 ) );
+		}
+
+		// Security: must be the patient who booked this
+		$current_user_id = get_current_user_id();
+		if ( intval( $current_user_id ) !== intval( $appointment->patient_user_id ) ) {
+			return new \WP_Error( 'rest_forbidden', __( 'You do not have permission to review this appointment.', 'meditaj' ), array( 'status' => 403 ) );
+		}
+
+		// Check if a review already exists
+		$exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $table_reviews WHERE appointment_id = %d", $appointment_id ) );
+		if ( $exists ) {
+			return new \WP_Error( 'review_exists', __( 'You have already reviewed this appointment.', 'meditaj' ), array( 'status' => 400 ) );
+		}
+
+		// Insert Review
+		$wpdb->insert(
+			$table_reviews,
+			array(
+				'appointment_id'  => $appointment_id,
+				'doctor_id'       => $appointment->doctor_id,
+				'patient_user_id' => $current_user_id,
+				'rating'          => $rating,
+				'comment'         => $comment,
+				'created_at'      => current_time( 'mysql' ),
+			),
+			array( '%d', '%d', '%d', '%d', '%s', '%s' )
+		);
+
+		// Recalculate Average Rating and Total Reviews
+		$doctor_id = $appointment->doctor_id;
+		$stats = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT COUNT(id) as total, AVG(rating) as avg_val FROM $table_reviews WHERE doctor_id = %d",
+				$doctor_id
+			)
+		);
+
+		$total_reviews = intval( $stats->total );
+		$avg_rating    = floatval( $stats->avg_val );
+
+		// Update Doctor meta row
+		$wpdb->update(
+			$table_doctors_meta,
+			array(
+				'avg_rating'    => $avg_rating,
+				'total_reviews' => $total_reviews,
+			),
+			array( 'post_id' => $doctor_id ),
+			array( '%f', '%d' ),
+			array( '%d' )
+		);
+
+		return new \WP_REST_Response( array( 'status' => 'success', 'avg_rating' => $avg_rating, 'total_reviews' => $total_reviews ), 200 );
 	}
 }

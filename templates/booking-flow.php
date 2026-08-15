@@ -60,6 +60,9 @@ if ( isset( $_GET['meditaj_payment'] ) ) {
 				array( '%d', '%d', '%s', '%s', '%s', '%f', '%s', '%s', '%s' )
 			);
 
+			// Trigger booking confirmation notifications.
+			\Meditaj\Notifications::send_booking_confirmation_emails( $appointment->id );
+
 			// Fetch the freshly updated appointment object.
 			$appointment = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_appointments WHERE id = %d", $appointment_id ) );
 		}

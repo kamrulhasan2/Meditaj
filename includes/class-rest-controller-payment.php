@@ -286,6 +286,9 @@ class RestControllerPayment extends WP_REST_Controller {
 			array( '%d' )
 		);
 
+		// Trigger booking confirmation notifications.
+		\Meditaj\Notifications::send_booking_confirmation_emails( $appointment->id );
+
 		// Insert row into wp_meditaj_transactions.
 		$table_transactions = \Meditaj\DB::get_table( 'transactions' );
 		$wpdb->insert(

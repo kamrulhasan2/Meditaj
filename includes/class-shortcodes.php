@@ -309,13 +309,13 @@ class Shortcodes {
 		wp_enqueue_script( 'meditaj-video-call-js', MEDITAJ_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), time(), true );
 		wp_enqueue_script( 'meditaj-booking-js', MEDITAJ_URL . 'assets/js/booking.js', array(), MEDITAJ_VERSION, true );
 
-		// Localize parameters for AJAX requests.
 		wp_localize_script(
 			'meditaj-booking-js',
 			'meditajSettings',
 			array(
-				'restUrl' => esc_url_raw( rest_url( 'meditaj/v1/' ) ),
-				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'restUrl'  => esc_url_raw( rest_url( 'meditaj/v1/' ) ),
+				'nonce'    => wp_create_nonce( 'wp_rest' ),
+				'userType' => 'patient',
 			)
 		);
 
@@ -351,8 +351,9 @@ class Shortcodes {
 			'meditaj-doctor-dashboard-js',
 			'meditajSettings',
 			array(
-				'restUrl' => esc_url_raw( rest_url( 'meditaj/v1/' ) ),
-				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'restUrl'  => esc_url_raw( rest_url( 'meditaj/v1/' ) ),
+				'nonce'    => wp_create_nonce( 'wp_rest' ),
+				'userType' => 'doctor',
 				'doctor'  => array(
 					'id'               => intval( $doctor->post_id ),
 					'consultation_fee' => floatval( $doctor->consultation_fee ),
