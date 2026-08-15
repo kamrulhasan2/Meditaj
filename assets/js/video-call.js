@@ -1,10 +1,13 @@
-/**
- * Handles Agora Telemedicine Video Calling flow.
- *
- * @package Meditaj
- */
-
 (function() {
+	// Define SVG icons for media controls (theme-proof & cross-browser)
+	const icons = {
+		micOn: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="video-icon" style="width: 20px; height: 20px;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>`,
+		micOff: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="video-icon" style="width: 20px; height: 20px;"><line x1="1" x2="23" y1="1" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V5a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" x2="12" y1="19" y2="22"/></svg>`,
+		camOn: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="video-icon" style="width: 20px; height: 20px;"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></svg>`,
+		camOff: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="video-icon" style="width: 20px; height: 20px;"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1m4 0h6a2 2 0 0 1 2 2v3.5l5-3.5v11l-5-3.5"/><line x1="1" x2="23" y1="1" y2="23"/></svg>`,
+		hangup: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="video-icon" style="width: 20px; height: 20px; transform: rotate(135deg);"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/></svg>`
+	};
+
 	// Expose globally so dashboard and checkout scripts can trigger
 	window.MeditajVideoCall = {
 		join: function(appointmentId) {
@@ -95,9 +98,9 @@
 			
 			<!-- Circular Media Controls Bar -->
 			<div class="video-controls-toolbar">
-				<button type="button" id="btn-toggle-mic" class="control-btn mic-on" title="Mute Microphone">🎙️</button>
-				<button type="button" id="btn-toggle-cam" class="control-btn cam-on" title="Disable Camera">📹</button>
-				<button type="button" id="btn-end-call" class="control-btn end-call" title="End Consultation">📞</button>
+				<button type="button" id="btn-toggle-mic" class="control-btn mic-on" title="Mute Microphone">${icons.micOn}</button>
+				<button type="button" id="btn-toggle-cam" class="control-btn cam-on" title="Disable Camera">${icons.camOn}</button>
+				<button type="button" id="btn-end-call" class="control-btn end-call" title="End Consultation">${icons.hangup}</button>
 			</div>
 		</div>
 		`;
@@ -240,14 +243,14 @@
 					await localAudioTrack.setEnabled(false);
 					btnMic.classList.remove('mic-on');
 					btnMic.classList.add('mic-off');
-					btnMic.textContent = '🔇';
+					btnMic.innerHTML = icons.micOff;
 					btnMic.title = 'Unmute Microphone';
 					isMicMuted = true;
 				} else {
 					await localAudioTrack.setEnabled(true);
 					btnMic.classList.remove('mic-off');
 					btnMic.classList.add('mic-on');
-					btnMic.textContent = '🎙️';
+					btnMic.innerHTML = icons.micOn;
 					btnMic.title = 'Mute Microphone';
 					isMicMuted = false;
 				}
@@ -259,14 +262,14 @@
 					await localVideoTrack.setEnabled(false);
 					btnCam.classList.remove('cam-on');
 					btnCam.classList.add('cam-off');
-					btnCam.textContent = '❌';
+					btnCam.innerHTML = icons.camOff;
 					btnCam.title = 'Enable Camera';
 					isCamDisabled = true;
 				} else {
 					await localVideoTrack.setEnabled(true);
 					btnCam.classList.remove('cam-off');
 					btnCam.classList.add('cam-on');
-					btnCam.textContent = '📹';
+					btnCam.innerHTML = icons.camOn;
 					btnCam.title = 'Disable Camera';
 					isCamDisabled = false;
 				}

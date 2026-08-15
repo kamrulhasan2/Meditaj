@@ -18,6 +18,43 @@ if ( isset( $_GET['meditaj_payment'] ) ) {
 	$appointment = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_appointments WHERE id = %d", $appointment_id ) );
 	
 	if ( $appointment ) {
+		// Local development helper: Since localhost cannot receive public SSLCommerz webhook/IPN queries,
+		// we automatically process the confirmation updates when the patient returns successfully.
+		if ( 'pending_payment' === $appointment->status && 'success' === $payment_status ) {
+			$now = current_time( 'mysql' );
+			$wpdb->update(
+				$table_appointments,
+				array(
+					'payment_status' => 'paid',
+					'status'         => 'confirmed',
+					'payment_method' => 'sslcommerz',
+					'updated_at'     => $now,
+				),
+				array( 'id' => $appointment->id ),
+				array( '%s', '%s', '%s', '%s' ),
+				array( '%d' )
+			);
+
+			// Record transaction in database ledger.
+			$table_transactions = \Meditaj\DB::get_table( 'transactions' );
+			$wpdb->insert(
+				$table_transactions,
+				array(
+					'appointment_id' => $appointment->id,
+					'doctor_id'      => $appointment->doctor_id,
+					'amount'         => $appointment->amount,
+					'payment_method' => 'sslcommerz',
+					'gateway_txn_id' => 'LOCAL_DEV_' . $appointment->id . '_' . time(),
+					'payment_status' => 'success',
+					'created_at'     => $now,
+				),
+				array( '%d', '%d', '%f', '%s', '%s', '%s', '%s' )
+			);
+
+			// Fetch the freshly updated appointment object.
+			$appointment = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_appointments WHERE id = %d", $appointment_id ) );
+		}
+
 		$doctor_id = $appointment->doctor_id;
 		$doctor_title = get_the_title( $doctor_id );
 		$date = $appointment->appointment_date;

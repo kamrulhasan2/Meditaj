@@ -1728,8 +1728,20 @@
 .control-btn.end-call:hover {
 	background-color: #dc2626 !important;
 }
-
 .control-btn:hover {
 	opacity: 0.9 !important;
 	transform: scale(1.05) !important;
 }
+
+/* Ensure SVG icons in video call controls are visible and styled consistently */
+.control-btn .video-icon {
+	width: 20px !important;
+	height: 20px !important;
+	color: #ffffff !important;
+	fill: none !important;
+	display: block !important;
+	margin: 0 auto !important;
+	stroke: currentColor !important;
+	stroke-width: 2.5px !important;
+}
+
