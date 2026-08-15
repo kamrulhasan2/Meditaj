@@ -92,6 +92,15 @@ class AdminMenu {
 
 		add_submenu_page(
 			'meditaj',
+			__( 'Setup Guide', 'meditaj' ),
+			__( 'Setup Guide', 'meditaj' ),
+			'manage_options',
+			'meditaj-setup-guide',
+			array( __CLASS__, 'render_setup_guide_page' )
+		);
+
+		add_submenu_page(
+			'meditaj',
 			__( 'Settings', 'meditaj' ),
 			__( 'Settings', 'meditaj' ),
 			'manage_options',
@@ -344,6 +353,115 @@ class AdminMenu {
 			}
 		});
 		</script>
+		<?php
+	}
+
+	/**
+	 * Render Setup Guide page callback.
+	 */
+	public static function render_setup_guide_page() {
+		?>
+		<div class="wrap meditaj-admin-wrap" style="max-width: 1000px; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+			<div class="meditaj-admin-header" style="margin-bottom: 25px;">
+				<h1 class="meditaj-admin-title"><?php esc_html_e( 'Meditaj Installation & Setup Guide', 'meditaj' ); ?></h1>
+			</div>
+
+			<div style="background: #fff; border: 1px solid #ccd0d4; border-radius: 8px; padding: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 30px;">
+				<p style="font-size: 15px; line-height: 1.6; color: #334155; margin-top: 0;">
+					<?php esc_html_e( 'Welcome to Meditaj! This guide walks you through the step-by-step process of setting up shortcodes, integrating SSLCommerz sandbox payments, securing WebRTC video calls via Agora, and scheduling automated email alerts.', 'meditaj' ); ?>
+				</p>
+			</div>
+
+			<!-- SECTION 1: Shortcodes Integration -->
+			<div class="meditaj-form-card" style="margin-top: 0; margin-bottom: 30px; padding: 25px;">
+				<h3 style="margin-top: 0; font-size: 18px; color: #0f766e; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; font-weight: 700;">
+					<?php esc_html_e( '1. Shortcodes Guide', 'meditaj' ); ?>
+				</h3>
+				<p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 15px;">
+					<?php esc_html_e( 'Create new WordPress pages for each of the following portals and insert their respective shortcodes:', 'meditaj' ); ?>
+				</p>
+				<table class="wp-list-table widefat fixed striped" style="box-shadow: none; border: 1px solid #e2e8f0;">
+					<thead>
+						<tr>
+							<th style="width: 250px; font-weight: 600;"><?php esc_html_e( 'Shortcode', 'meditaj' ); ?></th>
+							<th style="font-weight: 600;"><?php esc_html_e( 'Description / Usage', 'meditaj' ); ?></th>
+							<th style="width: 150px; font-weight: 600;"><?php esc_html_e( 'User Access', 'meditaj' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td><code style="font-size: 13px; color: #0f766e; font-weight: bold;">[meditaj_booking_flow]</code></td>
+							<td><?php esc_html_e( 'Renders the complete patient-facing telemedicine booking journey (specialty selection → slots grid → checkout).', 'meditaj' ); ?></td>
+							<td><span class="meditaj-status-badge status-approved" style="font-size: 10px;"><?php esc_html_e( 'PUBLIC GUEST', 'meditaj' ); ?></span></td>
+						</tr>
+						<tr>
+							<td><code style="font-size: 13px; color: #0f766e; font-weight: bold;">[meditaj_patient_dashboard]</code></td>
+							<td><?php esc_html_e( 'Renders the frontend patient control panel to view booked list, transactions, join calls, and submit reviews.', 'meditaj' ); ?></td>
+							<td><span class="meditaj-status-badge status-pending" style="font-size: 10px;"><?php esc_html_e( 'PATIENTS ONLY', 'meditaj' ); ?></span></td>
+						</tr>
+						<tr>
+							<td><code style="font-size: 13px; color: #0f766e; font-weight: bold;">[meditaj_doctor_dashboard]</code></td>
+							<td><?php esc_html_e( 'Renders the frontend doctor portal to manage schedule grids, edit meta, and launch video calls.', 'meditaj' ); ?></td>
+							<td><span class="meditaj-status-badge status-pending" style="font-size: 10px;"><?php esc_html_e( 'DOCTORS ONLY', 'meditaj' ); ?></span></td>
+						</tr>
+						<tr>
+							<td><code style="font-size: 13px; color: #0f766e; font-weight: bold;">[meditaj_doctor_registration]</code></td>
+							<td><?php esc_html_e( 'Renders a streamlined onboarding form for new doctors to sign up and submit certificates/license.', 'meditaj' ); ?></td>
+							<td><span class="meditaj-status-badge status-approved" style="font-size: 10px;"><?php esc_html_e( 'PUBLIC GUEST', 'meditaj' ); ?></span></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<!-- SECTION 2: SSLCommerz Integration -->
+			<div class="meditaj-form-card" style="margin-bottom: 30px; padding: 25px;">
+				<h3 style="margin-top: 0; font-size: 18px; color: #0f766e; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; font-weight: 700;">
+					<?php esc_html_e( '2. SSLCommerz Payment Gateway Setup', 'meditaj' ); ?>
+				</h3>
+				<ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #334155; line-height: 1.6;">
+					<li><?php printf( __( 'Navigate to the <a href="%s">Settings page</a> in this plugin.', 'meditaj' ), admin_url( 'admin.php?page=meditaj-settings' ) ); ?></li>
+					<li><?php esc_html_e( 'Paste your Store ID and Store Password provided by SSLCommerz.', 'meditaj' ); ?></li>
+					<li><?php esc_html_e( 'Check the Sandbox checkbox for local/staging testing. Uncheck it when migrating to production/live merchant credentials.', 'meditaj' ); ?></li>
+					<li><strong><?php esc_html_e( 'Local Webhook Limitation Note:', 'meditaj' ); ?></strong> <?php esc_html_e( 'Localhost environments cannot receive public webhooks. Meditaj automatically processes dummy transactions for testing on localhost returns, while production utilizes real-time IPN handlers.', 'meditaj' ); ?></li>
+				</ol>
+			</div>
+
+			<!-- SECTION 3: Agora Video Setup -->
+			<div class="meditaj-form-card" style="margin-bottom: 30px; padding: 25px;">
+				<h3 style="margin-top: 0; font-size: 18px; color: #0f766e; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; font-weight: 700;">
+					<?php esc_html_e( '3. Agora WebRTC Video Call Integration', 'meditaj' ); ?>
+				</h3>
+				<p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 15px;">
+					<?php esc_html_e( 'To generate short-lived, encrypted version 007 RTC AccessTokens, you must register the keys on your Agora Console:', 'meditaj' ); ?>
+				</p>
+				<ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 15px;">
+					<li><?php esc_html_e( 'Log into your Agora Console (https://console.agora.io) and create a new project.', 'meditaj' ); ?></li>
+					<li><?php esc_html_e( 'Ensure you select "Secured Mode: App ID + App Certificate" (DO NOT use App ID only mode, as token validation will reject it!).', 'meditaj' ); ?></li>
+					<li><?php esc_html_e( 'Copy your App ID and App Certificate from the Project management tab.', 'meditaj' ); ?></li>
+					<li><?php printf( __( 'Paste them into their respective slots in the <a href="%s">Meditaj Settings page</a>.', 'meditaj' ), admin_url( 'admin.php?page=meditaj-settings' ) ); ?></li>
+				</ol>
+				<div style="background: #fff8e1; border-left: 4px solid #ffb300; padding: 12px 15px; border-radius: 4px; font-size: 13px; color: #5d4037;">
+					<strong><?php esc_html_e( 'SSL / HTTPS Context Warning:', 'meditaj' ); ?></strong> <?php esc_html_e( 'Browsers restrict camera and microphone access to HTTPS only on live domains. Video calling will fail to connect over HTTP (except on localhost).', 'meditaj' ); ?>
+				</div>
+			</div>
+
+			<!-- SECTION 4: WP-Cron & Email Reminders -->
+			<div class="meditaj-form-card" style="margin-bottom: 30px; padding: 25px;">
+				<h3 style="margin-top: 0; font-size: 18px; color: #0f766e; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; font-weight: 700;">
+					<?php esc_html_e( '4. Automated Email Alerts & Cron Reminders', 'meditaj' ); ?>
+				</h3>
+				<p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 15px;">
+					<?php esc_html_e( 'Meditaj automatically fires transactional emails on booking confirmations, doctor meta approvals, and schedules reminder emails 30 minutes before consultations.', 'meditaj' ); ?>
+				</p>
+				<ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 15px;">
+					<li><?php esc_html_e( 'Ensure your server is configured to send emails. We highly recommend installing an SMTP plugin (like WP Mail SMTP) to prevent alerts from landing in spam folders.', 'meditaj' ); ?></li>
+					<li><?php esc_html_e( 'WP-Cron depends on user traffic. On low-traffic staging/production sites, the 30-minute reminder emails may experience delays.', 'meditaj' ); ?></li>
+					<li><?php esc_html_e( 'For production environments, disable default WP-Cron in wp-config.php and set up a system-level cron job in your hosting control panel to call wp-cron.php every 10 minutes:', 'meditaj' ); ?>
+						<pre style="background: #f1f5f9; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; margin-top: 5px; color: #0f172a; overflow-x: auto;">*/10 * * * * wget -q -O - http://yourdomain.com/wp-cron.php?doing_wp_cron >/dev/null 2>&1</pre>
+					</li>
+				</ol>
+			</div>
+		</div>
 		<?php
 	}
 }
