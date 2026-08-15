@@ -10,6 +10,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( isset( $_GET['meditaj_payment'] ) ) {
+	// If the gateway returned via POST, redirect via GET to restore SameSite session cookies and nonces.
+	if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
+		$redirect_url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+		wp_safe_redirect( esc_url_raw( $redirect_url ) );
+		exit;
+	}
+
 	$payment_status = sanitize_key( $_GET['meditaj_payment'] );
 	$appointment_id = isset( $_GET['id'] ) ? intval( $_GET['id'] ) : 0;
 	

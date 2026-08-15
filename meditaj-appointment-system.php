@@ -110,7 +110,7 @@ add_action(
 add_action(
 	'wp_enqueue_scripts',
 	function () {
-		wp_enqueue_style( 'meditaj-style', MEDITAJ_URL . 'assets/css/style.css', array(), MEDITAJ_VERSION );
+		wp_enqueue_style( 'meditaj-style', MEDITAJ_URL . 'assets/css/style.css', array(), time() );
 	}
 );
 
