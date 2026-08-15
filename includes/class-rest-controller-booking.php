@@ -50,6 +50,30 @@ class RestControllerBooking extends WP_REST_Controller {
 				),
 			)
 		);
+
+		register_rest_route(
+			$namespace,
+			'/video/token',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'generate_video_token' ),
+					'permission_callback' => array( $this, 'check_logged_in_permission' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			$namespace,
+			'/appointments/(?P<id>\d+)/complete',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'complete_appointment' ),
+					'permission_callback' => array( $this, 'check_logged_in_permission' ),
+				),
+			)
+		);
 	}
 
 	/**
@@ -227,5 +251,151 @@ class RestControllerBooking extends WP_REST_Controller {
 		}
 
 		return new WP_REST_Response( $appointment, 200 );
+	}
+
+	/**
+	 * Generate an Agora RTC token for a confirmed appointment call window.
+	 *
+	 * @param \WP_REST_Request $request REST request object.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function generate_video_token( $request ) {
+		global $wpdb;
+		$appointment_id = intval( $request->get_param( 'appointment_id' ) );
+		if ( ! $appointment_id ) {
+			return new WP_Error( 'rest_bad_request', __( 'Missing appointment_id parameter.', 'meditaj' ), array( 'status' => 400 ) );
+		}
+
+		$table_appointments = \Meditaj\DB::get_table( 'appointments' );
+		$table_meta         = \Meditaj\DB::get_table( 'doctors_meta' );
+
+		// Retrieve appointment details and doctor user ID.
+		$appointment = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT a.*, d.user_id as doctor_user_id 
+				 FROM $table_appointments a 
+				 JOIN $table_meta d ON a.doctor_id = d.post_id 
+				 WHERE a.id = %d",
+				$appointment_id
+			)
+		);
+
+		if ( ! $appointment ) {
+			return new WP_Error( 'rest_not_found', __( 'Appointment not found.', 'meditaj' ), array( 'status' => 404 ) );
+		}
+
+		// Security Check: requester must be the doctor_user_id or patient_user_id.
+		$current_user_id = get_current_user_id();
+		$is_doctor       = ( intval( $current_user_id ) === intval( $appointment->doctor_user_id ) );
+		$is_patient      = ( intval( $current_user_id ) === intval( $appointment->patient_user_id ) );
+
+		if ( ! $is_doctor && ! $is_patient ) {
+			return new WP_Error( 'rest_forbidden', __( 'You do not have permission to access this call.', 'meditaj' ), array( 'status' => 403 ) );
+		}
+
+		// Validate status is 'confirmed' or 'ongoing'.
+		if ( 'confirmed' !== $appointment->status && 'ongoing' !== $appointment->status ) {
+			return new WP_Error( 'rest_forbidden', __( 'Video calling is only allowed for confirmed appointments.', 'meditaj' ), array( 'status' => 403 ) );
+		}
+
+		// Validate time window (except for instant call which starts immediately).
+		if ( 'scheduled' === $appointment->appointment_type ) {
+			$appointment_timestamp = strtotime( $appointment->appointment_date . ' ' . $appointment->appointment_time );
+			$now_timestamp         = current_time( 'timestamp' );
+
+			// Call allowed 15 mins before to 60 mins after scheduled start time.
+			$window_start = $appointment_timestamp - ( 15 * 60 );
+			$window_end   = $appointment_timestamp + ( 60 * 60 );
+
+			if ( $now_timestamp < $window_start ) {
+				return new WP_Error( 'rest_forbidden', __( 'The call window has not opened yet. You can join 15 minutes before the start time.', 'meditaj' ), array( 'status' => 403 ) );
+			}
+
+			if ( $now_timestamp > $window_end ) {
+				return new WP_Error( 'rest_forbidden', __( 'The call window has closed.', 'meditaj' ), array( 'status' => 403 ) );
+			}
+		}
+
+		// Ensure video_room_id is generated.
+		$video_room_id = $appointment->video_room_id;
+		if ( empty( $video_room_id ) ) {
+			$video_room_id = 'room_' . $appointment->id . '_' . md5( $appointment->id . AUTH_KEY );
+			$wpdb->update(
+				$table_appointments,
+				array( 'video_room_id' => $video_room_id ),
+				array( 'id' => $appointment->id ),
+				array( '%s' ),
+				array( '%d' )
+			);
+		}
+
+		// Generate Agora Token.
+		$token = AgoraToken::generate_token( $video_room_id, 0, 1, 3600 );
+
+		if ( ! $token ) {
+			return new WP_Error( 'rest_internal_error', __( 'Failed to generate video credentials. Ensure App Credentials are configured in settings.', 'meditaj' ), array( 'status' => 500 ) );
+		}
+
+		return new WP_REST_Response(
+			array(
+				'token'        => $token,
+				'app_id'       => get_option( 'meditaj_agora_app_id', '' ),
+				'channel_name' => $video_room_id,
+				'uid'          => 0,
+				'is_doctor'    => $is_doctor,
+				'doctor_name'  => get_the_title( $appointment->doctor_id ),
+				'patient_name' => $appointment->family_member_name ? $appointment->family_member_name : wp_get_current_user()->display_name,
+			),
+			200
+		);
+	}
+
+	/**
+	 * Mark an appointment status as completed.
+	 *
+	 * @param \WP_REST_Request $request REST request object.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function complete_appointment( $request ) {
+		global $wpdb;
+		$id = intval( $request->get_param( 'id' ) );
+
+		$table_appointments = \Meditaj\DB::get_table( 'appointments' );
+		$table_meta         = \Meditaj\DB::get_table( 'doctors_meta' );
+
+		// Retrieve appointment details and doctor user ID.
+		$appointment = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT a.*, d.user_id as doctor_user_id 
+				 FROM $table_appointments a 
+				 JOIN $table_meta d ON a.doctor_id = d.post_id 
+				 WHERE a.id = %d",
+				$id
+			)
+		);
+
+		if ( ! $appointment ) {
+			return new WP_Error( 'rest_not_found', __( 'Appointment not found.', 'meditaj' ), array( 'status' => 404 ) );
+		}
+
+		// Security Check: requester must be the doctor_user_id or patient_user_id.
+		$current_user_id = get_current_user_id();
+		$is_doctor       = ( intval( $current_user_id ) === intval( $appointment->doctor_user_id ) );
+		$is_patient      = ( intval( $current_user_id ) === intval( $appointment->patient_user_id ) );
+
+		if ( ! $is_doctor && ! $is_patient ) {
+			return new WP_Error( 'rest_forbidden', __( 'You do not have permission to modify this appointment.', 'meditaj' ), array( 'status' => 403 ) );
+		}
+
+		// Update appointment status to 'completed'.
+		$wpdb->update(
+			$table_appointments,
+			array( 'status' => 'completed' ),
+			array( 'id' => $appointment->id ),
+			array( '%s' ),
+			array( '%d' )
+		);
+
+		return new WP_REST_Response( array( 'status' => 'success', 'appointment_status' => 'completed' ), 200 );
 	}
 }

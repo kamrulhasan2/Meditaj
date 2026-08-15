@@ -163,14 +163,18 @@ class AdminMenu {
 			update_option( 'meditaj_ssl_store_passwd', sanitize_text_field( $_POST['meditaj_ssl_store_passwd'] ) );
 			update_option( 'meditaj_ssl_sandbox', isset( $_POST['meditaj_ssl_sandbox'] ) ? '1' : '0' );
 			update_option( 'meditaj_commission_percentage', floatval( $_POST['meditaj_commission_percentage'] ) );
+			update_option( 'meditaj_agora_app_id', sanitize_text_field( $_POST['meditaj_agora_app_id'] ) );
+			update_option( 'meditaj_agora_app_certificate', sanitize_text_field( $_POST['meditaj_agora_app_certificate'] ) );
 			echo '<div class="notice notice-success is-dismissible" style="max-width: 600px; margin: 15px 0;"><p>' . esc_html__( 'Settings successfully saved!', 'meditaj' ) . '</p></div>';
 		}
 
 		// Fetch active values.
-		$store_id     = get_option( 'meditaj_ssl_store_id', 'testbox' );
-		$store_passwd = get_option( 'meditaj_ssl_store_passwd', 'testbox@ssl' );
-		$sandbox      = get_option( 'meditaj_ssl_sandbox', '1' );
-		$commission   = get_option( 'meditaj_commission_percentage', '15' );
+		$store_id      = get_option( 'meditaj_ssl_store_id', 'testbox' );
+		$store_passwd  = get_option( 'meditaj_ssl_store_passwd', 'testbox@ssl' );
+		$sandbox       = get_option( 'meditaj_ssl_sandbox', '1' );
+		$commission    = get_option( 'meditaj_commission_percentage', '15' );
+		$agora_app_id  = get_option( 'meditaj_agora_app_id', '' );
+		$agora_app_crt = get_option( 'meditaj_agora_app_certificate', '' );
 		?>
 		<div class="wrap meditaj-admin-wrap">
 			<div class="meditaj-admin-header" style="margin-bottom: 20px;">
@@ -210,6 +214,28 @@ class AdminMenu {
 					</tr>
 				</table>
 
+				<h3 style="margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;"><?php esc_html_e( 'Agora Video Calling Settings', 'meditaj' ); ?></h3>
+				
+				<table class="form-table">
+					<tr>
+						<th scope="row"><label for="meditaj_agora_app_id"><?php esc_html_e( 'Agora App ID', 'meditaj' ); ?></label></th>
+						<td>
+							<input name="meditaj_agora_app_id" type="text" id="meditaj_agora_app_id" value="<?php echo esc_attr( $agora_app_id ); ?>" class="regular-text">
+							<p class="description"><?php esc_html_e( 'Input your Agora Console Project App ID.', 'meditaj' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="meditaj_agora_app_certificate"><?php esc_html_e( 'Agora App Certificate', 'meditaj' ); ?></label></th>
+						<td>
+							<div style="position: relative; display: inline-block;">
+								<input name="meditaj_agora_app_certificate" type="password" id="meditaj_agora_app_certificate" value="<?php echo esc_attr( $agora_app_crt ); ?>" class="regular-text" style="padding-right: 35px;">
+								<span class="dashicons dashicons-visibility" id="toggle-agora-visibility" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #72777c;"></span>
+							</div>
+							<p class="description"><?php esc_html_e( 'Input your Agora Console Project Primary App Certificate.', 'meditaj' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
 				<h3 style="margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;"><?php esc_html_e( 'Platform Calculations', 'meditaj' ); ?></h3>
 
 				<table class="form-table">
@@ -241,6 +267,22 @@ class AdminMenu {
 						pwdInput.type = 'password';
 						toggleBtn.classList.remove('dashicons-hidden');
 						toggleBtn.classList.add('dashicons-visibility');
+					}
+				});
+			}
+
+			const toggleAgoraBtn = document.getElementById('toggle-agora-visibility');
+			const agoraInput = document.getElementById('meditaj_agora_app_certificate');
+			if (toggleAgoraBtn && agoraInput) {
+				toggleAgoraBtn.addEventListener('click', function() {
+					if (agoraInput.type === 'password') {
+						agoraInput.type = 'text';
+						toggleAgoraBtn.classList.remove('dashicons-visibility');
+						toggleAgoraBtn.classList.add('dashicons-hidden');
+					} else {
+						agoraInput.type = 'password';
+						toggleAgoraBtn.classList.remove('dashicons-hidden');
+						toggleAgoraBtn.classList.add('dashicons-visibility');
 					}
 				});
 			}

@@ -110,6 +110,15 @@ class RestControllerPayment extends WP_REST_Controller {
 		$store_passwd = defined( 'MEDITAJ_SSL_STORE_PASSWD' ) ? MEDITAJ_SSL_STORE_PASSWD : get_option( 'meditaj_ssl_store_passwd', 'testbox@ssl' );
 		$is_sandbox   = defined( 'MEDITAJ_SSL_SANDBOX' ) ? MEDITAJ_SSL_SANDBOX : ( '1' === get_option( 'meditaj_ssl_sandbox', '1' ) );
 
+		$return_url = $request->get_param( 'return_url' );
+		if ( empty( $return_url ) ) {
+			$return_url = home_url( '/' );
+		}
+
+		$success_url = add_query_arg( array( 'meditaj_payment' => 'success', 'id' => $appointment->id ), $return_url );
+		$fail_url    = add_query_arg( array( 'meditaj_payment' => 'fail', 'id' => $appointment->id ), $return_url );
+		$cancel_url  = add_query_arg( array( 'meditaj_payment' => 'cancel', 'id' => $appointment->id ), $return_url );
+
 		// Configure SSLCommerz Gateway Arguments.
 		$post_args = array(
 			'store_id'         => $store_id,
@@ -117,9 +126,9 @@ class RestControllerPayment extends WP_REST_Controller {
 			'total_amount'     => floatval( $appointment->amount ),
 			'currency'         => 'BDT',
 			'tran_id'          => $tran_id,
-			'success_url'      => home_url( '/?meditaj_payment=success&id=' . $appointment->id ),
-			'fail_url'         => home_url( '/?meditaj_payment=fail&id=' . $appointment->id ),
-			'cancel_url'       => home_url( '/?meditaj_payment=cancel&id=' . $appointment->id ),
+			'success_url'      => esc_url_raw( $success_url ),
+			'fail_url'         => esc_url_raw( $fail_url ),
+			'cancel_url'       => esc_url_raw( $cancel_url ),
 			'ipn_url'          => rest_url( 'meditaj/v1/payment/webhook/sslcommerz' ),
 			'cus_name'         => wp_get_current_user()->display_name,
 			'cus_email'        => wp_get_current_user()->user_email,

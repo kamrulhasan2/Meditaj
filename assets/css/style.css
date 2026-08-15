@@ -1580,3 +1580,156 @@
 	color: #334155;
 	background-color: #ffffff;
 }
+
+/* Agora Video Call Overlay Modal */
+.meditaj-video-modal {
+	position: fixed !important;
+	top: 0 !important;
+	left: 0 !important;
+	width: 100% !important;
+	height: 100% !important;
+	background-color: #0f172a !important; /* Deep dark slate */
+	z-index: 999999 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	color: #ffffff !important;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.video-modal-header {
+	padding: 20px !important;
+	background: linear-gradient(to bottom, rgba(15, 23, 42, 0.8), transparent) !important;
+	display: flex !important;
+	justify-content: space-between !important;
+	align-items: center !important;
+	position: absolute !important;
+	top: 0 !important;
+	left: 0 !important;
+	width: 100% !important;
+	box-sizing: border-box !important;
+	z-index: 10 !important;
+}
+
+#video-call-title {
+	font-weight: bold !important;
+	font-size: 16px !important;
+	text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+}
+
+#video-call-duration {
+	background-color: rgba(0, 0, 0, 0.6) !important;
+	padding: 4px 10px !important;
+	border-radius: 20px !important;
+	font-size: 14px !important;
+}
+
+.video-grid-container {
+	flex-grow: 1 !important;
+	position: relative !important;
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.remote-video-stream {
+	width: 100% !important;
+	height: 100% !important;
+	background-color: #1e293b !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	position: relative !important;
+}
+
+.remote-video-stream div {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.video-placeholder {
+	font-size: 18px !important;
+	color: #94a3b8 !important;
+	text-align: center !important;
+	position: absolute !important;
+	z-index: 2 !important;
+}
+
+.local-video-stream {
+	position: absolute !important;
+	bottom: 100px !important;
+	right: 20px !important;
+	width: 150px !important;
+	height: 200px !important;
+	background-color: #334155 !important;
+	border-radius: 8px !important;
+	overflow: hidden !important;
+	border: 2px solid #ffffff !important;
+	box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+	z-index: 5 !important;
+}
+
+.local-video-stream div {
+	width: 100% !important;
+	height: 100% !important;
+}
+
+.video-controls-toolbar {
+	position: absolute !important;
+	bottom: 20px !important;
+	left: 50% !important;
+	transform: translateX(-50%) !important;
+	display: flex !important;
+	gap: 20px !important;
+	padding: 15px 25px !important;
+	background-color: rgba(30, 41, 59, 0.8) !important;
+	border-radius: 50px !important;
+	backdrop-filter: blur(10px) !important;
+	z-index: 10 !important;
+	box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5) !important;
+}
+
+.control-btn {
+	width: 50px !important;
+	height: 50px !important;
+	border-radius: 50% !important;
+	border: none !important;
+	cursor: pointer !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	font-size: 20px !important;
+	transition: all 0.2s ease !important;
+	box-shadow: none !important;
+}
+
+.control-btn.mic-on {
+	background-color: #475569 !important;
+	color: #ffffff !important;
+}
+.control-btn.mic-off {
+	background-color: #ef4444 !important;
+	color: #ffffff !important;
+}
+
+.control-btn.cam-on {
+	background-color: #475569 !important;
+	color: #ffffff !important;
+}
+.control-btn.cam-off {
+	background-color: #ef4444 !important;
+	color: #ffffff !important;
+}
+
+.control-btn.end-call {
+	background-color: #ef4444 !important;
+	color: #ffffff !important;
+	transform: rotate(135deg) !important;
+}
+
+.control-btn.end-call:hover {
+	background-color: #dc2626 !important;
+}
+
+.control-btn:hover {
+	opacity: 0.9 !important;
+	transform: scale(1.05) !important;
+}

@@ -305,6 +305,8 @@ class Shortcodes {
 	 * Render the booking flow shortcode content.
 	 */
 	public static function render_booking_shortcode() {
+		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
+		wp_enqueue_script( 'meditaj-video-call-js', MEDITAJ_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), MEDITAJ_VERSION, true );
 		wp_enqueue_script( 'meditaj-booking-js', MEDITAJ_URL . 'assets/js/booking.js', array(), MEDITAJ_VERSION, true );
 
 		// Localize parameters for AJAX requests.
@@ -340,6 +342,8 @@ class Shortcodes {
 			return '<div class="meditaj-alert">' . esc_html__( 'You do not have a doctor profile registered on this platform.', 'meditaj' ) . '</div>';
 		}
 
+		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
+		wp_enqueue_script( 'meditaj-video-call-js', MEDITAJ_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), MEDITAJ_VERSION, true );
 		wp_enqueue_script( 'meditaj-doctor-dashboard-js', MEDITAJ_URL . 'assets/js/doctor-dashboard.js', array(), MEDITAJ_VERSION, true );
 
 		// Localize parameters for AJAX requests.

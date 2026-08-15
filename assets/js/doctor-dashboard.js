@@ -137,7 +137,11 @@ document.addEventListener('DOMContentLoaded', function() {
 					const joinBtn = tr.querySelector('.meditaj-btn-join-call');
 					if ( isCallWindow ) {
 						joinBtn.addEventListener('click', function() {
-							alert('Opening Meditaj Telemedicine Consultation Call Room...');
+							if ( window.MeditajVideoCall ) {
+								window.MeditajVideoCall.join(app.id);
+							} else {
+								alert('Video call manager is not initialized.');
+							}
 						});
 					} else {
 						joinBtn.title = 'Available only within 15 minutes of scheduled time.';

@@ -731,14 +731,16 @@ document.addEventListener('DOMContentLoaded', function() {
 				btnConfirm.textContent = 'Redirecting to Payment...';
 				const appointmentId = data.appointment_id;
 
-				// 2. Initialize payment session
 				return fetch(meditajSettings.restUrl + 'payment/init', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 						'X-WP-Nonce': meditajSettings.nonce
 					},
-					body: JSON.stringify({ appointment_id: appointmentId })
+					body: JSON.stringify({
+						appointment_id: appointmentId,
+						return_url: window.location.href
+					})
 				});
 			})
 			.then(res => {
