@@ -85,6 +85,15 @@ class AdminMenu {
 			'meditaj-appointments',
 			array( __CLASS__, 'render_appointments_page' )
 		);
+
+		add_submenu_page(
+			'meditaj',
+			__( 'Settings', 'meditaj' ),
+			__( 'Settings', 'meditaj' ),
+			'manage_options',
+			'meditaj-settings',
+			array( __CLASS__, 'render_settings_page' )
+		);
 	}
 
 	/**
@@ -136,6 +145,84 @@ class AdminMenu {
 				<h2><?php esc_html_e( 'All Appointments', 'meditaj' ); ?></h2>
 				<p><?php esc_html_e( 'A full appointments tracking ledger with status filtering and logs will be displayed here in Phase 8.', 'meditaj' ); ?></p>
 			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render Settings Page and handle options saving.
+	 */
+	public static function render_settings_page() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		// Handle Form Submission.
+		if ( isset( $_POST['meditaj_settings_submit'] ) && check_admin_referer( 'meditaj_save_settings', 'meditaj_settings_nonce' ) ) {
+			update_option( 'meditaj_ssl_store_id', sanitize_text_field( $_POST['meditaj_ssl_store_id'] ) );
+			update_option( 'meditaj_ssl_store_passwd', sanitize_text_field( $_POST['meditaj_ssl_store_passwd'] ) );
+			update_option( 'meditaj_ssl_sandbox', isset( $_POST['meditaj_ssl_sandbox'] ) ? '1' : '0' );
+			update_option( 'meditaj_commission_percentage', floatval( $_POST['meditaj_commission_percentage'] ) );
+			echo '<div class="notice notice-success is-dismissible" style="max-width: 600px; margin: 15px 0;"><p>' . esc_html__( 'Settings successfully saved!', 'meditaj' ) . '</p></div>';
+		}
+
+		// Fetch active values.
+		$store_id     = get_option( 'meditaj_ssl_store_id', 'testbox' );
+		$store_passwd = get_option( 'meditaj_ssl_store_passwd', 'testbox@ssl' );
+		$sandbox      = get_option( 'meditaj_ssl_sandbox', '1' );
+		$commission   = get_option( 'meditaj_commission_percentage', '15' );
+		?>
+		<div class="wrap meditaj-admin-wrap">
+			<div class="meditaj-admin-header" style="margin-bottom: 20px;">
+				<h1 class="meditaj-admin-title"><?php esc_html_e( 'Meditaj Gateway & Platform Settings', 'meditaj' ); ?></h1>
+			</div>
+
+			<form method="post" action="" style="background: #fff; padding: 30px; border-radius: 8px; border: 1px solid #ccd0d4; max-width: 600px;">
+				<?php wp_nonce_field( 'meditaj_save_settings', 'meditaj_settings_nonce' ); ?>
+				
+				<h3 style="margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px;"><?php esc_html_e( 'SSLCommerz Gateway Settings', 'meditaj' ); ?></h3>
+				
+				<table class="form-table">
+					<tr>
+						<th scope="row"><label for="meditaj_ssl_store_id"><?php esc_html_e( 'Store ID', 'meditaj' ); ?></label></th>
+						<td>
+							<input name="meditaj_ssl_store_id" type="text" id="meditaj_ssl_store_id" value="<?php echo esc_attr( $store_id ); ?>" class="regular-text" required>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="meditaj_ssl_store_passwd"><?php esc_html_e( 'Store Password', 'meditaj' ); ?></label></th>
+						<td>
+							<input name="meditaj_ssl_store_passwd" type="password" id="meditaj_ssl_store_passwd" value="<?php echo esc_attr( $store_passwd ); ?>" class="regular-text" required>
+							<p class="description"><?php esc_html_e( 'Input your custom SSLCommerz API Store Password.', 'meditaj' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Sandbox / Test Mode', 'meditaj' ); ?></th>
+						<td>
+							<label>
+								<input name="meditaj_ssl_sandbox" type="checkbox" id="meditaj_ssl_sandbox" value="1" <?php checked( $sandbox, '1' ); ?>>
+								<?php esc_html_e( 'Enable Sandbox (Test Mode) Gateway URLs', 'meditaj' ); ?>
+							</label>
+						</td>
+					</tr>
+				</table>
+
+				<h3 style="margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;"><?php esc_html_e( 'Platform Calculations', 'meditaj' ); ?></h3>
+
+				<table class="form-table">
+					<tr>
+						<th scope="row"><label for="meditaj_commission_percentage"><?php esc_html_e( 'Platform Commission (%)', 'meditaj' ); ?></label></th>
+						<td>
+							<input name="meditaj_commission_percentage" type="number" id="meditaj_commission_percentage" value="<?php echo esc_attr( $commission ); ?>" min="0" max="100" step="0.5" class="small-text" required>
+							<p class="description"><?php esc_html_e( 'Platform service fee cut deducted from paid appointment totals.', 'meditaj' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
+				<p class="submit" style="margin-bottom: 0; padding-bottom: 0; margin-top: 25px;">
+					<input type="submit" name="meditaj_settings_submit" id="submit" class="button button-primary button-large" value="<?php esc_attr_e( 'Save Settings Configurations', 'meditaj' ); ?>">
+				</p>
+			</form>
 		</div>
 		<?php
 	}

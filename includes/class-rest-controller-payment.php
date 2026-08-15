@@ -106,10 +106,14 @@ class RestControllerPayment extends WP_REST_Controller {
 		// Generate Transaction ID.
 		$tran_id = 'TXN_' . $appointment->id . '_' . time();
 
+		$store_id     = defined( 'MEDITAJ_SSL_STORE_ID' ) ? MEDITAJ_SSL_STORE_ID : get_option( 'meditaj_ssl_store_id', 'testbox' );
+		$store_passwd = defined( 'MEDITAJ_SSL_STORE_PASSWD' ) ? MEDITAJ_SSL_STORE_PASSWD : get_option( 'meditaj_ssl_store_passwd', 'testbox@ssl' );
+		$is_sandbox   = defined( 'MEDITAJ_SSL_SANDBOX' ) ? MEDITAJ_SSL_SANDBOX : ( '1' === get_option( 'meditaj_ssl_sandbox', '1' ) );
+
 		// Configure SSLCommerz Gateway Arguments.
 		$post_args = array(
-			'store_id'         => MEDITAJ_SSL_STORE_ID,
-			'store_passwd'     => MEDITAJ_SSL_STORE_PASSWD,
+			'store_id'         => $store_id,
+			'store_passwd'     => $store_passwd,
 			'total_amount'     => floatval( $appointment->amount ),
 			'currency'         => 'BDT',
 			'tran_id'          => $tran_id,
@@ -131,7 +135,7 @@ class RestControllerPayment extends WP_REST_Controller {
 		);
 
 		// Determine gateway URL based on sandbox flag.
-		$gateway_url = MEDITAJ_SSL_SANDBOX ?
+		$gateway_url = $is_sandbox ?
 			'https://sandbox.sslcommerz.com/gwprocess/v4/api.php' :
 			'https://header.sslcommerz.com/gwprocess/v4/api.php';
 
@@ -200,12 +204,15 @@ class RestControllerPayment extends WP_REST_Controller {
 			return new WP_Error( 'rest_bad_request', __( 'Webhook payload missing details.', 'meditaj' ), array( 'status' => 400 ) );
 		}
 
+		$store_id     = defined( 'MEDITAJ_SSL_STORE_ID' ) ? MEDITAJ_SSL_STORE_ID : get_option( 'meditaj_ssl_store_id', 'testbox' );
+		$store_passwd = defined( 'MEDITAJ_SSL_STORE_PASSWD' ) ? MEDITAJ_SSL_STORE_PASSWD : get_option( 'meditaj_ssl_store_passwd', 'testbox@ssl' );
+
 		// 1. Verify webhook signature via Gateway Validation API query.
 		$validation_url = sprintf(
 			'https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php?val_id=%s&store_id=%s&store_passwd=%s&format=json',
 			urlencode( $val_id ),
-			urlencode( MEDITAJ_SSL_STORE_ID ),
-			urlencode( MEDITAJ_SSL_STORE_PASSWD )
+			urlencode( $store_id ),
+			urlencode( $store_passwd )
 		);
 
 		$response = wp_remote_get(
