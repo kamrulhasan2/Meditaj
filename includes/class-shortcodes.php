@@ -30,6 +30,7 @@ class Shortcodes {
 		add_shortcode( 'meditaj_doctor_registration', array( __CLASS__, 'render_registration_shortcode' ) );
 		add_shortcode( 'meditaj_booking_flow', array( __CLASS__, 'render_booking_shortcode' ) );
 		add_shortcode( 'meditaj_doctor_dashboard', array( __CLASS__, 'render_doctor_dashboard_shortcode' ) );
+		add_shortcode( 'meditaj_patient_dashboard', array( __CLASS__, 'render_patient_dashboard_shortcode' ) );
 		add_action( 'template_redirect', array( __CLASS__, 'process_registration_form' ) );
 	}
 
@@ -366,6 +367,33 @@ class Shortcodes {
 
 		ob_start();
 		include MEDITAJ_PATH . 'templates/doctor-dashboard.php';
+		return ob_get_clean();
+	}
+
+	/**
+	 * Render Patient Dashboard shortcode.
+	 */
+	public static function render_patient_dashboard_shortcode() {
+		if ( ! is_user_logged_in() ) {
+			return '<div class="meditaj-alert">' . esc_html__( 'You must be logged in to view your patient dashboard.', 'meditaj' ) . ' <a href="' . esc_url( wp_login_url() ) . '">' . esc_html__( 'Log In Here', 'meditaj' ) . '</a></div>';
+		}
+
+		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
+		wp_enqueue_script( 'meditaj-video-call-js', MEDITAJ_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), time(), true );
+
+		// Localize parameters for AJAX requests.
+		wp_localize_script(
+			'meditaj-video-call-js',
+			'meditajSettings',
+			array(
+				'restUrl'  => esc_url_raw( rest_url( 'meditaj/v1/' ) ),
+				'nonce'    => wp_create_nonce( 'wp_rest' ),
+				'userType' => 'patient',
+			)
+		);
+
+		ob_start();
+		include MEDITAJ_PATH . 'templates/patient-dashboard.php';
 		return ob_get_clean();
 	}
 }

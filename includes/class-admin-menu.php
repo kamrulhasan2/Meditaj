@@ -108,15 +108,26 @@ class AdminMenu {
 	 * Render Patients page placeholder.
 	 */
 	public static function render_patients_page() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		require_once MEDITAJ_PATH . 'includes/class-admin-patients.php';
+		$table = new AdminPatientsTable();
+		$table->prepare_items();
 		?>
 		<div class="wrap meditaj-admin-wrap">
-			<div class="meditaj-admin-header">
+			<div class="meditaj-admin-header" style="margin-bottom: 20px;">
 				<h1 class="meditaj-admin-title"><?php esc_html_e( 'Patients Directory', 'meditaj' ); ?></h1>
 			</div>
-			<div class="meditaj-placeholder-card">
-				<h2><?php esc_html_e( 'Patient Registry', 'meditaj' ); ?></h2>
-				<p><?php esc_html_e( 'A list of registered patient users and their respective appointment history will be displayed here in a later phase.', 'meditaj' ); ?></p>
-			</div>
+
+			<form method="get" action="">
+				<input type="hidden" name="page" value="meditaj-patients" />
+				<?php
+				$table->search_box( __( 'Search Patients', 'meditaj' ), 'meditaj_search_patient' );
+				$table->display();
+				?>
+			</form>
 		</div>
 		<?php
 	}
