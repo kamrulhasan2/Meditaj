@@ -192,7 +192,10 @@ class AdminMenu {
 					<tr>
 						<th scope="row"><label for="meditaj_ssl_store_passwd"><?php esc_html_e( 'Store Password', 'meditaj' ); ?></label></th>
 						<td>
-							<input name="meditaj_ssl_store_passwd" type="password" id="meditaj_ssl_store_passwd" value="<?php echo esc_attr( $store_passwd ); ?>" class="regular-text" required>
+							<div style="position: relative; display: inline-block;">
+								<input name="meditaj_ssl_store_passwd" type="password" id="meditaj_ssl_store_passwd" value="<?php echo esc_attr( $store_passwd ); ?>" class="regular-text" style="padding-right: 35px;" required>
+								<span class="dashicons dashicons-visibility" id="toggle-password-visibility" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #72777c;"></span>
+							</div>
 							<p class="description"><?php esc_html_e( 'Input your custom SSLCommerz API Store Password.', 'meditaj' ); ?></p>
 						</td>
 					</tr>
@@ -224,6 +227,25 @@ class AdminMenu {
 				</p>
 			</form>
 		</div>
+		<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			const toggleBtn = document.getElementById('toggle-password-visibility');
+			const pwdInput = document.getElementById('meditaj_ssl_store_passwd');
+			if (toggleBtn && pwdInput) {
+				toggleBtn.addEventListener('click', function() {
+					if (pwdInput.type === 'password') {
+						pwdInput.type = 'text';
+						toggleBtn.classList.remove('dashicons-visibility');
+						toggleBtn.classList.add('dashicons-hidden');
+					} else {
+						pwdInput.type = 'password';
+						toggleBtn.classList.remove('dashicons-hidden');
+						toggleBtn.classList.add('dashicons-visibility');
+					}
+				});
+			}
+		});
+		</script>
 		<?php
 	}
 }
