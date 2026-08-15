@@ -34,5 +34,8 @@ class RestApi {
 
 		$payment = new RestControllerPayment();
 		$payment->register_routes();
+
+		$dashboard = new RestControllerDoctorDashboard();
+		$dashboard->register_routes();
 	}
 }

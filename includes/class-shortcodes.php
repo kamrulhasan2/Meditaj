@@ -29,6 +29,7 @@ class Shortcodes {
 	public static function init() {
 		add_shortcode( 'meditaj_doctor_registration', array( __CLASS__, 'render_registration_shortcode' ) );
 		add_shortcode( 'meditaj_booking_flow', array( __CLASS__, 'render_booking_shortcode' ) );
+		add_shortcode( 'meditaj_doctor_dashboard', array( __CLASS__, 'render_doctor_dashboard_shortcode' ) );
 		add_action( 'template_redirect', array( __CLASS__, 'process_registration_form' ) );
 	}
 
@@ -318,6 +319,48 @@ class Shortcodes {
 
 		ob_start();
 		include MEDITAJ_PATH . 'templates/booking-flow.php';
+		return ob_get_clean();
+	}
+
+	/**
+	 * Render the doctor dashboard shortcode content.
+	 */
+	public static function render_doctor_dashboard_shortcode() {
+		if ( ! is_user_logged_in() ) {
+			return '<div class="meditaj-alert">' . esc_html__( 'You must be logged in to view the doctor dashboard.', 'meditaj' ) . ' <a href="' . esc_url( wp_login_url() ) . '">' . esc_html__( 'Log In Here', 'meditaj' ) . '</a></div>';
+		}
+
+		// Verify this user maps to a registered doctor profile
+		global $wpdb;
+		$user_id = get_current_user_id();
+		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$doctor = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_meta WHERE user_id = %d", $user_id ) );
+
+		if ( ! $doctor ) {
+			return '<div class="meditaj-alert">' . esc_html__( 'You do not have a doctor profile registered on this platform.', 'meditaj' ) . '</div>';
+		}
+
+		wp_enqueue_script( 'meditaj-doctor-dashboard-js', MEDITAJ_URL . 'assets/js/doctor-dashboard.js', array(), MEDITAJ_VERSION, true );
+
+		// Localize parameters for AJAX requests.
+		wp_localize_script(
+			'meditaj-doctor-dashboard-js',
+			'meditajSettings',
+			array(
+				'restUrl' => esc_url_raw( rest_url( 'meditaj/v1/' ) ),
+				'nonce'   => wp_create_nonce( 'wp_rest' ),
+				'doctor'  => array(
+					'id'               => intval( $doctor->post_id ),
+					'consultation_fee' => floatval( $doctor->consultation_fee ),
+					'instant_call_fee' => floatval( $doctor->instant_call_fee ),
+					'is_online'        => (bool) $doctor->is_online,
+					'bio'              => get_post( $doctor->post_id )->post_content,
+				),
+			)
+		);
+
+		ob_start();
+		include MEDITAJ_PATH . 'templates/doctor-dashboard.php';
 		return ob_get_clean();
 	}
 }
