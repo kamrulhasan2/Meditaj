@@ -1745,3 +1745,40 @@
 	stroke-width: 2.5px !important;
 }
 
+/* Custom Responsive Overrides for Mobile Telemedicine Portals */
+@media (max-width: 768px) {
+	.meditaj-stats-row {
+		grid-template-columns: 1fr !important;
+	}
+	.meditaj-fields-grid {
+		grid-template-columns: 1fr !important;
+	}
+	.meditaj-field.span-full {
+		grid-column: span 1 !important;
+	}
+	.meditaj-dashboard-header {
+		padding: 16px 20px !important;
+	}
+	.day-slot-row {
+		flex-direction: column !important;
+		gap: 10px !important;
+	}
+	.day-label-column {
+		flex: 0 0 auto !important;
+		padding-top: 0 !important;
+	}
+}
+
+.meditaj-dashboard-table {
+	width: 100% !important;
+	min-width: 750px !important;
+}
+
+.meditaj-patient-table {
+	width: 100% !important;
+	min-width: 750px !important;
+	border-collapse: collapse !important;
+	text-align: left !important;
+	font-size: 13px !important;
+}
+

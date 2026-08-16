@@ -100,8 +100,8 @@ foreach ( $appointments as $appt ) {
 		<?php if ( empty( $active_consultations ) ) : ?>
 			<p style="color: #64748b; font-size: 14px; margin: 0;"><?php esc_html_e( 'You have no consultations scheduled for today.', 'meditaj' ); ?></p>
 		<?php else : ?>
-			<div style="overflow-x: auto;">
-				<table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+			<div class="meditaj-table-responsive">
+				<table class="meditaj-patient-table">
 					<thead>
 						<tr style="border-bottom: 2px solid #f1f5f9; color: #64748b;">
 							<th style="padding: 10px 0;"><?php esc_html_e( 'Doctor', 'meditaj' ); ?></th>
@@ -158,8 +158,8 @@ foreach ( $appointments as $appt ) {
 		<?php if ( empty( $upcoming_bookings ) ) : ?>
 			<p style="color: #64748b; font-size: 14px; margin: 0;"><?php esc_html_e( 'You have no upcoming consultations booked.', 'meditaj' ); ?></p>
 		<?php else : ?>
-			<div style="overflow-x: auto;">
-				<table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+			<div class="meditaj-table-responsive">
+				<table class="meditaj-patient-table">
 					<thead>
 						<tr style="border-bottom: 2px solid #f1f5f9; color: #64748b;">
 							<th style="padding: 10px 0;"><?php esc_html_e( 'Doctor', 'meditaj' ); ?></th>
@@ -200,8 +200,8 @@ foreach ( $appointments as $appt ) {
 		<?php if ( empty( $past_history ) ) : ?>
 			<p style="color: #64748b; font-size: 14px; margin: 0;"><?php esc_html_e( 'Your past consultation history is empty.', 'meditaj' ); ?></p>
 		<?php else : ?>
-			<div style="overflow-x: auto;">
-				<table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+			<div class="meditaj-table-responsive">
+				<table class="meditaj-patient-table">
 					<thead>
 						<tr style="border-bottom: 2px solid #f1f5f9; color: #64748b;">
 							<th style="padding: 10px 0;"><?php esc_html_e( 'Doctor', 'meditaj' ); ?></th>
