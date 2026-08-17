@@ -81,9 +81,6 @@ function eg_care_activate_plugin() {
 	\EGCare\CPT::register_post_types();
 	\EGCare\CPT::register_taxonomies();
 
-	// Seed dummy doctors for testing.
-	\EGCare\DB::seed_dummy_doctors();
-
 	flush_rewrite_rules();
 }
 
