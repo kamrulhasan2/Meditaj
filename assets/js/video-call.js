@@ -9,7 +9,7 @@
 	};
 
 	// Expose globally so dashboard and checkout scripts can trigger
-	window.EG CareVideoCall = {
+	window.EGCareVideoCall = {
 		join: function(appointmentId) {
 			if ( ! appointmentId ) {
 				alert('Invalid appointment session.');
@@ -396,7 +396,7 @@
 		document.body.addEventListener('click', function(e) {
 			if ( e.target && e.target.classList.contains('eg-care-btn-join-call') ) {
 				const appointmentId = e.target.getAttribute('data-id');
-				window.EG CareVideoCall.join(appointmentId);
+				window.EGCareVideoCall.join(appointmentId);
 			}
 		});
 	});

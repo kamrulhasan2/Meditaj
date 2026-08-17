@@ -155,8 +155,8 @@ document.addEventListener('DOMContentLoaded', function() {
 					const joinBtn = tr.querySelector('.eg-care-btn-join-call');
 					if ( isCallWindow ) {
 						joinBtn.addEventListener('click', function() {
-							if ( window.EG CareVideoCall ) {
-								window.EG CareVideoCall.join(app.id);
+							if ( window.EGCareVideoCall ) {
+								window.EGCareVideoCall.join(app.id);
 							} else {
 								alert('Video call manager is not initialized.');
 							}
