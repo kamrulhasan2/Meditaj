@@ -112,15 +112,27 @@ class Shortcodes {
 			return;
 		}
 
-		// Pre-flight file upload error validations.
-		if ( isset( $_FILES['reg_certificate'] ) && $_FILES['reg_certificate']['error'] !== UPLOAD_ERR_OK ) {
-			self::$errors[] = __( 'Error uploading certificate file. Please verify the file is not corrupted and is under 2MB.', 'meditaj' );
-			return;
+		// Pre-flight file upload error validations and size limits (max 2MB).
+		$max_file_size = 2 * 1024 * 1024; // 2MB
+
+		if ( isset( $_FILES['reg_certificate'] ) ) {
+			if ( $_FILES['reg_certificate']['error'] !== UPLOAD_ERR_OK ) {
+				self::$errors[] = __( 'Error uploading certificate file. Please verify the file is not corrupted.', 'meditaj' );
+				return;
+			}
+			if ( $_FILES['reg_certificate']['size'] > $max_file_size ) {
+				self::$errors[] = __( 'Certificate file size exceeds the 2MB limit.', 'meditaj' );
+				return;
+			}
 		}
 
 		if ( isset( $_FILES['reg_photo'] ) && ! empty( $_FILES['reg_photo']['name'] ) ) {
 			if ( $_FILES['reg_photo']['error'] !== UPLOAD_ERR_OK ) {
-				self::$errors[] = __( 'Error uploading profile photo. Please verify the file is not corrupted and is under 2MB.', 'meditaj' );
+				self::$errors[] = __( 'Error uploading profile photo. Please verify the file is not corrupted.', 'meditaj' );
+				return;
+			}
+			if ( $_FILES['reg_photo']['size'] > $max_file_size ) {
+				self::$errors[] = __( 'Profile photo file size exceeds the 2MB limit.', 'meditaj' );
 				return;
 			}
 		}

@@ -174,6 +174,9 @@ class AdminMenu {
 
 		// 2. Process Bulk Actions
 		if ( ( isset( $_GET['action'] ) || isset( $_GET['action2'] ) ) && isset( $_GET['bulk-appointments'] ) ) {
+			if ( ! isset( $_GET['meditaj_bulk_nonce'] ) || ! wp_verify_nonce( sanitize_key( $_GET['meditaj_bulk_nonce'] ), 'bulk-appointments' ) ) {
+				wp_die( esc_html__( 'Security check failed.', 'meditaj' ) );
+			}
 			$bulk_action = sanitize_key( ! empty( $_GET['action'] ) ? $_GET['action'] : $_GET['action2'] );
 			$appt_ids    = array_map( 'intval', $_GET['bulk-appointments'] );
 
@@ -204,6 +207,7 @@ class AdminMenu {
 
 			<form method="get" action="">
 				<input type="hidden" name="page" value="meditaj-appointments" />
+				<?php wp_nonce_field( 'bulk-appointments', 'meditaj_bulk_nonce' ); ?>
 				<?php
 				$table->search_box( __( 'Search Patients/Txn ID', 'meditaj' ), 'meditaj_search_appt' );
 				$table->views();
@@ -225,11 +229,20 @@ class AdminMenu {
 		// Handle Form Submission.
 		if ( isset( $_POST['meditaj_settings_submit'] ) && check_admin_referer( 'meditaj_save_settings', 'meditaj_settings_nonce' ) ) {
 			update_option( 'meditaj_ssl_store_id', sanitize_text_field( $_POST['meditaj_ssl_store_id'] ) );
-			update_option( 'meditaj_ssl_store_passwd', sanitize_text_field( $_POST['meditaj_ssl_store_passwd'] ) );
+			
+			$new_store_passwd = sanitize_text_field( $_POST['meditaj_ssl_store_passwd'] );
+			if ( '●●●●●●●●' !== $new_store_passwd && '' !== $new_store_passwd ) {
+				update_option( 'meditaj_ssl_store_passwd', $new_store_passwd, 'no' );
+			}
+			
 			update_option( 'meditaj_ssl_sandbox', isset( $_POST['meditaj_ssl_sandbox'] ) ? '1' : '0' );
 			update_option( 'meditaj_commission_percentage', floatval( $_POST['meditaj_commission_percentage'] ) );
 			update_option( 'meditaj_agora_app_id', sanitize_text_field( $_POST['meditaj_agora_app_id'] ) );
-			update_option( 'meditaj_agora_app_certificate', sanitize_text_field( $_POST['meditaj_agora_app_certificate'] ) );
+			
+			$new_agora_app_crt = sanitize_text_field( $_POST['meditaj_agora_app_certificate'] );
+			if ( '●●●●●●●●' !== $new_agora_app_crt && '' !== $new_agora_app_crt ) {
+				update_option( 'meditaj_agora_app_certificate', $new_agora_app_crt, 'no' );
+			}
 			echo '<div class="notice notice-success is-dismissible" style="max-width: 600px; margin: 15px 0;"><p>' . esc_html__( 'Settings successfully saved!', 'meditaj' ) . '</p></div>';
 		}
 
@@ -240,6 +253,9 @@ class AdminMenu {
 		$commission    = get_option( 'meditaj_commission_percentage', '15' );
 		$agora_app_id  = get_option( 'meditaj_agora_app_id', '' );
 		$agora_app_crt = get_option( 'meditaj_agora_app_certificate', '' );
+
+		$masked_store_passwd = ! empty( $store_passwd ) ? '●●●●●●●●' : '';
+		$masked_agora_app_crt = ! empty( $agora_app_crt ) ? '●●●●●●●●' : '';
 		?>
 		<div class="wrap meditaj-admin-wrap">
 			<div class="meditaj-admin-header" style="margin-bottom: 20px;">
@@ -262,7 +278,7 @@ class AdminMenu {
 						<th scope="row"><label for="meditaj_ssl_store_passwd"><?php esc_html_e( 'Store Password', 'meditaj' ); ?></label></th>
 						<td>
 							<div style="position: relative; display: inline-block;">
-								<input name="meditaj_ssl_store_passwd" type="password" id="meditaj_ssl_store_passwd" value="<?php echo esc_attr( $store_passwd ); ?>" class="regular-text" style="padding-right: 35px;" required>
+								<input name="meditaj_ssl_store_passwd" type="password" id="meditaj_ssl_store_passwd" value="<?php echo esc_attr( $masked_store_passwd ); ?>" class="regular-text" style="padding-right: 35px;" required>
 								<span class="dashicons dashicons-visibility" id="toggle-password-visibility" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #72777c;"></span>
 							</div>
 							<p class="description"><?php esc_html_e( 'Input your custom SSLCommerz API Store Password.', 'meditaj' ); ?></p>
@@ -293,7 +309,7 @@ class AdminMenu {
 						<th scope="row"><label for="meditaj_agora_app_certificate"><?php esc_html_e( 'Agora App Certificate', 'meditaj' ); ?></label></th>
 						<td>
 							<div style="position: relative; display: inline-block;">
-								<input name="meditaj_agora_app_certificate" type="password" id="meditaj_agora_app_certificate" value="<?php echo esc_attr( $agora_app_crt ); ?>" class="regular-text" style="padding-right: 35px;">
+								<input name="meditaj_agora_app_certificate" type="password" id="meditaj_agora_app_certificate" value="<?php echo esc_attr( $masked_agora_app_crt ); ?>" class="regular-text" style="padding-right: 35px;">
 								<span class="dashicons dashicons-visibility" id="toggle-agora-visibility" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #72777c;"></span>
 							</div>
 							<p class="description"><?php esc_html_e( 'Input your Agora Console Project Primary App Certificate.', 'meditaj' ); ?></p>

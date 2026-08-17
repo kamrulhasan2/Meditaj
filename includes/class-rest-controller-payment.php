@@ -158,7 +158,8 @@ class RestControllerPayment extends WP_REST_Controller {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			return new WP_Error( 'meditaj_gateway_error', $response->get_error_message(), array( 'status' => 502 ) );
+			error_log( 'SSLCommerz Init Error: ' . $response->get_error_message() );
+			return new WP_Error( 'meditaj_gateway_error', __( 'Failed to initiate gateway session. Please try again later.', 'meditaj' ), array( 'status' => 502 ) );
 		}
 
 		$body = wp_remote_retrieve_body( $response );
@@ -236,7 +237,8 @@ class RestControllerPayment extends WP_REST_Controller {
 		);
 
 		if ( is_wp_error( $response ) ) {
-			return new WP_Error( 'meditaj_gateway_error', $response->get_error_message(), array( 'status' => 502 ) );
+			error_log( 'SSLCommerz IPN validation error: ' . $response->get_error_message() );
+			return new WP_Error( 'meditaj_gateway_error', __( 'Unable to verify payment authenticity.', 'meditaj' ), array( 'status' => 502 ) );
 		}
 
 		$body = wp_remote_retrieve_body( $response );

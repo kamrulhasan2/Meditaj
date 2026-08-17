@@ -399,6 +399,15 @@ class RestControllerBooking extends WP_REST_Controller {
 			return new WP_Error( 'rest_forbidden', __( 'You do not have permission to modify this appointment.', 'meditaj' ), array( 'status' => 403 ) );
 		}
 
+		// State Validation: appointment must be paid and currently confirmed/ongoing.
+		if ( 'paid' !== $appointment->payment_status ) {
+			return new WP_Error( 'rest_bad_request', __( 'Cannot complete an unpaid appointment.', 'meditaj' ), array( 'status' => 400 ) );
+		}
+
+		if ( ! in_array( $appointment->status, array( 'confirmed', 'ongoing' ), true ) ) {
+			return new WP_Error( 'rest_bad_request', __( 'Only confirmed or ongoing appointments can be marked as completed.', 'meditaj' ), array( 'status' => 400 ) );
+		}
+
 		// Update appointment status to 'completed'.
 		$wpdb->update(
 			$table_appointments,
@@ -442,6 +451,11 @@ class RestControllerBooking extends WP_REST_Controller {
 		$current_user_id = get_current_user_id();
 		if ( intval( $current_user_id ) !== intval( $appointment->patient_user_id ) ) {
 			return new \WP_Error( 'rest_forbidden', __( 'You do not have permission to review this appointment.', 'meditaj' ), array( 'status' => 403 ) );
+		}
+
+		// Verify appointment is completed
+		if ( 'completed' !== $appointment->status ) {
+			return new \WP_Error( 'invalid_status', __( 'You can only review completed appointments.', 'meditaj' ), array( 'status' => 400 ) );
 		}
 
 		// Check if a review already exists
