@@ -1,15 +1,15 @@
 /**
- * Meditaj Admin Dashboard Stylesheet
+ * EG Care Admin Dashboard Stylesheet
  */
 
 /* Container and layout */
-.meditaj-admin-wrap {
+.eg-care-admin-wrap {
 	margin: 20px 20px 0 0;
 	max-width: 1200px;
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 }
 
-.meditaj-admin-header {
+.eg-care-admin-header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -18,7 +18,7 @@
 	padding-bottom: 15px;
 }
 
-.meditaj-admin-title {
+.eg-care-admin-title {
 	font-size: 24px;
 	font-weight: 600;
 	color: #1d2327;
@@ -26,7 +26,7 @@
 }
 
 /* Status Badges */
-.meditaj-status-badge {
+.eg-care-status-badge {
 	display: inline-block;
 	padding: 4px 10px;
 	border-radius: 12px;
@@ -36,26 +36,26 @@
 	letter-spacing: 0.5px;
 }
 
-.meditaj-status-badge.status-approved {
+.eg-care-status-badge.status-approved {
 	background-color: #dcfce7;
 	color: #166534;
 	border: 1px solid #bbf7d0;
 }
 
-.meditaj-status-badge.status-pending {
+.eg-care-status-badge.status-pending {
 	background-color: #ffedd5;
 	color: #9a3412;
 	border: 1px solid #fed7aa;
 }
 
-.meditaj-status-badge.status-rejected {
+.eg-care-status-badge.status-rejected {
 	background-color: #fee2e2;
 	color: #991b1b;
 	border: 1px solid #fecaca;
 }
 
 /* Add Doctor Form Layout */
-.meditaj-form-card {
+.eg-care-form-card {
 	background: #fff;
 	border: 1px solid #ccd0d4;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -64,11 +64,11 @@
 	margin-top: 20px;
 }
 
-.meditaj-form-section {
+.eg-care-form-section {
 	margin-bottom: 30px;
 }
 
-.meditaj-form-section-title {
+.eg-care-form-section-title {
 	font-size: 16px;
 	font-weight: 600;
 	color: #0f766e; /* Teal */
@@ -77,37 +77,37 @@
 	padding-left: 10px;
 }
 
-.meditaj-form-grid {
+.eg-care-form-grid {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
 	gap: 20px;
 }
 
-.meditaj-form-grid.full-width {
+.eg-care-form-grid.full-width {
 	grid-template-columns: 1fr;
 }
 
-.meditaj-form-field {
+.eg-care-form-field {
 	display: flex;
 	flex-direction: column;
 }
 
-.meditaj-form-field.span-2 {
+.eg-care-form-field.span-2 {
 	grid-column: span 2;
 }
 
-.meditaj-form-field label {
+.eg-care-form-field label {
 	font-weight: 600;
 	margin-bottom: 6px;
 	color: #2c3338;
 }
 
-.meditaj-form-field input[type="text"],
-.meditaj-form-field input[type="email"],
-.meditaj-form-field input[type="password"],
-.meditaj-form-field input[type="number"],
-.meditaj-form-field select,
-.meditaj-form-field textarea {
+.eg-care-form-field input[type="text"],
+.eg-care-form-field input[type="email"],
+.eg-care-form-field input[type="password"],
+.eg-care-form-field input[type="number"],
+.eg-care-form-field select,
+.eg-care-form-field textarea {
 	padding: 8px 12px;
 	border: 1px solid #8c8f94;
 	border-radius: 4px;
@@ -118,16 +118,16 @@
 	transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
-.meditaj-form-field input:focus,
-.meditaj-form-field select:focus,
-.meditaj-form-field textarea:focus {
+.eg-care-form-field input:focus,
+.eg-care-form-field select:focus,
+.eg-care-form-field textarea:focus {
 	border-color: #0f766e;
 	box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.15);
 	outline: none;
 }
 
 /* Submit and Utility Buttons */
-.meditaj-btn-primary {
+.eg-care-btn-primary {
 	background-color: #0f766e !important;
 	color: #fff !important;
 	border-color: #0f766e !important;
@@ -139,12 +139,12 @@
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
 
-.meditaj-btn-primary:hover {
+.eg-care-btn-primary:hover {
 	background-color: #0d5e57 !important;
 	border-color: #0d5e57 !important;
 }
 
-.meditaj-placeholder-card {
+.eg-care-placeholder-card {
 	background: #fff;
 	border: 1px solid #ccd0d4;
 	border-radius: 8px;
@@ -153,19 +153,19 @@
 	margin-top: 20px;
 }
 
-.meditaj-placeholder-card h2 {
+.eg-care-placeholder-card h2 {
 	color: #50575e;
 	font-size: 20px;
 	margin-bottom: 10px;
 }
 
-.meditaj-placeholder-card p {
+.eg-care-placeholder-card p {
 	color: #8c8f94;
 	font-size: 14px;
 }
 
 /* List Table enhancements */
-.meditaj-doctor-photo {
+.eg-care-doctor-photo {
 	width: 40px;
 	height: 40px;
 	border-radius: 50%;
@@ -174,7 +174,7 @@
 	background-color: #f0f0f1;
 }
 
-.meditaj-doctor-photo-placeholder {
+.eg-care-doctor-photo-placeholder {
 	display: inline-flex;
 	justify-content: center;
 	align-items: center;
@@ -188,13 +188,13 @@
 }
 
 /* Make row actions always visible to improve usability and accessibility */
-.meditaj-admin-wrap .row-actions {
+.eg-care-admin-wrap .row-actions {
 	position: static !important;
 	visibility: visible !important;
 }
 
 /* Admin Dashboard Grid Layout */
-.meditaj-dashboard-grid {
+.eg-care-dashboard-grid {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
 	gap: 20px;
@@ -202,19 +202,19 @@
 }
 
 @media (max-width: 900px) {
-	.meditaj-dashboard-grid {
+	.eg-care-dashboard-grid {
 		grid-template-columns: repeat(2, 1fr);
 	}
 }
 
 @media (max-width: 600px) {
-	.meditaj-dashboard-grid {
+	.eg-care-dashboard-grid {
 		grid-template-columns: 1fr;
 	}
 }
 
 /* Metric Cards */
-.meditaj-metric-card {
+.eg-care-metric-card {
 	background: #fff;
 	border: 1px solid #ccd0d4;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -226,12 +226,12 @@
 	transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.meditaj-metric-card:hover {
+.eg-care-metric-card:hover {
 	transform: translateY(-2px);
 	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.06);
 }
 
-.meditaj-metric-icon-wrap {
+.eg-care-metric-icon-wrap {
 	width: 50px;
 	height: 50px;
 	border-radius: 50%;
@@ -241,25 +241,25 @@
 	font-size: 24px;
 }
 
-.meditaj-metric-content {
+.eg-care-metric-content {
 	flex-grow: 1;
 }
 
-.meditaj-metric-title {
+.eg-care-metric-title {
 	font-size: 13px;
 	color: #64748b;
 	margin: 0 0 5px 0;
 	font-weight: 500;
 }
 
-.meditaj-metric-value {
+.eg-care-metric-value {
 	font-size: 22px;
 	font-weight: 700;
 	color: #0f172a;
 	margin: 0;
 }
 
-.meditaj-metric-change {
+.eg-care-metric-change {
 	display: flex;
 	align-items: center;
 	font-size: 11px;
@@ -267,15 +267,15 @@
 	font-weight: 600;
 }
 
-.meditaj-metric-change.up {
+.eg-care-metric-change.up {
 	color: #15803d; /* Green */
 }
 
-.meditaj-metric-change.down {
+.eg-care-metric-change.down {
 	color: #b91c1c; /* Red */
 }
 
-.meditaj-metric-change.neutral {
+.eg-care-metric-change.neutral {
 	color: #64748b; /* Slate */
 }
 
@@ -288,7 +288,7 @@
 .icon-commission { background-color: #f5f5f4; color: #78716c; }
 
 /* Dashboard Charts Layout */
-.meditaj-charts-container {
+.eg-care-charts-container {
 	display: grid;
 	grid-template-columns: 2fr 1fr;
 	gap: 20px;
@@ -297,12 +297,12 @@
 }
 
 @media (max-width: 900px) {
-	.meditaj-charts-container {
+	.eg-care-charts-container {
 		grid-template-columns: 1fr;
 	}
 }
 
-.meditaj-chart-card {
+.eg-care-chart-card {
 	background: #fff;
 	border: 1px solid #ccd0d4;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -310,7 +310,7 @@
 	padding: 20px;
 }
 
-.meditaj-chart-card h3 {
+.eg-care-chart-card h3 {
 	font-size: 15px;
 	color: #1e293b;
 	margin: 0 0 20px 0;
@@ -319,14 +319,14 @@
 	font-weight: 600;
 }
 
-.meditaj-chart-wrap {
+.eg-care-chart-wrap {
 	position: relative;
 	width: 100%;
 	height: 300px;
 }
 
 /* Recent Appointments Ledger at bottom */
-.meditaj-ledger-card {
+.eg-care-ledger-card {
 	background: #fff;
 	border: 1px solid #ccd0d4;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -336,7 +336,7 @@
 	margin-bottom: 30px;
 }
 
-.meditaj-ledger-card h3 {
+.eg-care-ledger-card h3 {
 	font-size: 15px;
 	color: #1e293b;
 	margin: 0 0 20px 0;

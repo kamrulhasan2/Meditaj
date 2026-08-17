@@ -1,5 +1,5 @@
 <?php
-namespace Meditaj;
+namespace EGCare;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -14,7 +14,7 @@ class AdminDashboard {
 		$table_appointments = DB::get_table( 'appointments' );
 		$table_doctors      = DB::get_table( 'doctors_meta' );
 
-		$commission_rate = floatval( get_option( 'meditaj_commission_percentage', '15' ) ) / 100;
+		$commission_rate = floatval( get_option( 'eg_care_commission_percentage', '15' ) ) / 100;
 
 		// --- 1. Metric Counts ---
 		// Total Patients (Unique)
@@ -84,10 +84,10 @@ class AdminDashboard {
 
 		// Enqueue scripts with cache-busting
 		wp_enqueue_script( 'chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', array(), '4.4.1', true );
-		wp_enqueue_script( 'meditaj-admin-charts-js', MEDITAJ_URL . 'assets/js/admin-charts.js', array( 'chart-js' ), time(), true );
+		wp_enqueue_script( 'eg-care-admin-charts-js', EG_CARE_URL . 'assets/js/admin-charts.js', array( 'chart-js' ), time(), true );
 		wp_localize_script(
-			'meditaj-admin-charts-js',
-			'meditajChartsData',
+			'eg-care-admin-charts-js',
+			'eg-careChartsData',
 			array(
 				'trend'     => $trend_data,
 				'instant'   => $instant_count,
@@ -97,123 +97,123 @@ class AdminDashboard {
 
 		// Output layout markup
 		?>
-		<div class="wrap meditaj-admin-wrap">
-			<div class="meditaj-admin-header" style="margin-bottom: 25px;">
-				<h1 class="meditaj-admin-title"><?php esc_html_e( 'Meditaj Back-Office Dashboard', 'meditaj' ); ?></h1>
+		<div class="wrap eg-care-admin-wrap">
+			<div class="eg-care-admin-header" style="margin-bottom: 25px;">
+				<h1 class="eg-care-admin-title"><?php esc_html_e( 'EG Care Back-Office Dashboard', 'eg-care' ); ?></h1>
 			</div>
 
 			<!-- Grid of 6 Metric Cards -->
-			<div class="meditaj-dashboard-grid">
+			<div class="eg-care-dashboard-grid">
 				<!-- Total Patients -->
-				<div class="meditaj-metric-card">
-					<div class="meditaj-metric-icon-wrap icon-patients">👤</div>
-					<div class="meditaj-metric-content">
-						<h4 class="meditaj-metric-title"><?php esc_html_e( 'Total Patients', 'meditaj' ); ?></h4>
-						<p class="meditaj-metric-value"><?php echo number_format( $total_patients ); ?></p>
-						<span class="meditaj-metric-change neutral"><?php esc_html_e( 'Unique individuals', 'meditaj' ); ?></span>
+				<div class="eg-care-metric-card">
+					<div class="eg-care-metric-icon-wrap icon-patients">👤</div>
+					<div class="eg-care-metric-content">
+						<h4 class="eg-care-metric-title"><?php esc_html_e( 'Total Patients', 'eg-care' ); ?></h4>
+						<p class="eg-care-metric-value"><?php echo number_format( $total_patients ); ?></p>
+						<span class="eg-care-metric-change neutral"><?php esc_html_e( 'Unique individuals', 'eg-care' ); ?></span>
 					</div>
 				</div>
 
 				<!-- Total Appointments -->
-				<div class="meditaj-metric-card">
-					<div class="meditaj-metric-icon-wrap icon-appointments">📅</div>
-					<div class="meditaj-metric-content">
-						<h4 class="meditaj-metric-title"><?php esc_html_e( 'Total Appointments', 'meditaj' ); ?></h4>
-						<p class="meditaj-metric-value"><?php echo number_format( $total_appointments ); ?></p>
-						<span class="meditaj-metric-change <?php echo $app_change_pct >= 0 ? 'up' : 'down'; ?>">
-							<?php echo $app_change_pct >= 0 ? '▲' : '▼'; ?> <?php echo number_format( abs( $app_change_pct ), 1 ); ?>% <?php esc_html_e( 'vs last 30d', 'meditaj' ); ?>
+				<div class="eg-care-metric-card">
+					<div class="eg-care-metric-icon-wrap icon-appointments">📅</div>
+					<div class="eg-care-metric-content">
+						<h4 class="eg-care-metric-title"><?php esc_html_e( 'Total Appointments', 'eg-care' ); ?></h4>
+						<p class="eg-care-metric-value"><?php echo number_format( $total_appointments ); ?></p>
+						<span class="eg-care-metric-change <?php echo $app_change_pct >= 0 ? 'up' : 'down'; ?>">
+							<?php echo $app_change_pct >= 0 ? '▲' : '▼'; ?> <?php echo number_format( abs( $app_change_pct ), 1 ); ?>% <?php esc_html_e( 'vs last 30d', 'eg-care' ); ?>
 						</span>
 					</div>
 				</div>
 
 				<!-- Today's Appointments -->
-				<div class="meditaj-metric-card">
-					<div class="meditaj-metric-icon-wrap icon-today">⏰</div>
-					<div class="meditaj-metric-content">
-						<h4 class="meditaj-metric-title"><?php esc_html_e( "Today's Consultations", 'meditaj' ); ?></h4>
-						<p class="meditaj-metric-value"><?php echo number_format( $todays_appointments ); ?></p>
-						<span class="meditaj-metric-change neutral"><?php esc_html_e( 'Pending or confirmed today', 'meditaj' ); ?></span>
+				<div class="eg-care-metric-card">
+					<div class="eg-care-metric-icon-wrap icon-today">⏰</div>
+					<div class="eg-care-metric-content">
+						<h4 class="eg-care-metric-title"><?php esc_html_e( "Today's Consultations", 'eg-care' ); ?></h4>
+						<p class="eg-care-metric-value"><?php echo number_format( $todays_appointments ); ?></p>
+						<span class="eg-care-metric-change neutral"><?php esc_html_e( 'Pending or confirmed today', 'eg-care' ); ?></span>
 					</div>
 				</div>
 
 				<!-- Pending Verifications -->
-				<div class="meditaj-metric-card">
-					<div class="meditaj-metric-icon-wrap icon-pending">🛡️</div>
-					<div class="meditaj-metric-content">
-						<h4 class="meditaj-metric-title"><?php esc_html_e( 'Pending Doctor Approvals', 'meditaj' ); ?></h4>
-						<p class="meditaj-metric-value"><?php echo number_format( $pending_notifications ); ?></p>
-						<span class="meditaj-metric-change <?php echo $pending_notifications > 0 ? 'down' : 'neutral'; ?>">
+				<div class="eg-care-metric-card">
+					<div class="eg-care-metric-icon-wrap icon-pending">🛡️</div>
+					<div class="eg-care-metric-content">
+						<h4 class="eg-care-metric-title"><?php esc_html_e( 'Pending Doctor Approvals', 'eg-care' ); ?></h4>
+						<p class="eg-care-metric-value"><?php echo number_format( $pending_notifications ); ?></p>
+						<span class="eg-care-metric-change <?php echo $pending_notifications > 0 ? 'down' : 'neutral'; ?>">
 							<?php if ( $pending_notifications > 0 ) : ?>
-								<?php esc_html_e( 'Requires attention', 'meditaj' ); ?>
+								<?php esc_html_e( 'Requires attention', 'eg-care' ); ?>
 							<?php else : ?>
-								<?php esc_html_e( 'All clear', 'meditaj' ); ?>
+								<?php esc_html_e( 'All clear', 'eg-care' ); ?>
 							<?php endif; ?>
 						</span>
 					</div>
 				</div>
 
 				<!-- Total Revenue -->
-				<div class="meditaj-metric-card">
-					<div class="meditaj-metric-icon-wrap icon-revenue">৳</div>
-					<div class="meditaj-metric-content">
-						<h4 class="meditaj-metric-title"><?php esc_html_e( 'Total Revenue', 'meditaj' ); ?></h4>
-						<p class="meditaj-metric-value"><?php echo number_format( $total_revenue, 2 ); ?> BDT</p>
-						<span class="meditaj-metric-change <?php echo $rev_change_pct >= 0 ? 'up' : 'down'; ?>">
-							<?php echo $rev_change_pct >= 0 ? '▲' : '▼'; ?> <?php echo number_format( abs( $rev_change_pct ), 1 ); ?>% <?php esc_html_e( 'vs last 30d', 'meditaj' ); ?>
+				<div class="eg-care-metric-card">
+					<div class="eg-care-metric-icon-wrap icon-revenue">৳</div>
+					<div class="eg-care-metric-content">
+						<h4 class="eg-care-metric-title"><?php esc_html_e( 'Total Revenue', 'eg-care' ); ?></h4>
+						<p class="eg-care-metric-value"><?php echo number_format( $total_revenue, 2 ); ?> BDT</p>
+						<span class="eg-care-metric-change <?php echo $rev_change_pct >= 0 ? 'up' : 'down'; ?>">
+							<?php echo $rev_change_pct >= 0 ? '▲' : '▼'; ?> <?php echo number_format( abs( $rev_change_pct ), 1 ); ?>% <?php esc_html_e( 'vs last 30d', 'eg-care' ); ?>
 						</span>
 					</div>
 				</div>
 
 				<!-- Platform Earnings -->
-				<div class="meditaj-metric-card">
-					<div class="meditaj-metric-icon-wrap icon-commission">📈</div>
-					<div class="meditaj-metric-content">
-						<h4 class="meditaj-metric-title"><?php esc_html_e( 'Platform Earnings', 'meditaj' ); ?></h4>
-						<p class="meditaj-metric-value"><?php echo number_format( $platform_earnings, 2 ); ?> BDT</p>
-						<span class="meditaj-metric-change neutral"><?php echo esc_html( floatval( $commission_rate * 100 ) ); ?>% <?php esc_html_e( 'commission cut', 'meditaj' ); ?></span>
+				<div class="eg-care-metric-card">
+					<div class="eg-care-metric-icon-wrap icon-commission">📈</div>
+					<div class="eg-care-metric-content">
+						<h4 class="eg-care-metric-title"><?php esc_html_e( 'Platform Earnings', 'eg-care' ); ?></h4>
+						<p class="eg-care-metric-value"><?php echo number_format( $platform_earnings, 2 ); ?> BDT</p>
+						<span class="eg-care-metric-change neutral"><?php echo esc_html( floatval( $commission_rate * 100 ) ); ?>% <?php esc_html_e( 'commission cut', 'eg-care' ); ?></span>
 					</div>
 				</div>
 			</div>
 
 			<!-- Graphs Section -->
-			<div class="meditaj-charts-container">
+			<div class="eg-care-charts-container">
 				<!-- Daily Performance Trend (Line chart) -->
-				<div class="meditaj-chart-card">
-					<h3><?php esc_html_e( 'Appointment Performance Trend (Last 30 Days)', 'meditaj' ); ?></h3>
-					<div class="meditaj-chart-wrap">
-						<canvas id="meditajDailyTrendChart"></canvas>
+				<div class="eg-care-chart-card">
+					<h3><?php esc_html_e( 'Appointment Performance Trend (Last 30 Days)', 'eg-care' ); ?></h3>
+					<div class="eg-care-chart-wrap">
+						<canvas id="eg-careDailyTrendChart"></canvas>
 					</div>
 				</div>
 
 				<!-- Appointment Types Share (Doughnut chart) -->
-				<div class="meditaj-chart-card">
-					<h3><?php esc_html_e( 'Consultation Types Share', 'meditaj' ); ?></h3>
-					<div class="meditaj-chart-wrap">
-						<canvas id="meditajTypeChart"></canvas>
+				<div class="eg-care-chart-card">
+					<h3><?php esc_html_e( 'Consultation Types Share', 'eg-care' ); ?></h3>
+					<div class="eg-care-chart-wrap">
+						<canvas id="eg-careTypeChart"></canvas>
 					</div>
 				</div>
 			</div>
 
 			<!-- Recent Activity Table Ledger -->
-			<div class="meditaj-ledger-card">
-				<h3><?php esc_html_e( 'Latest Appointments Ledger', 'meditaj' ); ?></h3>
+			<div class="eg-care-ledger-card">
+				<h3><?php esc_html_e( 'Latest Appointments Ledger', 'eg-care' ); ?></h3>
 				<table class="wp-list-table widefat fixed striped posts" style="border: 0; box-shadow: none;">
 					<thead>
 						<tr>
-							<th><?php esc_html_e( 'Appointment ID', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Doctor', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Patient Name', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Type', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Date & Time', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Amount', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Status', 'meditaj' ); ?></th>
+							<th><?php esc_html_e( 'Appointment ID', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Doctor', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Patient Name', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Type', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Date & Time', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Amount', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Status', 'eg-care' ); ?></th>
 						</tr>
 					</thead>
 					<tbody>
 						<?php if ( empty( $recent_appointments ) ) : ?>
 							<tr>
 								<td colspan="7" style="text-align: center; color: #8c8f94; padding: 20px;">
-									<?php esc_html_e( 'No recent bookings recorded.', 'meditaj' ); ?>
+									<?php esc_html_e( 'No recent bookings recorded.', 'eg-care' ); ?>
 								</td>
 							</tr>
 						<?php else : ?>
@@ -232,14 +232,14 @@ class AdminDashboard {
 										?>
 									</td>
 									<td>
-										<span class="meditaj-status-badge <?php echo 'instant' === $app->appointment_type ? 'status-approved' : 'status-pending'; ?>" style="font-size: 10px; padding: 2px 6px;">
+										<span class="eg-care-status-badge <?php echo 'instant' === $app->appointment_type ? 'status-approved' : 'status-pending'; ?>" style="font-size: 10px; padding: 2px 6px;">
 											<?php echo esc_html( strtoupper( $app->appointment_type ) ); ?>
 										</span>
 									</td>
 									<td><?php echo esc_html( $app->appointment_date . ' @ ' . date( 'g:i A', strtotime( $app->appointment_time ) ) ); ?></td>
 									<td><?php echo esc_html( $app->amount ); ?> BDT</td>
 									<td>
-										<span class="meditaj-status-badge <?php echo 'completed' === $app->status ? 'status-approved' : ( 'cancelled' === $app->status ? 'status-rejected' : 'status-pending' ); ?>" style="font-size: 10px; padding: 2px 6px;">
+										<span class="eg-care-status-badge <?php echo 'completed' === $app->status ? 'status-approved' : ( 'cancelled' === $app->status ? 'status-rejected' : 'status-pending' ); ?>" style="font-size: 10px; padding: 2px 6px;">
 											<?php echo esc_html( strtoupper( $app->status ) ); ?>
 										</span>
 									</td>

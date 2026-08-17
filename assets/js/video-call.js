@@ -9,7 +9,7 @@
 	};
 
 	// Expose globally so dashboard and checkout scripts can trigger
-	window.MeditajVideoCall = {
+	window.EG CareVideoCall = {
 		join: function(appointmentId) {
 			if ( ! appointmentId ) {
 				alert('Invalid appointment session.');
@@ -18,10 +18,10 @@
 
 			// Show loading status
 			const loadingOverlay = document.createElement('div');
-			loadingOverlay.id = 'meditaj-video-loading';
+			loadingOverlay.id = 'eg-care-video-loading';
 			loadingOverlay.style = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 1000000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-family: sans-serif;';
 			loadingOverlay.innerHTML = `
-				<div class="meditaj-loading-spinner" style="border: 4px solid rgba(255,255,255,0.1); border-left-color: #0f766e; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
+				<div class="eg-care-loading-spinner" style="border: 4px solid rgba(255,255,255,0.1); border-left-color: #0f766e; width: 50px; height: 50px; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
 				<h3 style="margin: 0; font-size: 18px;">Initializing Call Room...</h3>
 				<p style="margin: 8px 0 0; color: #94a3b8; font-size: 14px;">Retrieving secure RTC tokens</p>
 				<style>
@@ -31,11 +31,11 @@
 			document.body.appendChild(loadingOverlay);
 
 			// 1. Fetch Agora token from REST API
-			fetch(meditajSettings.restUrl + 'video/token', {
+			fetch(egCareSettings.restUrl + 'video/token', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-WP-Nonce': meditajSettings.nonce
+					'X-WP-Nonce': egCareSettings.nonce
 				},
 				body: JSON.stringify({ appointment_id: appointmentId })
 			})
@@ -66,7 +66,7 @@
 	// Inject the Call Overlay Modal UI into the page DOM.
 	function injectVideoCallModal(doctorName, patientName, isDoctor) {
 		// Remove existing modal if any
-		const oldModal = document.getElementById('meditaj-video-call-modal');
+		const oldModal = document.getElementById('eg-care-video-call-modal');
 		if ( oldModal ) {
 			oldModal.remove();
 		}
@@ -75,7 +75,7 @@
 		const labelText = isDoctor ? 'Patient Feed' : 'Doctor Feed';
 
 		const modalHtml = `
-		<div id="meditaj-video-call-modal" class="meditaj-video-modal">
+		<div id="eg-care-video-call-modal" class="eg-care-video-modal">
 			<div class="video-modal-header">
 				<span id="video-call-title">Consultation Call with ${partnerName}</span>
 				<span id="video-call-duration">00:00</span>
@@ -149,7 +149,7 @@
 			}
 
 			// Remove Modal from DOM
-			const modal = document.getElementById('meditaj-video-call-modal');
+			const modal = document.getElementById('eg-care-video-call-modal');
 			if ( modal ) {
 				modal.remove();
 			}
@@ -160,22 +160,22 @@
 			loadingNotice.innerHTML = `<h3>Closing Consultation...</h3><p style="color: #94a3b8;">Recording logs</p>`;
 			document.body.appendChild(loadingNotice);
 
-			fetch(meditajSettings.restUrl + 'appointments/' + appointmentId + '/complete', {
+			fetch(egCareSettings.restUrl + 'appointments/' + appointmentId + '/complete', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-WP-Nonce': meditajSettings.nonce
+					'X-WP-Nonce': egCareSettings.nonce
 				}
 			})
 			.then(() => {
-				if ( typeof meditajSettings !== 'undefined' && meditajSettings.userType === 'patient' ) {
+				if ( typeof egCareSettings !== 'undefined' && egCareSettings.userType === 'patient' ) {
 					if ( loadingNotice ) {
 						loadingNotice.remove();
 					}
 					
 					// Render rating modal in DOM.
 					const reviewModal = document.createElement('div');
-					reviewModal.id = 'meditaj-review-modal';
+					reviewModal.id = 'eg-care-review-modal';
 					reviewModal.style = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.85); z-index: 2000000; display: flex; align-items: center; justify-content: center; font-family: -apple-system, BlinkMacSystemFont, sans-serif;';
 					
 					reviewModal.innerHTML = `
@@ -250,11 +250,11 @@
 						submitBtn.textContent = 'Submitting...';
 						const comment = reviewModal.querySelector('#review-comment').value.trim();
 
-						fetch(meditajSettings.restUrl + 'appointments/' + appointmentId + '/reviews', {
+						fetch(egCareSettings.restUrl + 'appointments/' + appointmentId + '/reviews', {
 							method: 'POST',
 							headers: {
 								'Content-Type': 'application/json',
-								'X-WP-Nonce': meditajSettings.nonce
+								'X-WP-Nonce': egCareSettings.nonce
 							},
 							body: JSON.stringify({
 								rating: selectedRating,
@@ -394,9 +394,9 @@
 	document.addEventListener('DOMContentLoaded', function() {
 		// Attach delegator on body to capture dynamically generated buttons.
 		document.body.addEventListener('click', function(e) {
-			if ( e.target && e.target.classList.contains('meditaj-btn-join-call') ) {
+			if ( e.target && e.target.classList.contains('eg-care-btn-join-call') ) {
 				const appointmentId = e.target.getAttribute('data-id');
-				window.MeditajVideoCall.join(appointmentId);
+				window.EG CareVideoCall.join(appointmentId);
 			}
 		});
 	});

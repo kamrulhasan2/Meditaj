@@ -1,5 +1,5 @@
 <?php
-namespace Meditaj;
+namespace EGCare;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -60,55 +60,55 @@ foreach ( $appointments as $appt ) {
 }
 
 ?>
-<div class="meditaj-patient-dashboard" style="max-width: 1000px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px;">
+<div class="eg-care-patient-dashboard" style="max-width: 1000px; margin: 0 auto; font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 20px;">
 	
 	<!-- Header -->
-	<div class="meditaj-patient-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px;">
+	<div class="eg-care-patient-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px;">
 		<div>
-			<h2 style="margin: 0; font-size: 26px; color: #0f172a; font-weight: 700;"><?php printf( esc_html__( 'Hello, %s', 'meditaj' ), esc_html( wp_get_current_user()->display_name ) ); ?></h2>
-			<p style="margin: 5px 0 0; color: #64748b; font-size: 14px;"><?php esc_html_e( 'Manage your telemedicine appointments and consulting history.', 'meditaj' ); ?></p>
+			<h2 style="margin: 0; font-size: 26px; color: #0f172a; font-weight: 700;"><?php printf( esc_html__( 'Hello, %s', 'eg-care' ), esc_html( wp_get_current_user()->display_name ) ); ?></h2>
+			<p style="margin: 5px 0 0; color: #64748b; font-size: 14px;"><?php esc_html_e( 'Manage your telemedicine appointments and consulting history.', 'eg-care' ); ?></p>
 		</div>
 		<a href="<?php echo esc_url( wp_logout_url( home_url() ) ); ?>" style="padding: 8px 16px; border: 1px solid #cbd5e1; border-radius: 6px; text-decoration: none; color: #64748b; font-size: 14px; font-weight: 600; background: #fff; transition: background 0.2s;">
-			<?php esc_html_e( 'Log Out', 'meditaj' ); ?>
+			<?php esc_html_e( 'Log Out', 'eg-care' ); ?>
 		</a>
 	</div>
 
 	<!-- Stats Grid -->
-	<div class="meditaj-patient-stats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+	<div class="eg-care-patient-stats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
 		<!-- Total Bookings -->
 		<div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-			<span style="font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase;"><?php esc_html_e( 'Total Consultations', 'meditaj' ); ?></span>
+			<span style="font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase;"><?php esc_html_e( 'Total Consultations', 'eg-care' ); ?></span>
 			<h3 style="margin: 10px 0 0; font-size: 28px; color: #0f766e; font-weight: 700;"><?php echo intval( $total_bookings ); ?></h3>
 		</div>
 		<!-- Total Spent -->
 		<div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-			<span style="font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase;"><?php esc_html_e( 'Total Spent', 'meditaj' ); ?></span>
+			<span style="font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase;"><?php esc_html_e( 'Total Spent', 'eg-care' ); ?></span>
 			<h3 style="margin: 10px 0 0; font-size: 28px; color: #0f766e; font-weight: 700;"><?php echo number_format( $total_spent, 2 ); ?> BDT</h3>
 		</div>
 		<!-- Completed Calls -->
 		<div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-			<span style="font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase;"><?php esc_html_e( 'Completed Consultations', 'meditaj' ); ?></span>
+			<span style="font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase;"><?php esc_html_e( 'Completed Consultations', 'eg-care' ); ?></span>
 			<h3 style="margin: 10px 0 0; font-size: 28px; color: #0f766e; font-weight: 700;"><?php echo intval( $completed_calls ); ?></h3>
 		</div>
 	</div>
 
 	<!-- 1. Active / Today's Consultations -->
-	<div class="meditaj-dashboard-section" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 25px; margin-bottom: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+	<div class="eg-care-dashboard-section" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 25px; margin-bottom: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
 		<h3 style="margin: 0 0 20px; font-size: 18px; color: #1e293b; font-weight: 700; border-left: 4px solid #0f766e; padding-left: 10px;">
-			<?php esc_html_e( "Today's Consultations", 'meditaj' ); ?>
+			<?php esc_html_e( "Today's Consultations", 'eg-care' ); ?>
 		</h3>
 		<?php if ( empty( $active_consultations ) ) : ?>
-			<p style="color: #64748b; font-size: 14px; margin: 0;"><?php esc_html_e( 'You have no consultations scheduled for today.', 'meditaj' ); ?></p>
+			<p style="color: #64748b; font-size: 14px; margin: 0;"><?php esc_html_e( 'You have no consultations scheduled for today.', 'eg-care' ); ?></p>
 		<?php else : ?>
-			<div class="meditaj-table-responsive">
-				<table class="meditaj-patient-table">
+			<div class="eg-care-table-responsive">
+				<table class="eg-care-patient-table">
 					<thead>
 						<tr style="border-bottom: 2px solid #f1f5f9; color: #64748b;">
-							<th style="padding: 10px 0;"><?php esc_html_e( 'Doctor', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Patient Name', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Schedule Time', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Type', 'meditaj' ); ?></th>
-							<th style="text-align: right;"><?php esc_html_e( 'Actions', 'meditaj' ); ?></th>
+							<th style="padding: 10px 0;"><?php esc_html_e( 'Doctor', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Patient Name', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Schedule Time', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Type', 'eg-care' ); ?></th>
+							<th style="text-align: right;"><?php esc_html_e( 'Actions', 'eg-care' ); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -138,8 +138,8 @@ foreach ( $appointments as $appt ) {
 									</span>
 								</td>
 								<td style="text-align: right;">
-									<button type="button" class="meditaj-btn-join-call <?php echo $is_call_window ? 'active' : 'disabled'; ?>" data-id="<?php echo intval( $app->id ); ?>" <?php echo $is_call_window ? '' : 'disabled'; ?> style="padding: 6px 14px; border-radius: 6px; font-weight: 600; border: none; font-size: 13px;">
-										<?php esc_html_e( 'Join Call', 'meditaj' ); ?>
+									<button type="button" class="eg-care-btn-join-call <?php echo $is_call_window ? 'active' : 'disabled'; ?>" data-id="<?php echo intval( $app->id ); ?>" <?php echo $is_call_window ? '' : 'disabled'; ?> style="padding: 6px 14px; border-radius: 6px; font-weight: 600; border: none; font-size: 13px;">
+										<?php esc_html_e( 'Join Call', 'eg-care' ); ?>
 									</button>
 								</td>
 							</tr>
@@ -151,22 +151,22 @@ foreach ( $appointments as $appt ) {
 	</div>
 
 	<!-- 2. Upcoming Scheduled Consultations -->
-	<div class="meditaj-dashboard-section" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 25px; margin-bottom: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+	<div class="eg-care-dashboard-section" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 25px; margin-bottom: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
 		<h3 style="margin: 0 0 20px; font-size: 18px; color: #1e293b; font-weight: 700; border-left: 4px solid #0f766e; padding-left: 10px;">
-			<?php esc_html_e( 'Upcoming Scheduled Consultations', 'meditaj' ); ?>
+			<?php esc_html_e( 'Upcoming Scheduled Consultations', 'eg-care' ); ?>
 		</h3>
 		<?php if ( empty( $upcoming_bookings ) ) : ?>
-			<p style="color: #64748b; font-size: 14px; margin: 0;"><?php esc_html_e( 'You have no upcoming consultations booked.', 'meditaj' ); ?></p>
+			<p style="color: #64748b; font-size: 14px; margin: 0;"><?php esc_html_e( 'You have no upcoming consultations booked.', 'eg-care' ); ?></p>
 		<?php else : ?>
-			<div class="meditaj-table-responsive">
-				<table class="meditaj-patient-table">
+			<div class="eg-care-table-responsive">
+				<table class="eg-care-patient-table">
 					<thead>
 						<tr style="border-bottom: 2px solid #f1f5f9; color: #64748b;">
-							<th style="padding: 10px 0;"><?php esc_html_e( 'Doctor', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Patient Name', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Date & Time', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Fee paid', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Status', 'meditaj' ); ?></th>
+							<th style="padding: 10px 0;"><?php esc_html_e( 'Doctor', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Patient Name', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Date & Time', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Fee paid', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Status', 'eg-care' ); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -193,23 +193,23 @@ foreach ( $appointments as $appt ) {
 	</div>
 
 	<!-- 3. Consultation History & Reviews -->
-	<div class="meditaj-dashboard-section" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+	<div class="eg-care-dashboard-section" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 25px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
 		<h3 style="margin: 0 0 20px; font-size: 18px; color: #1e293b; font-weight: 700; border-left: 4px solid #0f766e; padding-left: 10px;">
-			<?php esc_html_e( 'Consultation History', 'meditaj' ); ?>
+			<?php esc_html_e( 'Consultation History', 'eg-care' ); ?>
 		</h3>
 		<?php if ( empty( $past_history ) ) : ?>
-			<p style="color: #64748b; font-size: 14px; margin: 0;"><?php esc_html_e( 'Your past consultation history is empty.', 'meditaj' ); ?></p>
+			<p style="color: #64748b; font-size: 14px; margin: 0;"><?php esc_html_e( 'Your past consultation history is empty.', 'eg-care' ); ?></p>
 		<?php else : ?>
-			<div class="meditaj-table-responsive">
-				<table class="meditaj-patient-table">
+			<div class="eg-care-table-responsive">
+				<table class="eg-care-patient-table">
 					<thead>
 						<tr style="border-bottom: 2px solid #f1f5f9; color: #64748b;">
-							<th style="padding: 10px 0;"><?php esc_html_e( 'Doctor', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Patient Name', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Date & Time', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Paid Amount', 'meditaj' ); ?></th>
-							<th><?php esc_html_e( 'Status', 'meditaj' ); ?></th>
-							<th style="text-align: right;"><?php esc_html_e( 'Feedback', 'meditaj' ); ?></th>
+							<th style="padding: 10px 0;"><?php esc_html_e( 'Doctor', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Patient Name', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Date & Time', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Paid Amount', 'eg-care' ); ?></th>
+							<th><?php esc_html_e( 'Status', 'eg-care' ); ?></th>
+							<th style="text-align: right;"><?php esc_html_e( 'Feedback', 'eg-care' ); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -218,7 +218,7 @@ foreach ( $appointments as $appt ) {
 							$date_val = date( 'M d, Y', strtotime( $app->appointment_date ) );
 							
 							// Check if reviewed already
-							$reviewed = $wpdb->get_var( $wpdb->prepare( "SELECT rating FROM {$wpdb->prefix}meditaj_reviews WHERE appointment_id = %d", $app->id ) );
+							$reviewed = $wpdb->get_var( $wpdb->prepare( "SELECT rating FROM {$wpdb->prefix}eg_care_reviews WHERE appointment_id = %d", $app->id ) );
 						?>
 							<tr style="border-bottom: 1px solid #f1f5f9;">
 								<td style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
@@ -235,8 +235,8 @@ foreach ( $appointments as $appt ) {
 										<?php if ( $reviewed ) : ?>
 											<span style="color: #fbbf24; font-weight: 600; font-size: 13px;">★ <?php echo intval( $reviewed ); ?> / 5</span>
 										<?php else : ?>
-											<button type="button" class="meditaj-btn-rate-appt" data-id="<?php echo intval( $app->id ); ?>" style="padding: 4px 10px; border-radius: 4px; background: #0f766e; color: #fff; border: none; font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;">
-												<?php esc_html_e( 'Rate Doctor', 'meditaj' ); ?>
+											<button type="button" class="eg-care-btn-rate-appt" data-id="<?php echo intval( $app->id ); ?>" style="padding: 4px 10px; border-radius: 4px; background: #0f766e; color: #fff; border: none; font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;">
+												<?php esc_html_e( 'Rate Doctor', 'eg-care' ); ?>
 											</button>
 										<?php endif; ?>
 									<?php else : ?>
@@ -255,14 +255,14 @@ foreach ( $appointments as $appt ) {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 	// Rate Doctor click handler for historical completed items
-	const rateButtons = document.querySelectorAll('.meditaj-btn-rate-appt');
+	const rateButtons = document.querySelectorAll('.eg-care-btn-rate-appt');
 	rateButtons.forEach(btn => {
 		btn.addEventListener('click', function() {
 			const apptId = this.getAttribute('data-id');
 			
 			// Open the exact same modal dynamically!
 			const reviewModal = document.createElement('div');
-			reviewModal.id = 'meditaj-review-modal';
+			reviewModal.id = 'eg-care-review-modal';
 			reviewModal.style = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.85); z-index: 2000000; display: flex; align-items: center; justify-content: center; font-family: -apple-system, BlinkMacSystemFont, sans-serif;';
 			
 			reviewModal.innerHTML = `
@@ -336,11 +336,11 @@ document.addEventListener('DOMContentLoaded', function() {
 				submitBtn.textContent = 'Submitting...';
 				const comment = reviewModal.querySelector('#review-comment').value.trim();
 
-				fetch(meditajSettings.restUrl + 'appointments/' + apptId + '/reviews', {
+				fetch(egCareSettings.restUrl + 'appointments/' + apptId + '/reviews', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
-						'X-WP-Nonce': meditajSettings.nonce
+						'X-WP-Nonce': egCareSettings.nonce
 					},
 					body: JSON.stringify({
 						rating: selectedRating,

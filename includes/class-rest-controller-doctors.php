@@ -2,10 +2,10 @@
 /**
  * REST API Controller for Doctors.
  *
- * @package Meditaj
+ * @package EG Care
  */
 
-namespace Meditaj;
+namespace EGCare;
 
 use WP_REST_Controller;
 use WP_REST_Server;
@@ -25,7 +25,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 	 * Register the routes for the objects of the controller.
 	 */
 	public function register_routes() {
-		$namespace = 'meditaj/v1';
+		$namespace = 'eg-care/v1';
 
 		register_rest_route(
 			$namespace,
@@ -144,7 +144,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 	 */
 	public function get_doctors( $request ) {
 		global $wpdb;
-		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 
 		// Parse search and filters.
 		$specialty_slug = $request->get_param( 'specialty' );
@@ -233,7 +233,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 	public function get_doctor( $request ) {
 		global $wpdb;
 		$id         = intval( $request->get_param( 'id' ) );
-		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
@@ -245,7 +245,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 		);
 
 		if ( ! $row ) {
-			return new WP_Error( 'meditaj_doctor_not_found', __( 'Approved doctor profile not found.', 'meditaj' ), array( 'status' => 404 ) );
+			return new WP_Error( 'eg_care_doctor_not_found', __( 'Approved doctor profile not found.', 'eg-care' ), array( 'status' => 404 ) );
 		}
 
 		$post = get_post( $id );
@@ -262,7 +262,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 		global $wpdb;
 		$id         = intval( $request->get_param( 'id' ) );
 		$date       = sanitize_text_field( $request->get_param( 'date' ) );
-		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 
 		// 1. Verify doctor exists and is approved.
 		$exists = $wpdb->get_var(
@@ -275,7 +275,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 		);
 
 		if ( ! $exists ) {
-			return new WP_Error( 'meditaj_doctor_not_found', __( 'Approved doctor profile not found.', 'meditaj' ), array( 'status' => 404 ) );
+			return new WP_Error( 'eg_care_doctor_not_found', __( 'Approved doctor profile not found.', 'eg-care' ), array( 'status' => 404 ) );
 		}
 
 		// 2. Perform slot calculation algorithm.
@@ -298,7 +298,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 		$day_of_week = intval( date( 'N', strtotime( $date ) ) );
 
 		// 2. Query Schedule Rules for this doctor on this day of week.
-		$table_schedules = \Meditaj\DB::get_table( 'schedules' );
+		$table_schedules = \EGCare\DB::get_table( 'schedules' );
 		$schedules       = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT start_time, end_time, slot_duration_min, break_duration_min FROM $table_schedules WHERE doctor_id = %d AND day_of_week = %d AND is_active = 1",
@@ -335,7 +335,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 		$slots = array_unique( $slots );
 
 		// 4. Query booked appointments for this doctor on this date.
-		$table_appointments = \Meditaj\DB::get_table( 'appointments' );
+		$table_appointments = \EGCare\DB::get_table( 'appointments' );
 		$appointments       = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT appointment_time FROM $table_appointments WHERE doctor_id = %d AND appointment_date = %s AND status IN ('confirmed', 'ongoing', 'completed', 'pending_payment')",

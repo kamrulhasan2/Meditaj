@@ -1,14 +1,14 @@
 /**
- * Meditaj Patient Booking Flow Javascript Logic
+ * EG Care Patient Booking Flow Javascript Logic
  *
  * Handles client-side state, steps routing, fetch filters, slots querying,
  * validations, and mock checkout summaries.
  *
- * @package Meditaj
+ * @package EG Care
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-	const app = document.getElementById('meditaj-booking-flow-app');
+	const app = document.getElementById('eg-care-booking-flow-app');
 	if ( ! app ) {
 		return;
 	}
@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	};
 
 	// Load existing state from sessionStorage if available
-	const savedState = sessionStorage.getItem('meditaj_booking_state');
+	const savedState = sessionStorage.getItem('eg_care_booking_state');
 	if ( savedState ) {
 		try {
 			state = JSON.parse(savedState);
@@ -60,13 +60,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// Save state to sessionStorage
 	function saveState() {
-		sessionStorage.setItem('meditaj_booking_state', JSON.stringify(state));
+		sessionStorage.setItem('eg_care_booking_state', JSON.stringify(state));
 	}
 
 	// 2. RENDERING STEPS
 	function render() {
 		// Update Steps Indicator Bar
-		document.querySelectorAll('.meditaj-step-indicator').forEach(el => {
+		document.querySelectorAll('.eg-care-step-indicator').forEach(el => {
 			const s = parseInt(el.getAttribute('data-step'));
 			if ( s <= state.step ) {
 				el.classList.add('active');
@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// STEP 1: Specialty Selection Grid
 	function renderStep1() {
-		const tmpl = document.getElementById('meditaj-tmpl-specialty-grid');
+		const tmpl = document.getElementById('eg-care-tmpl-specialty-grid');
 		if ( ! tmpl ) {
 			return;
 		}
@@ -96,26 +96,26 @@ document.addEventListener('DOMContentLoaded', function() {
 		const clone = tmpl.content.cloneNode(true);
 		app.appendChild(clone);
 
-		const gridTarget = document.getElementById('meditaj-specialties-target');
-		const cardTmpl = document.getElementById('meditaj-tmpl-specialty-card-item');
+		const gridTarget = document.getElementById('eg-care-specialties-target');
+		const cardTmpl = document.getElementById('eg-care-tmpl-specialty-card-item');
 
 		// Fetch specialties from endpoint
-		fetch(meditajSettings.restUrl + 'specialties')
+		fetch(egCareSettings.restUrl + 'specialties')
 			.then(res => res.json())
 			.then(data => {
 				gridTarget.innerHTML = '';
 				if ( ! data || 0 === data.length ) {
-					gridTarget.innerHTML = '<p class="meditaj-no-data">No specialties available.</p>';
+					gridTarget.innerHTML = '<p class="eg-care-no-data">No specialties available.</p>';
 					return;
 				}
 
 				data.forEach(spec => {
 					const cardClone = cardTmpl.cloneNode(true);
-					const card = cardClone.querySelector('.meditaj-specialty-card');
+					const card = cardClone.querySelector('.eg-care-specialty-card');
 					card.setAttribute('data-slug', spec.slug);
-					card.querySelector('.meditaj-specialty-name').textContent = spec.name;
+					card.querySelector('.eg-care-specialty-name').textContent = spec.name;
 
-					const iconContainer = card.querySelector('.meditaj-specialty-icon');
+					const iconContainer = card.querySelector('.eg-care-specialty-icon');
 					if ( spec.icon_url ) {
 						iconContainer.innerHTML = `<img src="${spec.icon_url}" alt="${spec.name}" style="width:32px; height:32px;">`;
 					} else {
@@ -136,27 +136,27 @@ document.addEventListener('DOMContentLoaded', function() {
 			})
 			.catch(err => {
 				console.error('Error fetching specialties:', err);
-				gridTarget.innerHTML = '<p class="meditaj-error-msg">Error loading specialties. Please try again.</p>';
+				gridTarget.innerHTML = '<p class="eg-care-error-msg">Error loading specialties. Please try again.</p>';
 			});
 	}
 
 	// STEP 2: Doctor Listing with Filters
 	function renderStep2() {
 		const step2Html = `
-		<div class="meditaj-step2-wrapper">
-			<div class="meditaj-filters-sidebar">
+		<div class="eg-care-step2-wrapper">
+			<div class="eg-care-filters-sidebar">
 				<h3>${translate('Filters')}</h3>
-				<div class="meditaj-filter-group">
+				<div class="eg-care-filter-group">
 					<label for="filter-search">${translate('Search')}</label>
 					<input type="text" id="filter-search" placeholder="Doctor name or degree...">
 				</div>
-				<div class="meditaj-filter-group">
+				<div class="eg-care-filter-group">
 					<label for="filter-specialty">${translate('Specialty')}</label>
 					<select id="filter-specialty">
 						<option value="">All Specialties</option>
 					</select>
 				</div>
-				<div class="meditaj-filter-group">
+				<div class="eg-care-filter-group">
 					<label>${translate('Consultation Fee')}</label>
 					<input type="range" id="filter-fee" min="0" max="5000" step="100" value="5000">
 					<div class="range-values">
@@ -164,25 +164,25 @@ document.addEventListener('DOMContentLoaded', function() {
 						<span id="fee-val-display">5000 BDT</span>
 					</div>
 				</div>
-				<div class="meditaj-filter-group checkbox">
+				<div class="eg-care-filter-group checkbox">
 					<label for="filter-instant">
 						<input type="checkbox" id="filter-instant">
 						${translate('Instant Call Only')}
 					</label>
 				</div>
-				<div class="meditaj-filter-actions">
-					<button type="button" id="btn-reset-filters" class="meditaj-btn-secondary">Reset Filters</button>
-					<button type="button" id="btn-back-to-step1" class="meditaj-btn-secondary" style="margin-top:10px;">Back to Specialties</button>
+				<div class="eg-care-filter-actions">
+					<button type="button" id="btn-reset-filters" class="eg-care-btn-secondary">Reset Filters</button>
+					<button type="button" id="btn-back-to-step1" class="eg-care-btn-secondary" style="margin-top:10px;">Back to Specialties</button>
 				</div>
 			</div>
-			<div class="meditaj-doctors-list-content">
-				<div class="meditaj-doctors-section" id="sec-instant-doctors">
+			<div class="eg-care-doctors-list-content">
+				<div class="eg-care-doctors-section" id="sec-instant-doctors">
 					<h3 class="section-title">Instant Specialist Doctors <span class="online-indicator-dot"></span></h3>
-					<div class="meditaj-doctors-grid" id="grid-instant-doctors"></div>
+					<div class="eg-care-doctors-grid" id="grid-instant-doctors"></div>
 				</div>
-				<div class="meditaj-doctors-section">
+				<div class="eg-care-doctors-section">
 					<h3 class="section-title">All Specialists</h3>
-					<div class="meditaj-doctors-grid" id="grid-all-doctors"></div>
+					<div class="eg-care-doctors-grid" id="grid-all-doctors"></div>
 				</div>
 			</div>
 		</div>
@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		// Bind Sidebar Specialty Dropdown Options
 		const specSelect = document.getElementById('filter-specialty');
-		fetch(meditajSettings.restUrl + 'specialties')
+		fetch(egCareSettings.restUrl + 'specialties')
 			.then(res => res.json())
 			.then(data => {
 				data.forEach(spec => {
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			const fee = feeSlider.value;
 			const instant = document.getElementById('filter-instant').checked;
 
-			let url = meditajSettings.restUrl + 'doctors?fee_max=' + fee;
+			let url = egCareSettings.restUrl + 'doctors?fee_max=' + fee;
 			if ( spec ) {
 				url += '&specialty=' + spec;
 			}
@@ -234,8 +234,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			const gridInstant = document.getElementById('grid-instant-doctors');
 			const gridAll = document.getElementById('grid-all-doctors');
 
-			gridInstant.innerHTML = '<div class="meditaj-loading-pills"></div>';
-			gridAll.innerHTML = '<div class="meditaj-loading-pills"></div>';
+			gridInstant.innerHTML = '<div class="eg-care-loading-pills"></div>';
+			gridAll.innerHTML = '<div class="eg-care-loading-pills"></div>';
 
 			fetch(url)
 				.then(res => res.json())
@@ -244,42 +244,42 @@ document.addEventListener('DOMContentLoaded', function() {
 					gridAll.innerHTML = '';
 
 					if ( ! data || 0 === data.length ) {
-						gridAll.innerHTML = '<p class="meditaj-no-data">No doctors found matching filters.</p>';
+						gridAll.innerHTML = '<p class="eg-care-no-data">No doctors found matching filters.</p>';
 						document.getElementById('sec-instant-doctors').style.display = 'none';
 						return;
 					}
 
-					const cardTmpl = document.getElementById('meditaj-tmpl-doctor-card').content;
+					const cardTmpl = document.getElementById('eg-care-tmpl-doctor-card').content;
 
 					let instantCount = 0;
 					let allCount = 0;
 
 					data.forEach(doc => {
 						const cardClone = cardTmpl.cloneNode(true);
-						const card = cardClone.querySelector('.meditaj-doctor-card');
+						const card = cardClone.querySelector('.eg-care-doctor-card');
 						card.setAttribute('data-id', doc.id);
-						card.querySelector('.meditaj-doctor-card-name').textContent = doc.name;
-						card.querySelector('.meditaj-doctor-card-designation').textContent = doc.designation;
-						card.querySelector('.meditaj-doctor-card-degree').textContent = doc.degree;
+						card.querySelector('.eg-care-doctor-card-name').textContent = doc.name;
+						card.querySelector('.eg-care-doctor-card-designation').textContent = doc.designation;
+						card.querySelector('.eg-care-doctor-card-degree').textContent = doc.degree;
 						card.querySelector('.spec-tag').textContent = doc.specialties.join(', ');
 						card.querySelector('.fee-val').textContent = doc.consultation_fee + ' BDT';
 						card.querySelector('.exp-val').textContent = doc.experience_years + ' Yrs';
 						card.querySelector('.rating-tag').innerHTML = `⭐ ${doc.avg_rating} (${doc.total_reviews} reviews)`;
 
-						const indicator = card.querySelector('.meditaj-status-indicator');
+						const indicator = card.querySelector('.eg-care-status-indicator');
 						if ( doc.is_online ) {
 							indicator.classList.add('online');
 						} else {
 							indicator.classList.add('offline');
 						}
 
-						const avatarContainer = card.querySelector('.meditaj-doctor-card-avatar-wrap');
+						const avatarContainer = card.querySelector('.eg-care-doctor-card-avatar-wrap');
 						if ( doc.photo_url ) {
-							avatarContainer.innerHTML = `<img src="${doc.photo_url}" class="meditaj-doc-avatar" alt="${escapeHtml(doc.name)}"><span class="meditaj-status-indicator ${doc.is_online ? 'online' : 'offline'}"></span>`;
+							avatarContainer.innerHTML = `<img src="${doc.photo_url}" class="eg-care-doc-avatar" alt="${escapeHtml(doc.name)}"><span class="eg-care-status-indicator ${doc.is_online ? 'online' : 'offline'}"></span>`;
 						} else {
 							// Initials placeholder
 							const initials = doc.name.split(' ').filter(n => n !== 'Dr.').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-							avatarContainer.innerHTML = `<div class="meditaj-doc-initials">${escapeHtml(initials)}</div><span class="meditaj-status-indicator ${doc.is_online ? 'online' : 'offline'}"></span>`;
+							avatarContainer.innerHTML = `<div class="eg-care-doc-initials">${escapeHtml(initials)}</div><span class="eg-care-status-indicator ${doc.is_online ? 'online' : 'offline'}"></span>`;
 						}
 
 						// Click selector
@@ -358,9 +358,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 
 		const step3Html = `
-		<div class="meditaj-step3-wrapper">
-			<div class="meditaj-doctor-detail-panel">
-				<div class="meditaj-detail-header">
+		<div class="eg-care-step3-wrapper">
+			<div class="eg-care-doctor-detail-panel">
+				<div class="eg-care-detail-header">
 					<div class="detail-avatar-wrap">
 						<!-- Injected via JS -->
 					</div>
@@ -374,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function() {
 						</div>
 					</div>
 				</div>
-				<div class="meditaj-detail-body">
+				<div class="eg-care-detail-body">
 					<h3>Biography</h3>
 					<p id="detail-bio">${doc.bio || 'No biography text available for this provider.'}</p>
 					
@@ -391,14 +391,14 @@ document.addEventListener('DOMContentLoaded', function() {
 							
 							<div id="booking-slots-section" style="display:none; margin-top: 15px;">
 								<h4>Available Slots</h4>
-								<div class="meditaj-slots-grid" id="grid-slots-target"></div>
+								<div class="eg-care-slots-grid" id="grid-slots-target"></div>
 							</div>
 						</div>
 					</div>
 
 					<div class="patient-details-block">
 						<h3>Patient Information</h3>
-						<div class="meditaj-field">
+						<div class="eg-care-field">
 							<label for="patient-relation">Consultation For</label>
 							<select id="patient-relation">
 								<option value="self" ${'self' === state.patientType ? 'selected' : ''}>Self</option>
@@ -409,35 +409,35 @@ document.addEventListener('DOMContentLoaded', function() {
 								<option value="other" ${'other' === state.patientType ? 'selected' : ''}>Other</option>
 							</select>
 						</div>
-						<div id="patient-family-fields" style="${'self' === state.patientType ? 'display:none;' : 'display:grid;'}" class="meditaj-fields-grid text-fields">
-							<div class="meditaj-field">
+						<div id="patient-family-fields" style="${'self' === state.patientType ? 'display:none;' : 'display:grid;'}" class="eg-care-fields-grid text-fields">
+							<div class="eg-care-field">
 								<label for="patient-name">Patient Name *</label>
 								<input type="text" id="patient-name" placeholder="Enter patient name" value="${state.patientName}">
 							</div>
-							<div class="meditaj-field">
+							<div class="eg-care-field">
 								<label for="patient-age">Patient Age *</label>
 								<input type="number" id="patient-age" placeholder="Enter age" value="${state.patientAge}">
 							</div>
 						</div>
-						<div class="meditaj-field span-full" style="margin-top: 10px;">
+						<div class="eg-care-field span-full" style="margin-top: 10px;">
 							<label for="patient-notes">Symptom Notes / Reason for Visit</label>
 							<textarea id="patient-notes" rows="3" placeholder="Describe symptoms or medical concern...">${state.notes}</textarea>
 						</div>
-						<div class="meditaj-field span-full" style="margin-top: 10px;">
+						<div class="eg-care-field span-full" style="margin-top: 10px;">
 							<label>Medical Reports (Optional)</label>
-							<div class="meditaj-modern-upload-wrapper">
-								<label for="patient-files" class="meditaj-modern-upload-label">Upload File</label>
-								<input type="file" id="patient-files" accept="image/*,.pdf" class="meditaj-hidden-file-input">
-								<span class="meditaj-file-name" id="patient-files-name">No file chosen</span>
+							<div class="eg-care-modern-upload-wrapper">
+								<label for="patient-files" class="eg-care-modern-upload-label">Upload File</label>
+								<input type="file" id="patient-files" accept="image/*,.pdf" class="eg-care-hidden-file-input">
+								<span class="eg-care-file-name" id="patient-files-name">No file chosen</span>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-			<div class="meditaj-checkout-panel-wrapper">
+			<div class="eg-care-checkout-panel-wrapper">
 				<div id="checkout-summary-target"></div>
-				<button type="button" id="btn-confirm-booking" class="meditaj-btn-register cyan-btn" style="width:100%; margin-top:20px;">Confirm Booking</button>
-				<button type="button" id="btn-back-to-step2" class="meditaj-btn-secondary" style="width:100%; margin-top: 10px;">Back to Doctors List</button>
+				<button type="button" id="btn-confirm-booking" class="eg-care-btn-register cyan-btn" style="width:100%; margin-top:20px;">Confirm Booking</button>
+				<button type="button" id="btn-back-to-step2" class="eg-care-btn-secondary" style="width:100%; margin-top: 10px;">Back to Doctors List</button>
 			</div>
 		</div>
 		`;
@@ -447,10 +447,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		// Populate Avatar
 		const avatarWrap = app.querySelector('.detail-avatar-wrap');
 		if ( doc.photo_url ) {
-			avatarWrap.innerHTML = `<img src="${doc.photo_url}" class="meditaj-detail-avatar" alt="${escapeHtml(doc.name)}">`;
+			avatarWrap.innerHTML = `<img src="${doc.photo_url}" class="eg-care-detail-avatar" alt="${escapeHtml(doc.name)}">`;
 		} else {
 			const initials = doc.name.split(' ').filter(n => n !== 'Dr.').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-			avatarWrap.innerHTML = `<div class="meditaj-detail-avatar-placeholder">${escapeHtml(initials)}</div>`;
+			avatarWrap.innerHTML = `<div class="eg-care-detail-avatar-placeholder">${escapeHtml(initials)}</div>`;
 		}
 
 		// Disable Instant toggle if doctor is offline
@@ -505,21 +505,21 @@ document.addEventListener('DOMContentLoaded', function() {
 			state.date = d;
 			saveState();
 			slotsSection.style.display = 'block';
-			slotsTarget.innerHTML = '<div class="meditaj-loading-spinner small"></div>';
+			slotsTarget.innerHTML = '<div class="eg-care-loading-spinner small"></div>';
 
-			fetch(meditajSettings.restUrl + 'doctors/' + doc.id + '/slots?date=' + d)
+			fetch(egCareSettings.restUrl + 'doctors/' + doc.id + '/slots?date=' + d)
 				.then(res => res.json())
 				.then(slots => {
 					slotsTarget.innerHTML = '';
 					if ( ! slots || 0 === slots.length ) {
-						slotsTarget.innerHTML = '<p class="meditaj-no-data">No consultation hours available on this date.</p>';
+						slotsTarget.innerHTML = '<p class="eg-care-no-data">No consultation hours available on this date.</p>';
 						return;
 					}
 
 					slots.forEach(slot => {
 						const pill = document.createElement('button');
 						pill.type = 'button';
-						pill.className = 'meditaj-slot-pill';
+						pill.className = 'eg-care-slot-pill';
 						pill.setAttribute('data-time', slot.time);
 						pill.textContent = formatTime24To12(slot.time);
 
@@ -532,7 +532,7 @@ document.addEventListener('DOMContentLoaded', function() {
 							}
 
 							pill.addEventListener('click', function() {
-								slotsTarget.querySelectorAll('.meditaj-slot-pill').forEach(p => p.classList.remove('active'));
+								slotsTarget.querySelectorAll('.eg-care-slot-pill').forEach(p => p.classList.remove('active'));
 								pill.classList.add('active');
 								state.slotTime = slot.time;
 								saveState();
@@ -614,7 +614,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		// Checkout summary cloning & population
 		const summaryTarget = document.getElementById('checkout-summary-target');
-		const summaryTmpl = document.getElementById('meditaj-tmpl-checkout-summary').content;
+		const summaryTmpl = document.getElementById('eg-care-tmpl-checkout-summary').content;
 
 		function updateCheckoutSummary() {
 			summaryTarget.innerHTML = '';
@@ -691,7 +691,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				state.date = dateInputEl.value;
 			}
 
-			const activeSlotEl = document.querySelector('.meditaj-slot-pill.active');
+			const activeSlotEl = document.querySelector('.eg-care-slot-pill.active');
 			if ( activeSlotEl ) {
 				state.slotTime = activeSlotEl.getAttribute('data-time');
 			}
@@ -737,11 +737,11 @@ document.addEventListener('DOMContentLoaded', function() {
 			btnConfirm.textContent = 'Processing Booking...';
 
 			// 1. Send request to create appointment
-			fetch(meditajSettings.restUrl + 'appointments', {
+			fetch(egCareSettings.restUrl + 'appointments', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-WP-Nonce': meditajSettings.nonce
+					'X-WP-Nonce': egCareSettings.nonce
 				},
 				body: JSON.stringify(payload)
 			})
@@ -755,11 +755,11 @@ document.addEventListener('DOMContentLoaded', function() {
 				btnConfirm.textContent = 'Redirecting to Payment...';
 				const appointmentId = data.appointment_id;
 
-				return fetch(meditajSettings.restUrl + 'payment/init', {
+				return fetch(egCareSettings.restUrl + 'payment/init', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
-						'X-WP-Nonce': meditajSettings.nonce
+						'X-WP-Nonce': egCareSettings.nonce
 					},
 					body: JSON.stringify({
 						appointment_id: appointmentId,
@@ -775,7 +775,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			})
 			.then(paymentData => {
 				// Success: redirect to gateway page
-				sessionStorage.removeItem('meditaj_booking_state');
+				sessionStorage.removeItem('eg_care_booking_state');
 				window.location.href = paymentData.payment_url;
 			})
 			.catch(err => {
@@ -793,9 +793,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		const total = fee + (fee * 0.05);
 
 		const successHtml = `
-		<div class="meditaj-booking-success-overlay">
-			<div class="meditaj-success-popup-card">
-				<div class="meditaj-success-popup-icon">
+		<div class="eg-care-booking-success-overlay">
+			<div class="eg-care-success-popup-card">
+				<div class="eg-care-success-popup-icon">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 32px; height: 32px; color: #16a34a;">
 						<polyline points="20 6 9 17 4 12"></polyline>
 					</svg>
@@ -822,7 +822,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					</div>
 				</div>
 
-				<button type="button" id="btn-close-success" class="meditaj-btn-register cyan-btn" style="width:100%; margin-top:20px;">Book Another Appointment</button>
+				<button type="button" id="btn-close-success" class="eg-care-btn-register cyan-btn" style="width:100%; margin-top:20px;">Book Another Appointment</button>
 			</div>
 		</div>
 		`;
@@ -832,10 +832,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		document.body.appendChild(overlayDiv.firstElementChild);
 
 		// Clear sessionStorage
-		sessionStorage.removeItem('meditaj_booking_state');
+		sessionStorage.removeItem('eg_care_booking_state');
 
 		document.getElementById('btn-close-success').addEventListener('click', function() {
-			document.querySelector('.meditaj-booking-success-overlay').remove();
+			document.querySelector('.eg-care-booking-success-overlay').remove();
 			state = {
 				step: 1,
 				specialty: '',

@@ -1,5 +1,5 @@
 <?php
-namespace Meditaj;
+namespace EGCare;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -29,14 +29,14 @@ class AdminDoctors {
 	 * Render Doctors List Table page in wp-admin.
 	 */
 	public static function render_doctors_page() {
-		$list_table = new \Meditaj\Meditaj_Doctors_List_Table();
+		$list_table = new EG_Care_Doctors_List_Table();
 		$list_table->prepare_items();
 		?>
-		<div class="wrap meditaj-admin-wrap">
-			<div class="meditaj-admin-header">
-				<h1 class="meditaj-admin-title"><?php esc_html_e( 'Doctor List', 'meditaj' ); ?></h1>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=meditaj-add-doctor' ) ); ?>" class="page-title-action">
-					<?php esc_html_e( 'Add New Doctor', 'meditaj' ); ?>
+		<div class="wrap eg-care-admin-wrap">
+			<div class="eg-care-admin-header">
+				<h1 class="eg-care-admin-title"><?php esc_html_e( 'Doctor List', 'eg-care' ); ?></h1>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=eg-care-add-doctor' ) ); ?>" class="page-title-action">
+					<?php esc_html_e( 'Add New Doctor', 'eg-care' ); ?>
 				</a>
 			</div>
 
@@ -55,18 +55,18 @@ class AdminDoctors {
 		$message = '';
 		$error   = '';
 
-		if ( isset( $_POST['meditaj_add_doctor_submit'] ) ) {
+		if ( isset( $_POST['eg_care_add_doctor_submit'] ) ) {
 			// Verify Nonce.
-			if ( ! isset( $_POST['meditaj_add_doctor_nonce'] ) || ! wp_verify_nonce( $_POST['meditaj_add_doctor_nonce'], 'meditaj_add_doctor' ) ) {
-				$error = __( 'Security verification failed.', 'meditaj' );
+			if ( ! isset( $_POST['eg_care_add_doctor_nonce'] ) || ! wp_verify_nonce( $_POST['eg_care_add_doctor_nonce'], 'eg_care_add_doctor' ) ) {
+				$error = __( 'Security verification failed.', 'eg-care' );
 			} elseif ( ! current_user_can( 'manage_options' ) ) {
-				$error = __( 'You do not have permission to perform this action.', 'meditaj' );
+				$error = __( 'You do not have permission to perform this action.', 'eg-care' );
 			} else {
 				$result = self::handle_add_doctor_submission();
 				if ( is_wp_error( $result ) ) {
 					$error = $result->get_error_message();
 				} else {
-					$message = __( 'Doctor successfully added.', 'meditaj' );
+					$message = __( 'Doctor successfully added.', 'eg-care' );
 				}
 			}
 		}
@@ -79,11 +79,11 @@ class AdminDoctors {
 			)
 		);
 		?>
-		<div class="wrap meditaj-admin-wrap">
-			<div class="meditaj-admin-header">
-				<h1 class="meditaj-admin-title"><?php esc_html_e( 'Add New Doctor', 'meditaj' ); ?></h1>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=meditaj-doctors' ) ); ?>" class="page-title-action">
-					<?php esc_html_e( 'Back to List', 'meditaj' ); ?>
+		<div class="wrap eg-care-admin-wrap">
+			<div class="eg-care-admin-header">
+				<h1 class="eg-care-admin-title"><?php esc_html_e( 'Add New Doctor', 'eg-care' ); ?></h1>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=eg-care-doctors' ) ); ?>" class="page-title-action">
+					<?php esc_html_e( 'Back to List', 'eg-care' ); ?>
 				</a>
 			</div>
 
@@ -94,183 +94,183 @@ class AdminDoctors {
 				<div class="notice notice-success is-dismissible"><p><?php echo esc_html( $message ); ?></p></div>
 			<?php endif; ?>
 
-			<div class="meditaj-form-card">
+			<div class="eg-care-form-card">
 				<form method="post" enctype="multipart/form-data">
-					<?php wp_nonce_field( 'meditaj_add_doctor', 'meditaj_add_doctor_nonce' ); ?>
+					<?php wp_nonce_field( 'eg_care_add_doctor', 'eg_care_add_doctor_nonce' ); ?>
  
 					<!-- SECTION 1: WordPress User Credentials -->
-					<div class="meditaj-form-section">
-						<h3 class="meditaj-form-section-title"><?php esc_html_e( '1. User Account Credentials', 'meditaj' ); ?></h3>
-						<div class="meditaj-form-grid">
-							<div class="meditaj-form-field">
-								<label for="doctor_username"><?php esc_html_e( 'Username *', 'meditaj' ); ?></label>
+					<div class="eg-care-form-section">
+						<h3 class="eg-care-form-section-title"><?php esc_html_e( '1. User Account Credentials', 'eg-care' ); ?></h3>
+						<div class="eg-care-form-grid">
+							<div class="eg-care-form-field">
+								<label for="doctor_username"><?php esc_html_e( 'Username *', 'eg-care' ); ?></label>
 								<input type="text" name="doctor_username" id="doctor_username" required value="<?php echo isset( $_POST['doctor_username'] ) ? esc_attr( $_POST['doctor_username'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="doctor_email"><?php esc_html_e( 'Email Address *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="doctor_email"><?php esc_html_e( 'Email Address *', 'eg-care' ); ?></label>
 								<input type="email" name="doctor_email" id="doctor_email" required value="<?php echo isset( $_POST['doctor_email'] ) ? esc_attr( $_POST['doctor_email'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="doctor_password"><?php esc_html_e( 'Password *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="doctor_password"><?php esc_html_e( 'Password *', 'eg-care' ); ?></label>
 								<input type="password" name="doctor_password" id="doctor_password" required minlength="6">
 							</div>
 						</div>
 					</div>
  
 					<!-- SECTION 2: Doctor Profile details -->
-					<div class="meditaj-form-section">
-						<h3 class="meditaj-form-section-title"><?php esc_html_e( '2. Profile Information', 'meditaj' ); ?></h3>
-						<div class="meditaj-form-grid">
-							<div class="meditaj-form-field">
-								<label for="doctor_name"><?php esc_html_e( 'Full Name *', 'meditaj' ); ?></label>
+					<div class="eg-care-form-section">
+						<h3 class="eg-care-form-section-title"><?php esc_html_e( '2. Profile Information', 'eg-care' ); ?></h3>
+						<div class="eg-care-form-grid">
+							<div class="eg-care-form-field">
+								<label for="doctor_name"><?php esc_html_e( 'Full Name *', 'eg-care' ); ?></label>
 								<input type="text" name="doctor_name" id="doctor_name" required value="<?php echo isset( $_POST['doctor_name'] ) ? esc_attr( $_POST['doctor_name'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="specialty_id"><?php esc_html_e( 'Specialty *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="specialty_id"><?php esc_html_e( 'Specialty *', 'eg-care' ); ?></label>
 								<select name="specialty_id" id="specialty_id" required>
-									<option value=""><?php esc_html_e( '-- Select Specialty --', 'meditaj' ); ?></option>
+									<option value=""><?php esc_html_e( '-- Select Specialty --', 'eg-care' ); ?></option>
 									<?php foreach ( $specialties as $spec ) : ?>
 										<option value="<?php echo esc_attr( $spec->term_id ); ?>"><?php echo esc_html( $spec->name ); ?></option>
 									<?php endforeach; ?>
 								</select>
 							</div>
-							<div class="meditaj-form-field">
-								<label for="doctor_photo"><?php esc_html_e( 'Profile Photo', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="doctor_photo"><?php esc_html_e( 'Profile Photo', 'eg-care' ); ?></label>
 								<input type="file" name="doctor_photo" id="doctor_photo" accept="image/*">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="provider_type"><?php esc_html_e( 'Provider Type *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="provider_type"><?php esc_html_e( 'Provider Type *', 'eg-care' ); ?></label>
 								<select name="provider_type" id="provider_type" required>
-									<option value="doctor"><?php esc_html_e( 'Doctor', 'meditaj' ); ?></option>
-									<option value="medical_professional"><?php esc_html_e( 'Medical Professional', 'meditaj' ); ?></option>
+									<option value="doctor"><?php esc_html_e( 'Doctor', 'eg-care' ); ?></option>
+									<option value="medical_professional"><?php esc_html_e( 'Medical Professional', 'eg-care' ); ?></option>
 								</select>
 							</div>
-							<div class="meditaj-form-field">
-								<label for="mobile"><?php esc_html_e( 'Mobile *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="mobile"><?php esc_html_e( 'Mobile *', 'eg-care' ); ?></label>
 								<input type="text" name="mobile" id="mobile" required value="<?php echo isset( $_POST['mobile'] ) ? esc_attr( $_POST['mobile'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="nid"><?php esc_html_e( 'NID *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="nid"><?php esc_html_e( 'NID *', 'eg-care' ); ?></label>
 								<input type="text" name="nid" id="nid" required value="<?php echo isset( $_POST['nid'] ) ? esc_attr( $_POST['nid'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="nationality"><?php esc_html_e( 'Nationality *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="nationality"><?php esc_html_e( 'Nationality *', 'eg-care' ); ?></label>
 								<select name="nationality" id="nationality" required>
-									<option value="Bangladeshi"><?php esc_html_e( 'Bangladeshi', 'meditaj' ); ?></option>
-									<option value="Other"><?php esc_html_e( 'Other', 'meditaj' ); ?></option>
+									<option value="Bangladeshi"><?php esc_html_e( 'Bangladeshi', 'eg-care' ); ?></option>
+									<option value="Other"><?php esc_html_e( 'Other', 'eg-care' ); ?></option>
 								</select>
 							</div>
-							<div class="meditaj-form-field">
-								<label for="organization"><?php esc_html_e( 'Organization', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="organization"><?php esc_html_e( 'Organization', 'eg-care' ); ?></label>
 								<input type="text" name="organization" id="organization" value="<?php echo isset( $_POST['organization'] ) ? esc_attr( $_POST['organization'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field span-2">
-								<label for="doctor_bio"><?php esc_html_e( 'Biography / Experience Overview', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field span-2">
+								<label for="doctor_bio"><?php esc_html_e( 'Biography / Experience Overview', 'eg-care' ); ?></label>
 								<textarea name="doctor_bio" id="doctor_bio" rows="4"><?php echo isset( $_POST['doctor_bio'] ) ? esc_textarea( $_POST['doctor_bio'] ) : ''; ?></textarea>
 							</div>
 						</div>
 					</div>
  
 					<!-- SECTION 3: Professional Metadata -->
-					<div class="meditaj-form-section">
-						<h3 class="meditaj-form-section-title"><?php esc_html_e( '3. Professional Metadata & Pricing', 'meditaj' ); ?></h3>
-						<div class="meditaj-form-grid">
-							<div class="meditaj-form-field">
-								<label for="bmdc_license_no"><?php esc_html_e( 'BMDC Registration No *', 'meditaj' ); ?></label>
+					<div class="eg-care-form-section">
+						<h3 class="eg-care-form-section-title"><?php esc_html_e( '3. Professional Metadata & Pricing', 'eg-care' ); ?></h3>
+						<div class="eg-care-form-grid">
+							<div class="eg-care-form-field">
+								<label for="bmdc_license_no"><?php esc_html_e( 'BMDC Registration No *', 'eg-care' ); ?></label>
 								<input type="text" name="bmdc_license_no" id="bmdc_license_no" required value="<?php echo isset( $_POST['bmdc_license_no'] ) ? esc_attr( $_POST['bmdc_license_no'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="bmdc_expiry_date"><?php esc_html_e( 'BMDC Expiry Date *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="bmdc_expiry_date"><?php esc_html_e( 'BMDC Expiry Date *', 'eg-care' ); ?></label>
 								<input type="date" name="bmdc_expiry_date" id="bmdc_expiry_date" required value="<?php echo isset( $_POST['bmdc_expiry_date'] ) ? esc_attr( $_POST['bmdc_expiry_date'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="degree"><?php esc_html_e( 'Degrees / Qualifications (comma separated) *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="degree"><?php esc_html_e( 'Degrees / Qualifications (comma separated) *', 'eg-care' ); ?></label>
 								<input type="text" name="degree" id="degree" required placeholder="e.g. MBBS, FCPS, MD" value="<?php echo isset( $_POST['degree'] ) ? esc_attr( $_POST['degree'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="designation"><?php esc_html_e( 'Designation *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="designation"><?php esc_html_e( 'Designation *', 'eg-care' ); ?></label>
 								<input type="text" name="designation" id="designation" required placeholder="e.g. Associate Professor" value="<?php echo isset( $_POST['designation'] ) ? esc_attr( $_POST['designation'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="experience_years"><?php esc_html_e( 'Years of Experience *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="experience_years"><?php esc_html_e( 'Years of Experience *', 'eg-care' ); ?></label>
 								<input type="number" name="experience_years" id="experience_years" min="0" required value="<?php echo isset( $_POST['experience_years'] ) ? esc_attr( $_POST['experience_years'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="consultation_fee"><?php esc_html_e( 'Scheduled Consultation Fee (BDT) *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="consultation_fee"><?php esc_html_e( 'Scheduled Consultation Fee (BDT) *', 'eg-care' ); ?></label>
 								<input type="number" name="consultation_fee" id="consultation_fee" min="0" step="0.01" required value="<?php echo isset( $_POST['consultation_fee'] ) ? esc_attr( $_POST['consultation_fee'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="instant_call_fee"><?php esc_html_e( 'Instant Call Fee (BDT) *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="instant_call_fee"><?php esc_html_e( 'Instant Call Fee (BDT) *', 'eg-care' ); ?></label>
 								<input type="number" name="instant_call_fee" id="instant_call_fee" min="0" step="0.01" required value="<?php echo isset( $_POST['instant_call_fee'] ) ? esc_attr( $_POST['instant_call_fee'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="follow_up_days"><?php esc_html_e( 'Follow up days *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="follow_up_days"><?php esc_html_e( 'Follow up days *', 'eg-care' ); ?></label>
 								<input type="number" name="follow_up_days" id="follow_up_days" min="0" required value="<?php echo isset( $_POST['follow_up_days'] ) ? esc_attr( $_POST['follow_up_days'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="follow_up_cost"><?php esc_html_e( 'Follow up cost *', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="follow_up_cost"><?php esc_html_e( 'Follow up cost *', 'eg-care' ); ?></label>
 								<input type="number" name="follow_up_cost" id="follow_up_cost" min="0" step="0.01" required value="<?php echo isset( $_POST['follow_up_cost'] ) ? esc_attr( $_POST['follow_up_cost'] ) : ''; ?>">
 							</div>
 						</div>
 					</div>
  
 					<!-- SECTION 4: Payment Payout accounts -->
-					<div class="meditaj-form-section">
-						<h3 class="meditaj-form-section-title"><?php esc_html_e( '4. Bank & Mobile Payout Settings', 'meditaj' ); ?></h3>
+					<div class="eg-care-form-section">
+						<h3 class="eg-care-form-section-title"><?php esc_html_e( '4. Bank & Mobile Payout Settings', 'eg-care' ); ?></h3>
 						
-						<div class="meditaj-form-grid" style="margin-bottom: 20px;">
-							<div class="meditaj-form-field">
-								<label for="payout_type"><?php esc_html_e( 'Payout Method', 'meditaj' ); ?></label>
+						<div class="eg-care-form-grid" style="margin-bottom: 20px;">
+							<div class="eg-care-form-field">
+								<label for="payout_type"><?php esc_html_e( 'Payout Method', 'eg-care' ); ?></label>
 								<select name="payout_type" id="payout_type">
-									<option value="bank" <?php selected( isset( $_POST['payout_type'] ) ? $_POST['payout_type'] : 'bank', 'bank' ); ?>><?php esc_html_e( 'Bank Account', 'meditaj' ); ?></option>
-									<option value="mobile" <?php selected( isset( $_POST['payout_type'] ) ? $_POST['payout_type'] : 'bank', 'mobile' ); ?>><?php esc_html_e( 'Mobile Banking', 'meditaj' ); ?></option>
+									<option value="bank" <?php selected( isset( $_POST['payout_type'] ) ? $_POST['payout_type'] : 'bank', 'bank' ); ?>><?php esc_html_e( 'Bank Account', 'eg-care' ); ?></option>
+									<option value="mobile" <?php selected( isset( $_POST['payout_type'] ) ? $_POST['payout_type'] : 'bank', 'mobile' ); ?>><?php esc_html_e( 'Mobile Banking', 'eg-care' ); ?></option>
 								</select>
 							</div>
 						</div>
 
 						<!-- Bank Payout Fields -->
-						<div class="meditaj-form-grid" id="sec_bank_fields">
-							<div class="meditaj-form-field">
-								<label for="bank_name"><?php esc_html_e( 'Bank Name', 'meditaj' ); ?></label>
+						<div class="eg-care-form-grid" id="sec_bank_fields">
+							<div class="eg-care-form-field">
+								<label for="bank_name"><?php esc_html_e( 'Bank Name', 'eg-care' ); ?></label>
 								<input type="text" name="bank_name" id="bank_name" value="<?php echo isset( $_POST['bank_name'] ) ? esc_attr( $_POST['bank_name'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="bank_branch"><?php esc_html_e( 'Branch Name', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="bank_branch"><?php esc_html_e( 'Branch Name', 'eg-care' ); ?></label>
 								<input type="text" name="bank_branch" id="bank_branch" value="<?php echo isset( $_POST['bank_branch'] ) ? esc_attr( $_POST['bank_branch'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="bank_account_no"><?php esc_html_e( 'Bank Account Number', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="bank_account_no"><?php esc_html_e( 'Bank Account Number', 'eg-care' ); ?></label>
 								<input type="text" name="bank_account_no" id="bank_account_no" value="<?php echo isset( $_POST['bank_account_no'] ) ? esc_attr( $_POST['bank_account_no'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="bank_account_name"><?php esc_html_e( 'Bank Account Name', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="bank_account_name"><?php esc_html_e( 'Bank Account Name', 'eg-care' ); ?></label>
 								<input type="text" name="bank_account_name" id="bank_account_name" value="<?php echo isset( $_POST['bank_account_name'] ) ? esc_attr( $_POST['bank_account_name'] ) : ''; ?>">
 							</div>
-							<div class="meditaj-form-field">
-								<label for="bank_routing_number"><?php esc_html_e( 'Routing Number', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="bank_routing_number"><?php esc_html_e( 'Routing Number', 'eg-care' ); ?></label>
 								<input type="text" name="bank_routing_number" id="bank_routing_number" value="<?php echo isset( $_POST['bank_routing_number'] ) ? esc_attr( $_POST['bank_routing_number'] ) : ''; ?>">
 							</div>
 						</div>
 
 						<!-- Mobile Payout Fields -->
-						<div class="meditaj-form-grid" id="sec_mobile_fields" style="display: none;">
-							<div class="meditaj-form-field">
-								<label for="mobile_banking_type"><?php esc_html_e( 'Mobile Banking Wallet', 'meditaj' ); ?></label>
+						<div class="eg-care-form-grid" id="sec_mobile_fields" style="display: none;">
+							<div class="eg-care-form-field">
+								<label for="mobile_banking_type"><?php esc_html_e( 'Mobile Banking Wallet', 'eg-care' ); ?></label>
 								<select name="mobile_banking_type" id="mobile_banking_type">
-									<option value="bkash"><?php esc_html_e( 'bKash', 'meditaj' ); ?></option>
-									<option value="nagad"><?php esc_html_e( 'Nagad', 'meditaj' ); ?></option>
-									<option value="rocket"><?php esc_html_e( 'Rocket', 'meditaj' ); ?></option>
+									<option value="bkash"><?php esc_html_e( 'bKash', 'eg-care' ); ?></option>
+									<option value="nagad"><?php esc_html_e( 'Nagad', 'eg-care' ); ?></option>
+									<option value="rocket"><?php esc_html_e( 'Rocket', 'eg-care' ); ?></option>
 								</select>
 							</div>
-							<div class="meditaj-form-field">
-								<label for="mobile_banking_no"><?php esc_html_e( 'Mobile Wallet Number', 'meditaj' ); ?></label>
+							<div class="eg-care-form-field">
+								<label for="mobile_banking_no"><?php esc_html_e( 'Mobile Wallet Number', 'eg-care' ); ?></label>
 								<input type="text" name="mobile_banking_no" id="mobile_banking_no" value="<?php echo isset( $_POST['mobile_banking_no'] ) ? esc_attr( $_POST['mobile_banking_no'] ) : ''; ?>">
 							</div>
 						</div>
 					</div>
  
 					<p class="submit">
-						<input type="submit" name="meditaj_add_doctor_submit" id="submit" class="button button-primary meditaj-btn-primary" value="<?php esc_attr_e( 'Create Doctor Profile', 'meditaj' ); ?>">
+						<input type="submit" name="eg_care_add_doctor_submit" id="submit" class="button button-primary eg-care-btn-primary" value="<?php esc_attr_e( 'Create Doctor Profile', 'eg-care' ); ?>">
 					</p>
 				</form>
 			</div>
@@ -341,15 +341,15 @@ class AdminDoctors {
  
 		// 2. Form validation.
 		if ( empty( $username ) || empty( $email ) || empty( $password ) || empty( $doctor_name ) || empty( $license ) || empty( $bmdc_expiry_date ) || empty( $mobile ) || empty( $nid ) ) {
-			return new \WP_Error( 'missing_fields', __( 'Please fill in all required fields.', 'meditaj' ) );
+			return new \WP_Error( 'missing_fields', __( 'Please fill in all required fields.', 'eg-care' ) );
 		}
  
 		if ( username_exists( $username ) ) {
-			return new \WP_Error( 'username_taken', __( 'Username is already taken.', 'meditaj' ) );
+			return new \WP_Error( 'username_taken', __( 'Username is already taken.', 'eg-care' ) );
 		}
  
 		if ( email_exists( $email ) ) {
-			return new \WP_Error( 'email_taken', __( 'Email address is already in use.', 'meditaj' ) );
+			return new \WP_Error( 'email_taken', __( 'Email address is already in use.', 'eg-care' ) );
 		}
  
 		// 3. User Creation.
@@ -362,7 +362,7 @@ class AdminDoctors {
 			array(
 				'ID'           => $user_id,
 				'display_name' => $doctor_name,
-				'role'         => 'meditaj_doctor',
+				'role'         => 'eg_care_doctor',
 			)
 		);
  
@@ -400,7 +400,7 @@ class AdminDoctors {
 		wp_set_object_terms( $post_id, $specialty_id, 'specialty' );
  
 		// 5. Custom Table insertion.
-		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 		$inserted   = $wpdb->insert(
 			$table_meta,
 			array(
@@ -466,7 +466,7 @@ class AdminDoctors {
 			wp_delete_post( $post_id, true );
 			require_once ABSPATH . 'wp-admin/includes/user.php';
 			wp_delete_user( $user_id );
-			return new \WP_Error( 'db_error', __( 'Failed to save doctor metadata in database.', 'meditaj' ) );
+			return new \WP_Error( 'db_error', __( 'Failed to save doctor metadata in database.', 'eg-care' ) );
 		}
 
 		return $wpdb->insert_id;
@@ -481,17 +481,17 @@ class AdminDoctors {
 		}
 
 		// Handle POST rejection.
-		if ( isset( $_POST['meditaj_reject_submit'] ) ) {
+		if ( isset( $_POST['eg_care_reject_submit'] ) ) {
 			$id = isset( $_POST['doctor_id'] ) ? intval( $_POST['doctor_id'] ) : 0;
 			if ( ! $id ) {
 				return;
 			}
-			if ( ! isset( $_POST['meditaj_reject_nonce'] ) || ! wp_verify_nonce( $_POST['meditaj_reject_nonce'], 'meditaj_reject_doctor_' . $id ) ) {
-				wp_die( esc_html__( 'Security check failed.', 'meditaj' ) );
+			if ( ! isset( $_POST['eg_care_reject_nonce'] ) || ! wp_verify_nonce( $_POST['eg_care_reject_nonce'], 'eg_care_reject_doctor_' . $id ) ) {
+				wp_die( esc_html__( 'Security check failed.', 'eg-care' ) );
 			}
 
 			global $wpdb;
-			$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+			$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 			$doctor     = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_meta WHERE id = %d", $id ) );
 			if ( ! $doctor ) {
 				return;
@@ -513,7 +513,7 @@ class AdminDoctors {
 			// Send rejection email.
 			$user_data = get_userdata( $doctor->user_id );
 			if ( $user_data ) {
-				\Meditaj\Notifications::send_doctor_rejection_email( $user_data->user_email, $user_data->display_name, $reason );
+				\EGCare\Notifications::send_doctor_rejection_email( $user_data->user_email, $user_data->display_name, $reason );
 			}
 
 			wp_safe_redirect( add_query_arg( 'message', 'rejected', wp_get_referer() ) );
@@ -521,7 +521,7 @@ class AdminDoctors {
 		}
 
 		// Handle GET actions.
-		if ( ! isset( $_GET['page'] ) || ! in_array( $_GET['page'], array( 'meditaj-doctors', 'meditaj-pending' ), true ) ) {
+		if ( ! isset( $_GET['page'] ) || ! in_array( $_GET['page'], array( 'eg-care-doctors', 'eg-care-pending' ), true ) ) {
 			return;
 		}
 
@@ -533,7 +533,7 @@ class AdminDoctors {
 		}
 
 		global $wpdb;
-		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 
 		// Retrieve records.
 		$doctor = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_meta WHERE id = %d", $id ) );
@@ -543,7 +543,7 @@ class AdminDoctors {
 
 		switch ( $action ) {
 			case 'approve':
-				check_admin_referer( 'meditaj_approve_doctor_' . $id );
+				check_admin_referer( 'eg_care_approve_doctor_' . $id );
 
 				// Update verification status.
 				$wpdb->update( $table_meta, array( 'verification_status' => 'approved' ), array( 'id' => $id ) );
@@ -559,14 +559,14 @@ class AdminDoctors {
 				// Send notification email.
 				$user_data = get_userdata( $doctor->user_id );
 				if ( $user_data ) {
-					\Meditaj\Notifications::send_doctor_approval_email( $user_data->user_email, $user_data->display_name );
+					\EGCare\Notifications::send_doctor_approval_email( $user_data->user_email, $user_data->display_name );
 				}
 
 				wp_safe_redirect( add_query_arg( 'message', 'approved', wp_get_referer() ) );
 				exit;
 
 			case 'reject':
-				check_admin_referer( 'meditaj_reject_doctor_' . $id );
+				check_admin_referer( 'eg_care_reject_doctor_' . $id );
 
 				$wpdb->update( $table_meta, array( 'verification_status' => 'rejected' ), array( 'id' => $id ) );
 
@@ -579,14 +579,14 @@ class AdminDoctors {
 
 				$user_data = get_userdata( $doctor->user_id );
 				if ( $user_data ) {
-					\Meditaj\Notifications::send_doctor_rejection_email( $user_data->user_email, $user_data->display_name, '' );
+					\EGCare\Notifications::send_doctor_rejection_email( $user_data->user_email, $user_data->display_name, '' );
 				}
 
 				wp_safe_redirect( add_query_arg( 'message', 'rejected', wp_get_referer() ) );
 				exit;
 
 			case 'delete':
-				check_admin_referer( 'meditaj_delete_doctor_' . $id );
+				check_admin_referer( 'eg_care_delete_doctor_' . $id );
 				// Clean CPT post.
 				wp_delete_post( $doctor->post_id, true );
 				// Clean user account.
@@ -605,7 +605,7 @@ class AdminDoctors {
 	 */
 	public static function render_pending_verifications_page() {
 		global $wpdb;
-		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 
 		// Query pending doctors only.
 		$query = "SELECT m.*, p.post_title 
@@ -618,36 +618,36 @@ class AdminDoctors {
 
 		$message = isset( $_GET['message'] ) ? sanitize_text_field( $_GET['message'] ) : '';
 		?>
-		<div class="wrap meditaj-admin-wrap">
-			<div class="meditaj-admin-header">
-				<h1 class="meditaj-admin-title"><?php esc_html_e( 'Pending Verifications', 'meditaj' ); ?></h1>
+		<div class="wrap eg-care-admin-wrap">
+			<div class="eg-care-admin-header">
+				<h1 class="eg-care-admin-title"><?php esc_html_e( 'Pending Verifications', 'eg-care' ); ?></h1>
 			</div>
 
 			<?php if ( 'approved' === $message ) : ?>
-				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Doctor application successfully approved and user notified.', 'meditaj' ); ?></p></div>
+				<div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Doctor application successfully approved and user notified.', 'eg-care' ); ?></p></div>
 			<?php elseif ( 'rejected' === $message ) : ?>
-				<div class="notice notice-warning is-dismissible"><p><?php esc_html_e( 'Doctor application successfully rejected and user notified.', 'meditaj' ); ?></p></div>
+				<div class="notice notice-warning is-dismissible"><p><?php esc_html_e( 'Doctor application successfully rejected and user notified.', 'eg-care' ); ?></p></div>
 			<?php elseif ( 'deleted' === $message ) : ?>
-				<div class="notice notice-info is-dismissible"><p><?php esc_html_e( 'Doctor profile successfully deleted.', 'meditaj' ); ?></p></div>
+				<div class="notice notice-info is-dismissible"><p><?php esc_html_e( 'Doctor profile successfully deleted.', 'eg-care' ); ?></p></div>
 			<?php endif; ?>
 
 			<table class="wp-list-table widefat fixed striped table-view-list posts">
 				<thead>
 					<tr>
-						<th scope="col" style="width: 80px;"><?php esc_html_e( 'Photo', 'meditaj' ); ?></th>
-						<th scope="col"><?php esc_html_e( 'Name', 'meditaj' ); ?></th>
-						<th scope="col"><?php esc_html_e( 'Specialty', 'meditaj' ); ?></th>
-						<th scope="col"><?php esc_html_e( 'Degrees / Qualifications', 'meditaj' ); ?></th>
-						<th scope="col"><?php esc_html_e( 'BMDC Registration No', 'meditaj' ); ?></th>
-						<th scope="col" style="width: 250px;"><?php esc_html_e( 'Certificate Files', 'meditaj' ); ?></th>
-						<th scope="col" style="width: 320px;"><?php esc_html_e( 'Actions', 'meditaj' ); ?></th>
+						<th scope="col" style="width: 80px;"><?php esc_html_e( 'Photo', 'eg-care' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Name', 'eg-care' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Specialty', 'eg-care' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Degrees / Qualifications', 'eg-care' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'BMDC Registration No', 'eg-care' ); ?></th>
+						<th scope="col" style="width: 250px;"><?php esc_html_e( 'Certificate Files', 'eg-care' ); ?></th>
+						<th scope="col" style="width: 320px;"><?php esc_html_e( 'Actions', 'eg-care' ); ?></th>
 					</tr>
 				</thead>
 				<tbody>
 					<?php if ( empty( $pending_doctors ) ) : ?>
 						<tr>
 							<td colspan="7" style="text-align: center; padding: 20px;">
-								<strong><?php esc_html_e( 'No pending verification requests found.', 'meditaj' ); ?></strong>
+								<strong><?php esc_html_e( 'No pending verification requests found.', 'eg-care' ); ?></strong>
 							</td>
 						</tr>
 					<?php else : ?>
@@ -658,7 +658,7 @@ class AdminDoctors {
 									$thumbnail = get_the_post_thumbnail_url( $doctor->post_id, 'thumbnail' );
 									if ( $thumbnail ) :
 										?>
-										<img src="<?php echo esc_url( $thumbnail ); ?>" class="meditaj-doctor-photo" alt="<?php echo esc_attr( $doctor->post_title ); ?>">
+										<img src="<?php echo esc_url( $thumbnail ); ?>" class="eg-care-doctor-photo" alt="<?php echo esc_attr( $doctor->post_title ); ?>">
 									<?php else : ?>
 										<?php
 										$initials = '';
@@ -671,13 +671,13 @@ class AdminDoctors {
 										}
 										$initials = substr( $initials, 0, 2 );
 										?>
-										<div class="meditaj-doctor-photo-placeholder"><?php echo esc_html( strtoupper( $initials ) ); ?></div>
+										<div class="eg-care-doctor-photo-placeholder"><?php echo esc_html( strtoupper( $initials ) ); ?></div>
 									<?php endif; ?>
 								</td>
 								<td>
 									<strong><a href="<?php echo esc_url( get_edit_post_link( $doctor->post_id ) ); ?>"><?php echo esc_html( $doctor->post_title ); ?></a></strong>
 									<div class="row-actions" style="position: static !important; visibility: visible !important;">
-										<span class="edit"><a href="<?php echo esc_url( get_edit_post_link( $doctor->post_id ) ); ?>"><?php esc_html_e( 'Edit CPT', 'meditaj' ); ?></a></span>
+										<span class="edit"><a href="<?php echo esc_url( get_edit_post_link( $doctor->post_id ) ); ?>"><?php esc_html_e( 'Edit CPT', 'eg-care' ); ?></a></span>
 									</div>
 								</td>
 								<td>
@@ -687,7 +687,7 @@ class AdminDoctors {
 										$names = wp_list_pluck( $terms, 'name' );
 										echo esc_html( implode( ', ', $names ) );
 									} else {
-										esc_html_e( 'Unassigned', 'meditaj' );
+										esc_html_e( 'Unassigned', 'eg-care' );
 									}
 									?>
 								</td>
@@ -703,28 +703,28 @@ class AdminDoctors {
 											if ( $mime && strpos( $mime, 'image' ) !== false ) {
 												echo sprintf( '<a href="%1$s" target="_blank"><img src="%1$s" style="max-width: 80px; max-height: 80px; border: 1px solid #ccd0d4; border-radius: 4px; padding: 2px; margin-right: 5px;" alt="Certificate"/></a>', esc_url( $url ) );
 											} else {
-												echo sprintf( '<a href="%1$s" target="_blank" class="button button-secondary" style="font-size:11px; height:auto; line-height:1.5; padding: 4px 8px; margin-right: 5px;">%2$s</a>', esc_url( $url ), esc_html__( 'View Document', 'meditaj' ) );
+												echo sprintf( '<a href="%1$s" target="_blank" class="button button-secondary" style="font-size:11px; height:auto; line-height:1.5; padding: 4px 8px; margin-right: 5px;">%2$s</a>', esc_url( $url ), esc_html__( 'View Document', 'eg-care' ) );
 											}
 										}
 									} else {
-										esc_html_e( 'No certificate uploaded', 'meditaj' );
+										esc_html_e( 'No certificate uploaded', 'eg-care' );
 									}
 									?>
 								</td>
 								<td>
 									<?php
-									$approve_url = wp_nonce_url( admin_url( 'admin.php?page=meditaj-pending&action=approve&id=' . $doctor->id ), 'meditaj_approve_doctor_' . $doctor->id );
+									$approve_url = wp_nonce_url( admin_url( 'admin.php?page=eg-care-pending&action=approve&id=' . $doctor->id ), 'eg_care_approve_doctor_' . $doctor->id );
 									?>
 									<a href="<?php echo esc_url( $approve_url ); ?>" class="button button-primary" style="background-color: green; border-color: green; color: #fff; margin-right: 5px; vertical-align:middle;">
-										<?php esc_html_e( 'Approve', 'meditaj' ); ?>
+										<?php esc_html_e( 'Approve', 'eg-care' ); ?>
 									</a>
 
 									<form method="post" style="display: inline-block; vertical-align:middle;">
-										<?php wp_nonce_field( 'meditaj_reject_doctor_' . $doctor->id, 'meditaj_reject_nonce' ); ?>
+										<?php wp_nonce_field( 'eg_care_reject_doctor_' . $doctor->id, 'eg_care_reject_nonce' ); ?>
 										<input type="hidden" name="doctor_id" value="<?php echo esc_attr( $doctor->id ); ?>">
-										<input type="text" name="rejection_reason" placeholder="<?php esc_attr_e( 'Rejection reason...', 'meditaj' ); ?>" style="width: 140px; font-size:11px; height:30px; vertical-align:middle; margin-right:2px;" required>
-										<button type="submit" name="meditaj_reject_submit" class="button button-link-delete" style="color: red; border: 1px solid red; height:30px; vertical-align:middle; padding: 0 8px; border-radius: 3px; cursor:pointer; background: none;">
-											<?php esc_html_e( 'Reject', 'meditaj' ); ?>
+										<input type="text" name="rejection_reason" placeholder="<?php esc_attr_e( 'Rejection reason...', 'eg-care' ); ?>" style="width: 140px; font-size:11px; height:30px; vertical-align:middle; margin-right:2px;" required>
+										<button type="submit" name="eg_care_reject_submit" class="button button-link-delete" style="color: red; border: 1px solid red; height:30px; vertical-align:middle; padding: 0 8px; border-radius: 3px; cursor:pointer; background: none;">
+											<?php esc_html_e( 'Reject', 'eg-care' ); ?>
 										</button>
 									</form>
 								</td>
@@ -743,8 +743,8 @@ class AdminDoctors {
 	 */
 	public static function add_doctor_meta_boxes() {
 		add_meta_box(
-			'meditaj_doctor_details',
-			__( 'Meditaj Doctor Details', 'meditaj' ),
+			'eg_care_doctor_details',
+			__( 'EG Care Doctor Details', 'eg-care' ),
 			array( __CLASS__, 'render_doctor_meta_box' ),
 			'doctors',
 			'normal',
@@ -759,10 +759,10 @@ class AdminDoctors {
 	 */
 	public static function render_doctor_meta_box( $post ) {
 		global $wpdb;
-		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 		$meta       = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_meta WHERE post_id = %d", $post->ID ) );
 
-		wp_nonce_field( 'meditaj_save_doctors_meta', 'meditaj_doctors_meta_nonce' );
+		wp_nonce_field( 'eg_care_save_doctors_meta', 'eg_care_doctors_meta_nonce' );
 
 		// Set default values.
 		$provider_type       = $meta ? $meta->provider_type : 'doctor';
@@ -789,112 +789,112 @@ class AdminDoctors {
 		$mobile_banking_no   = $meta ? $meta->mobile_banking_no : '';
 		?>
 		<style>
-			.meditaj-mb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
-			.meditaj-mb-field { display: flex; flex-direction: column; margin-bottom: 10px; }
-			.meditaj-mb-field label { font-weight: 600; margin-bottom: 5px; }
-			.meditaj-mb-field input, .meditaj-mb-field select { padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
+			.eg-care-mb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+			.eg-care-mb-field { display: flex; flex-direction: column; margin-bottom: 10px; }
+			.eg-care-mb-field label { font-weight: 600; margin-bottom: 5px; }
+			.eg-care-mb-field input, .eg-care-mb-field select { padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
 		</style>
-		<div class="meditaj-mb-grid">
-			<div class="meditaj-mb-field">
-				<label for="mb_provider_type"><?php esc_html_e( 'Provider Type', 'meditaj' ); ?></label>
+		<div class="eg-care-mb-grid">
+			<div class="eg-care-mb-field">
+				<label for="mb_provider_type"><?php esc_html_e( 'Provider Type', 'eg-care' ); ?></label>
 				<select name="mb_provider_type" id="mb_provider_type">
-					<option value="doctor" <?php selected( $provider_type, 'doctor' ); ?>><?php esc_html_e( 'Doctor', 'meditaj' ); ?></option>
-					<option value="medical_professional" <?php selected( $provider_type, 'medical_professional' ); ?>><?php esc_html_e( 'Medical Professional', 'meditaj' ); ?></option>
+					<option value="doctor" <?php selected( $provider_type, 'doctor' ); ?>><?php esc_html_e( 'Doctor', 'eg-care' ); ?></option>
+					<option value="medical_professional" <?php selected( $provider_type, 'medical_professional' ); ?>><?php esc_html_e( 'Medical Professional', 'eg-care' ); ?></option>
 				</select>
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_verification_status"><?php esc_html_e( 'Verification Status', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_verification_status"><?php esc_html_e( 'Verification Status', 'eg-care' ); ?></label>
 				<select name="mb_verification_status" id="mb_verification_status">
-					<option value="pending" <?php selected( $verification_status, 'pending' ); ?>><?php esc_html_e( 'Pending', 'meditaj' ); ?></option>
-					<option value="approved" <?php selected( $verification_status, 'approved' ); ?>><?php esc_html_e( 'Approved', 'meditaj' ); ?></option>
-					<option value="rejected" <?php selected( $verification_status, 'rejected' ); ?>><?php esc_html_e( 'Rejected', 'meditaj' ); ?></option>
+					<option value="pending" <?php selected( $verification_status, 'pending' ); ?>><?php esc_html_e( 'Pending', 'eg-care' ); ?></option>
+					<option value="approved" <?php selected( $verification_status, 'approved' ); ?>><?php esc_html_e( 'Approved', 'eg-care' ); ?></option>
+					<option value="rejected" <?php selected( $verification_status, 'rejected' ); ?>><?php esc_html_e( 'Rejected', 'eg-care' ); ?></option>
 				</select>
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_mobile"><?php esc_html_e( 'Mobile Number', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_mobile"><?php esc_html_e( 'Mobile Number', 'eg-care' ); ?></label>
 				<input type="text" name="mb_mobile" id="mb_mobile" value="<?php echo esc_attr( $mobile ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_nid"><?php esc_html_e( 'NID Number', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_nid"><?php esc_html_e( 'NID Number', 'eg-care' ); ?></label>
 				<input type="text" name="mb_nid" id="mb_nid" value="<?php echo esc_attr( $nid ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_nationality"><?php esc_html_e( 'Nationality', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_nationality"><?php esc_html_e( 'Nationality', 'eg-care' ); ?></label>
 				<input type="text" name="mb_nationality" id="mb_nationality" value="<?php echo esc_attr( $nationality ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_organization"><?php esc_html_e( 'Organization', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_organization"><?php esc_html_e( 'Organization', 'eg-care' ); ?></label>
 				<input type="text" name="mb_organization" id="mb_organization" value="<?php echo esc_attr( $organization ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_bmdc_license_no"><?php esc_html_e( 'BMDC Registration Code', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_bmdc_license_no"><?php esc_html_e( 'BMDC Registration Code', 'eg-care' ); ?></label>
 				<input type="text" name="mb_bmdc_license_no" id="mb_bmdc_license_no" value="<?php echo esc_attr( $bmdc_license_no ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_bmdc_expiry_date"><?php esc_html_e( 'BMDC Expiry Date', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_bmdc_expiry_date"><?php esc_html_e( 'BMDC Expiry Date', 'eg-care' ); ?></label>
 				<input type="date" name="mb_bmdc_expiry_date" id="mb_bmdc_expiry_date" value="<?php echo esc_attr( $bmdc_expiry_date ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_degree"><?php esc_html_e( 'Degrees / Academic Titles', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_degree"><?php esc_html_e( 'Degrees / Academic Titles', 'eg-care' ); ?></label>
 				<input type="text" name="mb_degree" id="mb_degree" value="<?php echo esc_attr( $degree ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_designation"><?php esc_html_e( 'Designation', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_designation"><?php esc_html_e( 'Designation', 'eg-care' ); ?></label>
 				<input type="text" name="mb_designation" id="mb_designation" value="<?php echo esc_attr( $designation ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_experience_years"><?php esc_html_e( 'Years of Experience', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_experience_years"><?php esc_html_e( 'Years of Experience', 'eg-care' ); ?></label>
 				<input type="number" name="mb_experience_years" id="mb_experience_years" value="<?php echo esc_attr( $experience_years ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_consultation_fee"><?php esc_html_e( 'Consultation Fee (BDT)', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_consultation_fee"><?php esc_html_e( 'Consultation Fee (BDT)', 'eg-care' ); ?></label>
 				<input type="number" name="mb_consultation_fee" id="mb_consultation_fee" step="0.01" value="<?php echo esc_attr( $consultation_fee ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_instant_call_fee"><?php esc_html_e( 'Instant Call Fee (BDT)', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_instant_call_fee"><?php esc_html_e( 'Instant Call Fee (BDT)', 'eg-care' ); ?></label>
 				<input type="number" name="mb_instant_call_fee" id="mb_instant_call_fee" step="0.01" value="<?php echo esc_attr( $instant_call_fee ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_is_online"><?php esc_html_e( 'Availability Indicator', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_is_online"><?php esc_html_e( 'Availability Indicator', 'eg-care' ); ?></label>
 				<select name="mb_is_online" id="mb_is_online">
-					<option value="0" <?php selected( $is_online, 0 ); ?>><?php esc_html_e( 'Offline', 'meditaj' ); ?></option>
-					<option value="1" <?php selected( $is_online, 1 ); ?>><?php esc_html_e( 'Online Now', 'meditaj' ); ?></option>
+					<option value="0" <?php selected( $is_online, 0 ); ?>><?php esc_html_e( 'Offline', 'eg-care' ); ?></option>
+					<option value="1" <?php selected( $is_online, 1 ); ?>><?php esc_html_e( 'Online Now', 'eg-care' ); ?></option>
 				</select>
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_follow_up_days"><?php esc_html_e( 'Follow Up Days', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_follow_up_days"><?php esc_html_e( 'Follow Up Days', 'eg-care' ); ?></label>
 				<input type="number" name="mb_follow_up_days" id="mb_follow_up_days" value="<?php echo esc_attr( $follow_up_days ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_follow_up_cost"><?php esc_html_e( 'Follow Up Cost (BDT)', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_follow_up_cost"><?php esc_html_e( 'Follow Up Cost (BDT)', 'eg-care' ); ?></label>
 				<input type="number" name="mb_follow_up_cost" id="mb_follow_up_cost" step="0.01" value="<?php echo esc_attr( $follow_up_cost ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_bank_account_name"><?php esc_html_e( 'Bank Account Name', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_bank_account_name"><?php esc_html_e( 'Bank Account Name', 'eg-care' ); ?></label>
 				<input type="text" name="mb_bank_account_name" id="mb_bank_account_name" value="<?php echo esc_attr( $bank_account_name ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_bank_account_no"><?php esc_html_e( 'Bank Account Number', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_bank_account_no"><?php esc_html_e( 'Bank Account Number', 'eg-care' ); ?></label>
 				<input type="text" name="mb_bank_account_no" id="mb_bank_account_no" value="<?php echo esc_attr( $bank_account_no ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_bank_branch_name"><?php esc_html_e( 'Bank Branch Name', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_bank_branch_name"><?php esc_html_e( 'Bank Branch Name', 'eg-care' ); ?></label>
 				<input type="text" name="mb_bank_branch_name" id="mb_bank_branch_name" value="<?php echo esc_attr( $bank_branch_name ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_bank_routing_number"><?php esc_html_e( 'Bank Routing Number', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_bank_routing_number"><?php esc_html_e( 'Bank Routing Number', 'eg-care' ); ?></label>
 				<input type="text" name="mb_bank_routing_number" id="mb_bank_routing_number" value="<?php echo esc_attr( $bank_routing_number ); ?>">
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_mobile_banking_type"><?php esc_html_e( 'Mobile Payout Wallet', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_mobile_banking_type"><?php esc_html_e( 'Mobile Payout Wallet', 'eg-care' ); ?></label>
 				<select name="mb_mobile_banking_type" id="mb_mobile_banking_type">
-					<option value="bkash" <?php selected( $mobile_banking_type, 'bkash' ); ?>><?php esc_html_e( 'bKash', 'meditaj' ); ?></option>
-					<option value="nagad" <?php selected( $mobile_banking_type, 'nagad' ); ?>><?php esc_html_e( 'Nagad', 'meditaj' ); ?></option>
-					<option value="rocket" <?php selected( $mobile_banking_type, 'rocket' ); ?>><?php esc_html_e( 'Rocket', 'meditaj' ); ?></option>
+					<option value="bkash" <?php selected( $mobile_banking_type, 'bkash' ); ?>><?php esc_html_e( 'bKash', 'eg-care' ); ?></option>
+					<option value="nagad" <?php selected( $mobile_banking_type, 'nagad' ); ?>><?php esc_html_e( 'Nagad', 'eg-care' ); ?></option>
+					<option value="rocket" <?php selected( $mobile_banking_type, 'rocket' ); ?>><?php esc_html_e( 'Rocket', 'eg-care' ); ?></option>
 				</select>
 			</div>
-			<div class="meditaj-mb-field">
-				<label for="mb_mobile_banking_no"><?php esc_html_e( 'Mobile Wallet Number', 'meditaj' ); ?></label>
+			<div class="eg-care-mb-field">
+				<label for="mb_mobile_banking_no"><?php esc_html_e( 'Mobile Wallet Number', 'eg-care' ); ?></label>
 				<input type="text" name="mb_mobile_banking_no" id="mb_mobile_banking_no" value="<?php echo esc_attr( $mobile_banking_no ); ?>">
 			</div>
 		</div>
@@ -908,7 +908,7 @@ class AdminDoctors {
 	 */
 	public static function save_doctor_meta_box_data( $post_id ) {
 		// Verify Nonce.
-		if ( ! isset( $_POST['meditaj_doctors_meta_nonce'] ) || ! wp_verify_nonce( $_POST['meditaj_doctors_meta_nonce'], 'meditaj_save_doctors_meta' ) ) {
+		if ( ! isset( $_POST['eg_care_doctors_meta_nonce'] ) || ! wp_verify_nonce( $_POST['eg_care_doctors_meta_nonce'], 'eg_care_save_doctors_meta' ) ) {
 			return;
 		}
 
@@ -923,7 +923,7 @@ class AdminDoctors {
 		}
 
 		global $wpdb;
-		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 
 		// Gather inputs.
 		$provider_type       = sanitize_text_field( $_POST['mb_provider_type'] );
@@ -988,13 +988,13 @@ class AdminDoctors {
 				$user_data = get_userdata( $author );
 				if ( $user_data ) {
 					if ( 'approved' === $verification_status ) {
-						\Meditaj\Notifications::send_doctor_approval_email( $user_data->user_email, $user_data->display_name );
+						\EGCare\Notifications::send_doctor_approval_email( $user_data->user_email, $user_data->display_name );
 						// Remove this hook temporarily to avoid infinite save_post loop
 						remove_action( 'save_post_doctors', array( __CLASS__, 'save_doctors_meta_box' ) );
 						wp_update_post( array( 'ID' => $post_id, 'post_status' => 'publish' ) );
 						add_action( 'save_post_doctors', array( __CLASS__, 'save_doctors_meta_box' ) );
 					} elseif ( 'rejected' === $verification_status ) {
-						\Meditaj\Notifications::send_doctor_rejection_email( $user_data->user_email, $user_data->display_name, '' );
+						\EGCare\Notifications::send_doctor_rejection_email( $user_data->user_email, $user_data->display_name, '' );
 						remove_action( 'save_post_doctors', array( __CLASS__, 'save_doctors_meta_box' ) );
 						wp_update_post( array( 'ID' => $post_id, 'post_status' => 'draft' ) );
 						add_action( 'save_post_doctors', array( __CLASS__, 'save_doctors_meta_box' ) );
@@ -1014,7 +1014,7 @@ class AdminDoctors {
 /**
  * WP_List_Table subclass for displaying doctors ledger.
  */
-class Meditaj_Doctors_List_Table extends \WP_List_Table {
+class EG_Care_Doctors_List_Table extends \WP_List_Table {
 	/**
 	 * Constructor.
 	 */
@@ -1041,7 +1041,7 @@ class Meditaj_Doctors_List_Table extends \WP_List_Table {
 	public function column_photo( $item ) {
 		$thumbnail = get_the_post_thumbnail_url( $item->post_id, 'thumbnail' );
 		if ( $thumbnail ) {
-			return sprintf( '<img src="%s" class="meditaj-doctor-photo" alt="%s">', esc_url( $thumbnail ), esc_attr( $item->post_title ) );
+			return sprintf( '<img src="%s" class="eg-care-doctor-photo" alt="%s">', esc_url( $thumbnail ), esc_attr( $item->post_title ) );
 		}
 
 		// Initial display placeholder.
@@ -1055,7 +1055,7 @@ class Meditaj_Doctors_List_Table extends \WP_List_Table {
 		}
 		$initials = substr( $initials, 0, 2 );
 
-		return sprintf( '<div class="meditaj-doctor-photo-placeholder">%s</div>', esc_html( strtoupper( $initials ) ) );
+		return sprintf( '<div class="eg-care-doctor-photo-placeholder">%s</div>', esc_html( strtoupper( $initials ) ) );
 	}
 
 	/**
@@ -1065,21 +1065,21 @@ class Meditaj_Doctors_List_Table extends \WP_List_Table {
 		$actions = array();
 
 		// Edit link.
-		$actions['edit'] = sprintf( '<a href="%s">%s</a>', esc_url( get_edit_post_link( $item->post_id ) ), __( 'Edit', 'meditaj' ) );
+		$actions['edit'] = sprintf( '<a href="%s">%s</a>', esc_url( get_edit_post_link( $item->post_id ) ), __( 'Edit', 'eg-care' ) );
 
 		// Approval / Rejection buttons.
 		if ( 'approved' !== $item->verification_status ) {
-			$approve_url = wp_nonce_url( admin_url( 'admin.php?page=meditaj-doctors&action=approve&id=' . $item->id ), 'meditaj_approve_doctor_' . $item->id );
-			$actions['approve'] = sprintf( '<a href="%s" style="color:green;">%s</a>', esc_url( $approve_url ), __( 'Approve', 'meditaj' ) );
+			$approve_url = wp_nonce_url( admin_url( 'admin.php?page=eg-care-doctors&action=approve&id=' . $item->id ), 'eg_care_approve_doctor_' . $item->id );
+			$actions['approve'] = sprintf( '<a href="%s" style="color:green;">%s</a>', esc_url( $approve_url ), __( 'Approve', 'eg-care' ) );
 		}
 		if ( 'rejected' !== $item->verification_status ) {
-			$reject_url = wp_nonce_url( admin_url( 'admin.php?page=meditaj-doctors&action=reject&id=' . $item->id ), 'meditaj_reject_doctor_' . $item->id );
-			$actions['reject'] = sprintf( '<a href="%s" style="color:orange;">%s</a>', esc_url( $reject_url ), __( 'Reject', 'meditaj' ) );
+			$reject_url = wp_nonce_url( admin_url( 'admin.php?page=eg-care-doctors&action=reject&id=' . $item->id ), 'eg_care_reject_doctor_' . $item->id );
+			$actions['reject'] = sprintf( '<a href="%s" style="color:orange;">%s</a>', esc_url( $reject_url ), __( 'Reject', 'eg-care' ) );
 		}
 
 		// Delete.
-		$delete_url = wp_nonce_url( admin_url( 'admin.php?page=meditaj-doctors&action=delete&id=' . $item->id ), 'meditaj_delete_doctor_' . $item->id );
-		$actions['delete'] = sprintf( '<a href="%s" style="color:red;" onclick="return confirm(\'%s\')">%s</a>', esc_url( $delete_url ), esc_attr__( 'Are you sure you want to delete this doctor? This will remove the WordPress user account and profile post too.', 'meditaj' ), __( 'Delete', 'meditaj' ) );
+		$delete_url = wp_nonce_url( admin_url( 'admin.php?page=eg-care-doctors&action=delete&id=' . $item->id ), 'eg_care_delete_doctor_' . $item->id );
+		$actions['delete'] = sprintf( '<a href="%s" style="color:red;" onclick="return confirm(\'%s\')">%s</a>', esc_url( $delete_url ), esc_attr__( 'Are you sure you want to delete this doctor? This will remove the WordPress user account and profile post too.', 'eg-care' ), __( 'Delete', 'eg-care' ) );
 
 		return sprintf( '<strong><a href="%1$s">%2$s</a></strong> %3$s', esc_url( get_edit_post_link( $item->post_id ) ), esc_html( $item->post_title ), $this->row_actions( $actions ) );
 	}
@@ -1090,7 +1090,7 @@ class Meditaj_Doctors_List_Table extends \WP_List_Table {
 	public function column_specialty( $item ) {
 		$terms = wp_get_post_terms( $item->post_id, 'specialty' );
 		if ( is_wp_error( $terms ) || empty( $terms ) ) {
-			return __( 'Unassigned', 'meditaj' );
+			return __( 'Unassigned', 'eg-care' );
 		}
 		$names = wp_list_pluck( $terms, 'name' );
 		return esc_html( implode( ', ', $names ) );
@@ -1101,7 +1101,7 @@ class Meditaj_Doctors_List_Table extends \WP_List_Table {
 	 */
 	public function column_verification_status( $item ) {
 		$status = esc_attr( $item->verification_status );
-		return sprintf( '<span class="meditaj-status-badge status-%s">%s</span>', $status, ucfirst( $status ) );
+		return sprintf( '<span class="eg-care-status-badge status-%s">%s</span>', $status, ucfirst( $status ) );
 	}
 
 	/**
@@ -1116,11 +1116,11 @@ class Meditaj_Doctors_List_Table extends \WP_List_Table {
 	 */
 	public function get_columns() {
 		return array(
-			'photo'               => __( 'Photo', 'meditaj' ),
-			'name'                => __( 'Name', 'meditaj' ),
-			'specialty'           => __( 'Specialty', 'meditaj' ),
-			'verification_status' => __( 'Verification Status', 'meditaj' ),
-			'consultation_fee'    => __( 'Consultation Fee', 'meditaj' ),
+			'photo'               => __( 'Photo', 'eg-care' ),
+			'name'                => __( 'Name', 'eg-care' ),
+			'specialty'           => __( 'Specialty', 'eg-care' ),
+			'verification_status' => __( 'Verification Status', 'eg-care' ),
+			'consultation_fee'    => __( 'Consultation Fee', 'eg-care' ),
 		);
 	}
 
@@ -1129,7 +1129,7 @@ class Meditaj_Doctors_List_Table extends \WP_List_Table {
 	 */
 	public function prepare_items() {
 		global $wpdb;
-		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 
 		// Columns.
 		$columns  = $this->get_columns();

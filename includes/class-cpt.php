@@ -1,5 +1,5 @@
 <?php
-namespace Meditaj;
+namespace EGCare;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -23,20 +23,20 @@ class CPT {
 	 */
 	public static function register_post_types() {
 		$labels = array(
-			'name'               => _x( 'Doctors', 'post type general name', 'meditaj' ),
-			'singular_name'      => _x( 'Doctor', 'post type singular name', 'meditaj' ),
-			'menu_name'          => _x( 'Doctors', 'admin menu', 'meditaj' ),
-			'name_admin_bar'     => _x( 'Doctor', 'add new on admin bar', 'meditaj' ),
-			'add_new'            => _x( 'Add New', 'doctor', 'meditaj' ),
-			'add_new_item'       => __( 'Add New Doctor', 'meditaj' ),
-			'new_item'           => __( 'New Doctor', 'meditaj' ),
-			'edit_item'          => __( 'Edit Doctor', 'meditaj' ),
-			'view_item'          => __( 'View Doctor', 'meditaj' ),
-			'all_items'          => __( 'All Doctors', 'meditaj' ),
-			'search_items'       => __( 'Search Doctors', 'meditaj' ),
-			'parent_item_colon'  => __( 'Parent Doctors:', 'meditaj' ),
-			'not_found'          => __( 'No doctors found.', 'meditaj' ),
-			'not_found_in_trash' => __( 'No doctors found in Trash.', 'meditaj' ),
+			'name'               => _x( 'Doctors', 'post type general name', 'eg-care' ),
+			'singular_name'      => _x( 'Doctor', 'post type singular name', 'eg-care' ),
+			'menu_name'          => _x( 'Doctors', 'admin menu', 'eg-care' ),
+			'name_admin_bar'     => _x( 'Doctor', 'add new on admin bar', 'eg-care' ),
+			'add_new'            => _x( 'Add New', 'doctor', 'eg-care' ),
+			'add_new_item'       => __( 'Add New Doctor', 'eg-care' ),
+			'new_item'           => __( 'New Doctor', 'eg-care' ),
+			'edit_item'          => __( 'Edit Doctor', 'eg-care' ),
+			'view_item'          => __( 'View Doctor', 'eg-care' ),
+			'all_items'          => __( 'All Doctors', 'eg-care' ),
+			'search_items'       => __( 'Search Doctors', 'eg-care' ),
+			'parent_item_colon'  => __( 'Parent Doctors:', 'eg-care' ),
+			'not_found'          => __( 'No doctors found.', 'eg-care' ),
+			'not_found_in_trash' => __( 'No doctors found in Trash.', 'eg-care' ),
 		);
 
 		$args = array(
@@ -64,17 +64,17 @@ class CPT {
 	 */
 	public static function register_taxonomies() {
 		$labels = array(
-			'name'              => _x( 'Specialties', 'taxonomy general name', 'meditaj' ),
-			'singular_name'     => _x( 'Specialty', 'taxonomy singular name', 'meditaj' ),
-			'search_items'      => __( 'Search Specialties', 'meditaj' ),
-			'all_items'         => __( 'All Specialties', 'meditaj' ),
-			'parent_item'       => __( 'Parent Specialty', 'meditaj' ),
-			'parent_item_colon' => __( 'Parent Specialty:', 'meditaj' ),
-			'edit_item'         => __( 'Edit Specialty', 'meditaj' ),
-			'update_item'       => __( 'Update Specialty', 'meditaj' ),
-			'add_new_item'      => __( 'Add New Specialty', 'meditaj' ),
-			'new_item_name'     => __( 'New Specialty Name', 'meditaj' ),
-			'menu_name'         => __( 'Specialties', 'meditaj' ),
+			'name'              => _x( 'Specialties', 'taxonomy general name', 'eg-care' ),
+			'singular_name'     => _x( 'Specialty', 'taxonomy singular name', 'eg-care' ),
+			'search_items'      => __( 'Search Specialties', 'eg-care' ),
+			'all_items'         => __( 'All Specialties', 'eg-care' ),
+			'parent_item'       => __( 'Parent Specialty', 'eg-care' ),
+			'parent_item_colon' => __( 'Parent Specialty:', 'eg-care' ),
+			'edit_item'         => __( 'Edit Specialty', 'eg-care' ),
+			'update_item'       => __( 'Update Specialty', 'eg-care' ),
+			'add_new_item'      => __( 'Add New Specialty', 'eg-care' ),
+			'new_item_name'     => __( 'New Specialty Name', 'eg-care' ),
+			'menu_name'         => __( 'Specialties', 'eg-care' ),
 		);
 
 		$args = array(
@@ -99,7 +99,7 @@ class CPT {
 			'specialty_icon_id',
 			array(
 				'type'              => 'integer',
-				'description'       => __( 'The attachment ID of the custom icon for this specialty.', 'meditaj' ),
+				'description'       => __( 'The attachment ID of the custom icon for this specialty.', 'eg-care' ),
 				'single'            => true,
 				'sanitize_callback' => 'absint',
 				'show_in_rest'      => true,

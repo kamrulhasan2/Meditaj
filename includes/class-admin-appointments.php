@@ -1,5 +1,5 @@
 <?php
-namespace Meditaj;
+namespace EGCare;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -14,8 +14,8 @@ class AdminAppointmentsTable extends \WP_List_Table {
 	public function __construct() {
 		parent::__construct(
 			array(
-				'singular' => 'meditaj_appointment',
-				'plural'   => 'meditaj_appointments',
+				'singular' => 'eg_care_appointment',
+				'plural'   => 'eg_care_appointments',
 				'ajax'     => false,
 			)
 		);
@@ -27,14 +27,14 @@ class AdminAppointmentsTable extends \WP_List_Table {
 	public function get_columns() {
 		return array(
 			'cb'             => '<input type="checkbox" />',
-			'id'             => __( 'ID', 'meditaj' ),
-			'patient_name'   => __( 'Patient Name', 'meditaj' ),
-			'doctor_name'    => __( 'Doctor Name', 'meditaj' ),
-			'type'           => __( 'Type', 'meditaj' ),
-			'schedule'       => __( 'Schedule', 'meditaj' ),
-			'amount'         => __( 'Amount', 'meditaj' ),
-			'payment_status' => __( 'Payment Status', 'meditaj' ),
-			'status'         => __( 'Status', 'meditaj' ),
+			'id'             => __( 'ID', 'eg-care' ),
+			'patient_name'   => __( 'Patient Name', 'eg-care' ),
+			'doctor_name'    => __( 'Doctor Name', 'eg-care' ),
+			'type'           => __( 'Type', 'eg-care' ),
+			'schedule'       => __( 'Schedule', 'eg-care' ),
+			'amount'         => __( 'Amount', 'eg-care' ),
+			'payment_status' => __( 'Payment Status', 'eg-care' ),
+			'status'         => __( 'Status', 'eg-care' ),
 		);
 	}
 
@@ -64,15 +64,15 @@ class AdminAppointmentsTable extends \WP_List_Table {
 			case 'id':
 				return sprintf( '<strong>#%d</strong>', $item->id );
 			case 'type':
-				return sprintf( '<span class="meditaj-status-badge %s">%s</span>', 'instant' === $item->appointment_type ? 'status-approved' : 'status-pending', strtoupper( $item->appointment_type ) );
+				return sprintf( '<span class="eg-care-status-badge %s">%s</span>', 'instant' === $item->appointment_type ? 'status-approved' : 'status-pending', strtoupper( $item->appointment_type ) );
 			case 'amount':
 				return sprintf( '%s BDT', number_format( $item->amount, 2 ) );
 			case 'payment_status':
 				$badge_class = 'paid' === $item->payment_status ? 'status-approved' : ( 'refunded' === $item->payment_status ? 'status-rejected' : 'status-pending' );
-				return sprintf( '<span class="meditaj-status-badge %s">%s</span>', $badge_class, strtoupper( $item->payment_status ) );
+				return sprintf( '<span class="eg-care-status-badge %s">%s</span>', $badge_class, strtoupper( $item->payment_status ) );
 			case 'status':
 				$badge_class = 'completed' === $item->status ? 'status-approved' : ( 'cancelled' === $item->status ? 'status-rejected' : 'status-pending' );
-				return sprintf( '<span class="meditaj-status-badge %s">%s</span>', $badge_class, strtoupper( $item->status ) );
+				return sprintf( '<span class="eg-care-status-badge %s">%s</span>', $badge_class, strtoupper( $item->status ) );
 			default:
 				return print_r( $item, true );
 		}
@@ -95,15 +95,15 @@ class AdminAppointmentsTable extends \WP_List_Table {
 		if ( 'confirmed' === $item->status || 'pending_payment' === $item->status ) {
 			$actions['cancel'] = sprintf(
 				'<a href="%s" style="color: #b91c1c;">%s</a>',
-				wp_nonce_url( add_query_arg( array( 'meditaj_action' => 'cancel', 'appt_id' => $item->id ) ), 'meditaj_cancel_appointment' ),
-				__( 'Cancel Booking', 'meditaj' )
+				wp_nonce_url( add_query_arg( array( 'eg_care_action' => 'cancel', 'appt_id' => $item->id ) ), 'eg_care_cancel_appointment' ),
+				__( 'Cancel Booking', 'eg-care' )
 			);
 		}
 		if ( 'confirmed' === $item->status || 'ongoing' === $item->status ) {
 			$actions['complete'] = sprintf(
 				'<a href="%s" style="color: #15803d;">%s</a>',
-				wp_nonce_url( add_query_arg( array( 'meditaj_action' => 'complete', 'appt_id' => $item->id ) ), 'meditaj_complete_appointment' ),
-				__( 'Mark Completed', 'meditaj' )
+				wp_nonce_url( add_query_arg( array( 'eg_care_action' => 'complete', 'appt_id' => $item->id ) ), 'eg_care_complete_appointment' ),
+				__( 'Mark Completed', 'eg-care' )
 			);
 		}
 
@@ -127,7 +127,7 @@ class AdminAppointmentsTable extends \WP_List_Table {
 	 */
 	protected function column_schedule( $item ) {
 		if ( 'instant' === $item->appointment_type ) {
-			return sprintf( '<em>%s</em><br/><span style="font-size:11px; color:#64748b;">%s</span>', __( 'Instant Call', 'meditaj' ), date( 'M d, Y', strtotime( $item->created_at ) ) );
+			return sprintf( '<em>%s</em><br/><span style="font-size:11px; color:#64748b;">%s</span>', __( 'Instant Call', 'eg-care' ), date( 'M d, Y', strtotime( $item->created_at ) ) );
 		}
 		return sprintf(
 			'<strong>%s</strong><br/><span style="font-size:11px; color:#64748b;">%s</span>',
@@ -141,8 +141,8 @@ class AdminAppointmentsTable extends \WP_List_Table {
 	 */
 	protected function get_bulk_actions() {
 		return array(
-			'bulk-cancel'   => __( 'Bulk Cancel', 'meditaj' ),
-			'bulk-complete' => __( 'Bulk Complete', 'meditaj' ),
+			'bulk-cancel'   => __( 'Bulk Cancel', 'eg-care' ),
+			'bulk-complete' => __( 'Bulk Complete', 'eg-care' ),
 		);
 	}
 
@@ -170,17 +170,17 @@ class AdminAppointmentsTable extends \WP_List_Table {
 				'<a href="%s" class="%s">%s <span class="count">(%d)</span></a>',
 				remove_query_arg( 'status_filter' ),
 				'all' === $current ? 'current' : '',
-				__( 'All', 'meditaj' ),
+				__( 'All', 'eg-care' ),
 				$total
 			),
 		);
 
 		$statuses = array(
-			'pending_payment' => __( 'Pending Payment', 'meditaj' ),
-			'confirmed'       => __( 'Confirmed', 'meditaj' ),
-			'ongoing'         => __( 'Ongoing', 'meditaj' ),
-			'completed'       => __( 'Completed', 'meditaj' ),
-			'cancelled'       => __( 'Cancelled', 'meditaj' ),
+			'pending_payment' => __( 'Pending Payment', 'eg-care' ),
+			'confirmed'       => __( 'Confirmed', 'eg-care' ),
+			'ongoing'         => __( 'Ongoing', 'eg-care' ),
+			'completed'       => __( 'Completed', 'eg-care' ),
+			'cancelled'       => __( 'Cancelled', 'eg-care' ),
 		);
 
 		foreach ( $statuses as $key => $label ) {
@@ -216,7 +216,7 @@ class AdminAppointmentsTable extends \WP_List_Table {
 		<div class="alignleft actions">
 			<!-- Doctor Filter Dropdown -->
 			<select name="doctor_filter" id="doctor_filter" style="float: none; margin-right: 6px;">
-				<option value="0"><?php esc_html_e( 'Filter by Doctor', 'meditaj' ); ?></option>
+				<option value="0"><?php esc_html_e( 'Filter by Doctor', 'eg-care' ); ?></option>
 				<?php foreach ( $doctors as $d ) : ?>
 					<option value="<?php echo intval( $d->post_id ); ?>" <?php selected( $selected_doctor, $d->post_id ); ?>>
 						<?php echo esc_html( get_the_title( $d->post_id ) ); ?>
@@ -227,7 +227,7 @@ class AdminAppointmentsTable extends \WP_List_Table {
 			<!-- Date Filter Input -->
 			<input type="date" name="date_filter" value="<?php echo esc_attr( $selected_date ); ?>" style="line-height: 1.5; padding: 2px 8px; margin-right: 6px;" />
 
-			<?php submit_button( __( 'Apply Filter', 'meditaj' ), 'button', 'filter_action', false, array( 'id' => 'post-query-submit' ) ); ?>
+			<?php submit_button( __( 'Apply Filter', 'eg-care' ), 'button', 'filter_action', false, array( 'id' => 'post-query-submit' ) ); ?>
 		</div>
 		<?php
 	}

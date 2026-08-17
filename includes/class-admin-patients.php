@@ -1,5 +1,5 @@
 <?php
-namespace Meditaj;
+namespace EGCare;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -14,8 +14,8 @@ class AdminPatientsTable extends \WP_List_Table {
 	public function __construct() {
 		parent::__construct(
 			array(
-				'singular' => 'meditaj_patient',
-				'plural'   => 'meditaj_patients',
+				'singular' => 'eg_care_patient',
+				'plural'   => 'eg_care_patients',
 				'ajax'     => false,
 			)
 		);
@@ -26,13 +26,13 @@ class AdminPatientsTable extends \WP_List_Table {
 	 */
 	public function get_columns() {
 		return array(
-			'user_id'          => __( 'User ID', 'meditaj' ),
-			'display_name'     => __( 'Patient Name', 'meditaj' ),
-			'email'            => __( 'Email Address', 'meditaj' ),
-			'total_bookings'   => __( 'Total Bookings', 'meditaj' ),
-			'total_spent'      => __( 'Total Spent (BDT)', 'meditaj' ),
-			'last_appointment' => __( 'Last Consultation', 'meditaj' ),
-			'actions'          => __( 'Actions', 'meditaj' ),
+			'user_id'          => __( 'User ID', 'eg-care' ),
+			'display_name'     => __( 'Patient Name', 'eg-care' ),
+			'email'            => __( 'Email Address', 'eg-care' ),
+			'total_bookings'   => __( 'Total Bookings', 'eg-care' ),
+			'total_spent'      => __( 'Total Spent (BDT)', 'eg-care' ),
+			'last_appointment' => __( 'Last Consultation', 'eg-care' ),
+			'actions'          => __( 'Actions', 'eg-care' ),
 		);
 	}
 
@@ -48,14 +48,14 @@ class AdminPatientsTable extends \WP_List_Table {
 			case 'email':
 				return esc_html( $item->email );
 			case 'total_bookings':
-				return sprintf( '<span class="meditaj-status-badge status-pending" style="font-size:11px; padding:2px 8px;">%d %s</span>', $item->total_bookings, _n( 'Booking', 'Bookings', $item->total_bookings, 'meditaj' ) );
+				return sprintf( '<span class="eg-care-status-badge status-pending" style="font-size:11px; padding:2px 8px;">%d %s</span>', $item->total_bookings, _n( 'Booking', 'Bookings', $item->total_bookings, 'eg-care' ) );
 			case 'total_spent':
 				return sprintf( '<strong>%s BDT</strong>', number_format( $item->total_spent, 2 ) );
 			case 'last_appointment':
 				return $item->last_appointment ? esc_html( date( 'M d, Y', strtotime( $item->last_appointment ) ) ) : '-';
 			case 'actions':
-				$url = admin_url( 'admin.php?page=meditaj-appointments&s=' . urlencode( $item->display_name ) );
-				return sprintf( '<a href="%s" class="button button-small meditaj-btn-primary" style="background:#0f766e !important; color:#fff !important; border-color:#0f766e !important;">%s</a>', esc_url( $url ), __( 'View Bookings', 'meditaj' ) );
+				$url = admin_url( 'admin.php?page=eg-care-appointments&s=' . urlencode( $item->display_name ) );
+				return sprintf( '<a href="%s" class="button button-small eg-care-btn-primary" style="background:#0f766e !important; color:#fff !important; border-color:#0f766e !important;">%s</a>', esc_url( $url ), __( 'View Bookings', 'eg-care' ) );
 			default:
 				return print_r( $item, true );
 		}

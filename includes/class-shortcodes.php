@@ -1,5 +1,5 @@
 <?php
-namespace Meditaj;
+namespace EGCare;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -27,10 +27,10 @@ class Shortcodes {
 	 * Initialize actions.
 	 */
 	public static function init() {
-		add_shortcode( 'meditaj_doctor_registration', array( __CLASS__, 'render_registration_shortcode' ) );
-		add_shortcode( 'meditaj_booking_flow', array( __CLASS__, 'render_booking_shortcode' ) );
-		add_shortcode( 'meditaj_doctor_dashboard', array( __CLASS__, 'render_doctor_dashboard_shortcode' ) );
-		add_shortcode( 'meditaj_patient_dashboard', array( __CLASS__, 'render_patient_dashboard_shortcode' ) );
+		add_shortcode( 'eg_care_doctor_registration', array( __CLASS__, 'render_registration_shortcode' ) );
+		add_shortcode( 'eg_care_booking_flow', array( __CLASS__, 'render_booking_shortcode' ) );
+		add_shortcode( 'eg_care_doctor_dashboard', array( __CLASS__, 'render_doctor_dashboard_shortcode' ) );
+		add_shortcode( 'eg_care_patient_dashboard', array( __CLASS__, 'render_patient_dashboard_shortcode' ) );
 		add_action( 'template_redirect', array( __CLASS__, 'process_registration_form' ) );
 	}
 
@@ -38,13 +38,13 @@ class Shortcodes {
 	 * Process form submission.
 	 */
 	public static function process_registration_form() {
-		if ( ! isset( $_POST['meditaj_register_submit'] ) ) {
+		if ( ! isset( $_POST['eg_care_register_submit'] ) ) {
 			return;
 		}
 
 		// Verify Nonce.
-		if ( ! isset( $_POST['meditaj_register_nonce'] ) || ! wp_verify_nonce( $_POST['meditaj_register_nonce'], 'meditaj_register' ) ) {
-			self::$errors[] = __( 'Security check failed. Please try again.', 'meditaj' );
+		if ( ! isset( $_POST['eg_care_register_nonce'] ) || ! wp_verify_nonce( $_POST['eg_care_register_nonce'], 'eg_care_register' ) ) {
+			self::$errors[] = __( 'Security check failed. Please try again.', 'eg-care' );
 			return;
 		}
 
@@ -92,23 +92,23 @@ class Shortcodes {
 
 		// Validate.
 		if ( empty( $username ) || empty( $email ) || empty( $password ) || empty( $name ) || empty( $license ) || empty( $expiry ) || empty( $specialty ) || empty( $mobile ) || empty( $nid ) || empty( $nationality ) || empty( $degree ) ) {
-			self::$errors[] = __( 'All fields marked with an asterisk (*) are required.', 'meditaj' );
+			self::$errors[] = __( 'All fields marked with an asterisk (*) are required.', 'eg-care' );
 			return;
 		}
 
 		if ( username_exists( $username ) ) {
-			self::$errors[] = __( 'Username is already registered.', 'meditaj' );
+			self::$errors[] = __( 'Username is already registered.', 'eg-care' );
 			return;
 		}
 
 		if ( email_exists( $email ) ) {
-			self::$errors[] = __( 'Email address is already registered.', 'meditaj' );
+			self::$errors[] = __( 'Email address is already registered.', 'eg-care' );
 			return;
 		}
 
 		// Validate file uploads first.
 		if ( empty( $_FILES['reg_certificate']['name'] ) ) {
-			self::$errors[] = __( 'You must upload a valid copy of your BMDC/Medical Certificate.', 'meditaj' );
+			self::$errors[] = __( 'You must upload a valid copy of your BMDC/Medical Certificate.', 'eg-care' );
 			return;
 		}
 
@@ -117,22 +117,22 @@ class Shortcodes {
 
 		if ( isset( $_FILES['reg_certificate'] ) ) {
 			if ( $_FILES['reg_certificate']['error'] !== UPLOAD_ERR_OK ) {
-				self::$errors[] = __( 'Error uploading certificate file. Please verify the file is not corrupted.', 'meditaj' );
+				self::$errors[] = __( 'Error uploading certificate file. Please verify the file is not corrupted.', 'eg-care' );
 				return;
 			}
 			if ( $_FILES['reg_certificate']['size'] > $max_file_size ) {
-				self::$errors[] = __( 'Certificate file size exceeds the 2MB limit.', 'meditaj' );
+				self::$errors[] = __( 'Certificate file size exceeds the 2MB limit.', 'eg-care' );
 				return;
 			}
 		}
 
 		if ( isset( $_FILES['reg_photo'] ) && ! empty( $_FILES['reg_photo']['name'] ) ) {
 			if ( $_FILES['reg_photo']['error'] !== UPLOAD_ERR_OK ) {
-				self::$errors[] = __( 'Error uploading profile photo. Please verify the file is not corrupted.', 'meditaj' );
+				self::$errors[] = __( 'Error uploading profile photo. Please verify the file is not corrupted.', 'eg-care' );
 				return;
 			}
 			if ( $_FILES['reg_photo']['size'] > $max_file_size ) {
-				self::$errors[] = __( 'Profile photo file size exceeds the 2MB limit.', 'meditaj' );
+				self::$errors[] = __( 'Profile photo file size exceeds the 2MB limit.', 'eg-care' );
 				return;
 			}
 		}
@@ -141,7 +141,7 @@ class Shortcodes {
 		$cert_file = $_FILES['reg_certificate'];
 		$cert_ext  = strtolower( pathinfo( $cert_file['name'], PATHINFO_EXTENSION ) );
 		if ( ! in_array( $cert_ext, array( 'pdf', 'jpg', 'jpeg', 'png' ), true ) ) {
-			self::$errors[] = __( 'Invalid certificate format. Only PDF, JPG, JPEG, and PNG are allowed.', 'meditaj' );
+			self::$errors[] = __( 'Invalid certificate format. Only PDF, JPG, JPEG, and PNG are allowed.', 'eg-care' );
 			return;
 		}
 
@@ -156,7 +156,7 @@ class Shortcodes {
 			array(
 				'ID'           => $user_id,
 				'display_name' => $name,
-				'role'         => 'meditaj_doctor',
+				'role'         => 'eg_care_doctor',
 			)
 		);
 
@@ -200,7 +200,7 @@ class Shortcodes {
 			global $wpdb;
 			$wpdb->delete( $wpdb->users, array( 'ID' => $user_id ), array( '%d' ) );
 			$wpdb->delete( $wpdb->usermeta, array( 'user_id' => $user_id ), array( '%d' ) );
-			self::$errors[] = __( 'Failed to save certificate attachment.', 'meditaj' );
+			self::$errors[] = __( 'Failed to save certificate attachment.', 'eg-care' );
 			return;
 		}
 
@@ -209,7 +209,7 @@ class Shortcodes {
 
 		// Insert metadata row.
 		global $wpdb;
-		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 
 		$inserted = $wpdb->insert(
 			$table_meta,
@@ -278,7 +278,7 @@ class Shortcodes {
 			global $wpdb;
 			$wpdb->delete( $wpdb->users, array( 'ID' => $user_id ), array( '%d' ) );
 			$wpdb->delete( $wpdb->usermeta, array( 'user_id' => $user_id ), array( '%d' ) );
-			self::$errors[] = __( 'Database write error. Registration failed.', 'meditaj' );
+			self::$errors[] = __( 'Database write error. Registration failed.', 'eg-care' );
 			return;
 		}
 
@@ -307,7 +307,7 @@ class Shortcodes {
 		);
 
 		// Include the template.
-		include MEDITAJ_PATH . 'templates/registration-form.php';
+		include EG_CARE_PATH . 'templates/registration-form.php';
 
 		return ob_get_clean();
 	}
@@ -335,21 +335,21 @@ class Shortcodes {
 	 */
 	public static function render_booking_shortcode() {
 		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
-		wp_enqueue_script( 'meditaj-video-call-js', MEDITAJ_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), time(), true );
-		wp_enqueue_script( 'meditaj-booking-js', MEDITAJ_URL . 'assets/js/booking.js', array(), MEDITAJ_VERSION, true );
+		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), time(), true );
+		wp_enqueue_script( 'eg-care-booking-js', EG_CARE_URL . 'assets/js/booking.js', array(), EG_CARE_VERSION, true );
 
 		wp_localize_script(
-			'meditaj-booking-js',
-			'meditajSettings',
+			'eg-care-booking-js',
+			'egCareSettings',
 			array(
-				'restUrl'  => esc_url_raw( rest_url( 'meditaj/v1/' ) ),
+				'restUrl'  => esc_url_raw( rest_url( 'eg-care/v1/' ) ),
 				'nonce'    => wp_create_nonce( 'wp_rest' ),
 				'userType' => 'patient',
 			)
 		);
 
 		ob_start();
-		include MEDITAJ_PATH . 'templates/booking-flow.php';
+		include EG_CARE_PATH . 'templates/booking-flow.php';
 		return ob_get_clean();
 	}
 
@@ -358,29 +358,29 @@ class Shortcodes {
 	 */
 	public static function render_doctor_dashboard_shortcode() {
 		if ( ! is_user_logged_in() ) {
-			return '<div class="meditaj-alert">' . esc_html__( 'You must be logged in to view the doctor dashboard.', 'meditaj' ) . ' <a href="' . esc_url( wp_login_url() ) . '">' . esc_html__( 'Log In Here', 'meditaj' ) . '</a></div>';
+			return '<div class="eg-care-alert">' . esc_html__( 'You must be logged in to view the doctor dashboard.', 'eg-care' ) . ' <a href="' . esc_url( wp_login_url() ) . '">' . esc_html__( 'Log In Here', 'eg-care' ) . '</a></div>';
 		}
 
 		// Verify this user maps to a registered doctor profile
 		global $wpdb;
 		$user_id = get_current_user_id();
-		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 		$doctor = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_meta WHERE user_id = %d", $user_id ) );
 
 		if ( ! $doctor ) {
-			return '<div class="meditaj-alert">' . esc_html__( 'You do not have a doctor profile registered on this platform.', 'meditaj' ) . '</div>';
+			return '<div class="eg-care-alert">' . esc_html__( 'You do not have a doctor profile registered on this platform.', 'eg-care' ) . '</div>';
 		}
 
 		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
-		wp_enqueue_script( 'meditaj-video-call-js', MEDITAJ_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), time(), true );
-		wp_enqueue_script( 'meditaj-doctor-dashboard-js', MEDITAJ_URL . 'assets/js/doctor-dashboard.js', array(), MEDITAJ_VERSION, true );
+		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), time(), true );
+		wp_enqueue_script( 'eg-care-doctor-dashboard-js', EG_CARE_URL . 'assets/js/doctor-dashboard.js', array(), EG_CARE_VERSION, true );
 
 		// Localize parameters for AJAX requests.
 		wp_localize_script(
-			'meditaj-doctor-dashboard-js',
-			'meditajSettings',
+			'eg-care-doctor-dashboard-js',
+			'egCareSettings',
 			array(
-				'restUrl'  => esc_url_raw( rest_url( 'meditaj/v1/' ) ),
+				'restUrl'  => esc_url_raw( rest_url( 'eg-care/v1/' ) ),
 				'nonce'    => wp_create_nonce( 'wp_rest' ),
 				'userType' => 'doctor',
 				'doctor'  => array(
@@ -394,7 +394,7 @@ class Shortcodes {
 		);
 
 		ob_start();
-		include MEDITAJ_PATH . 'templates/doctor-dashboard.php';
+		include EG_CARE_PATH . 'templates/doctor-dashboard.php';
 		return ob_get_clean();
 	}
 
@@ -403,25 +403,25 @@ class Shortcodes {
 	 */
 	public static function render_patient_dashboard_shortcode() {
 		if ( ! is_user_logged_in() ) {
-			return '<div class="meditaj-alert">' . esc_html__( 'You must be logged in to view your patient dashboard.', 'meditaj' ) . ' <a href="' . esc_url( wp_login_url() ) . '">' . esc_html__( 'Log In Here', 'meditaj' ) . '</a></div>';
+			return '<div class="eg-care-alert">' . esc_html__( 'You must be logged in to view your patient dashboard.', 'eg-care' ) . ' <a href="' . esc_url( wp_login_url() ) . '">' . esc_html__( 'Log In Here', 'eg-care' ) . '</a></div>';
 		}
 
 		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
-		wp_enqueue_script( 'meditaj-video-call-js', MEDITAJ_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), time(), true );
+		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), time(), true );
 
 		// Localize parameters for AJAX requests.
 		wp_localize_script(
-			'meditaj-video-call-js',
-			'meditajSettings',
+			'eg-care-video-call-js',
+			'egCareSettings',
 			array(
-				'restUrl'  => esc_url_raw( rest_url( 'meditaj/v1/' ) ),
+				'restUrl'  => esc_url_raw( rest_url( 'eg-care/v1/' ) ),
 				'nonce'    => wp_create_nonce( 'wp_rest' ),
 				'userType' => 'patient',
 			)
 		);
 
 		ob_start();
-		include MEDITAJ_PATH . 'templates/patient-dashboard.php';
+		include EG_CARE_PATH . 'templates/patient-dashboard.php';
 		return ob_get_clean();
 	}
 }

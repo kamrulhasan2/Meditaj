@@ -2,14 +2,14 @@
 /**
  * Main Template for Patient Booking Flow.
  *
- * @package Meditaj
+ * @package EG Care
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
-if ( isset( $_GET['meditaj_payment'] ) ) {
+if ( isset( $_GET['eg_care_payment'] ) ) {
 	// If the gateway returned via POST, redirect via GET to restore SameSite session cookies and nonces.
 	if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
 		$redirect_url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
@@ -17,17 +17,17 @@ if ( isset( $_GET['meditaj_payment'] ) ) {
 		exit;
 	}
 
-	$payment_status = sanitize_key( $_GET['meditaj_payment'] );
+	$payment_status = sanitize_key( $_GET['eg_care_payment'] );
 	$appointment_id = isset( $_GET['id'] ) ? intval( $_GET['id'] ) : 0;
 	
 	global $wpdb;
-	$table_appointments = \Meditaj\DB::get_table( 'appointments' );
+	$table_appointments = \EGCare\DB::get_table( 'appointments' );
 	$appointment = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_appointments WHERE id = %d", $appointment_id ) );
 	
 	if ( $appointment ) {
 		// Enforce user ownership of the appointment to prevent IDOR disclosure.
 		if ( ! is_user_logged_in() || get_current_user_id() !== intval( $appointment->patient_user_id ) ) {
-			wp_die( esc_html__( 'Unauthorized access. You do not have permission to view this appointment.', 'meditaj' ), '', array( 'response' => 403 ) );
+			wp_die( esc_html__( 'Unauthorized access. You do not have permission to view this appointment.', 'eg-care' ), '', array( 'response' => 403 ) );
 		}
 
 		// Local development helper: Only run database updates on local/debug environments
@@ -53,7 +53,7 @@ if ( isset( $_GET['meditaj_payment'] ) ) {
 			);
 
 			// Record transaction in database ledger.
-			$table_transactions = \Meditaj\DB::get_table( 'transactions' );
+			$table_transactions = \EGCare\DB::get_table( 'transactions' );
 			$wpdb->insert(
 				$table_transactions,
 				array(
@@ -71,7 +71,7 @@ if ( isset( $_GET['meditaj_payment'] ) ) {
 			);
 
 			// Trigger booking confirmation notifications.
-			\Meditaj\Notifications::send_booking_confirmation_emails( $appointment->id );
+			\EGCare\Notifications::send_booking_confirmation_emails( $appointment->id );
 
 			// Fetch the freshly updated appointment object.
 			$appointment = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_appointments WHERE id = %d", $appointment_id ) );
@@ -90,7 +90,7 @@ if ( isset( $_GET['meditaj_payment'] ) ) {
 		if ( 'success' === $payment_status ) {
 			if ( 'paid' === $appointment->payment_status ) {
 				?>
-				<div class="meditaj-payment-status-container success" style="max-width: 600px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;">
+				<div class="eg-care-payment-status-container success" style="max-width: 600px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;">
 					<div style="width: 70px; height: 70px; background: #d1fae5; color: #059669; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 32px; font-weight: bold;">✓</div>
 					<h2 style="color: #0f172a; margin-bottom: 10px; font-size: 24px;">Booking Confirmed & Paid!</h2>
 					<p style="color: #64748b; margin-bottom: 30px;">Your appointment has been successfully scheduled and paid. You can now join the telemedicine video consultation room.</p>
@@ -115,36 +115,36 @@ if ( isset( $_GET['meditaj_payment'] ) ) {
 					</div>
 
 					<div style="display: flex; flex-direction: column; gap: 12px;">
-						<button type="button" class="meditaj-btn-join-call active" data-id="<?php echo intval( $appointment_id ); ?>" style="width: 100%; padding: 14px; font-weight: bold; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; background-color: #0f766e; color: #fff;">
+						<button type="button" class="eg-care-btn-join-call active" data-id="<?php echo intval( $appointment_id ); ?>" style="width: 100%; padding: 14px; font-weight: bold; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; background-color: #0f766e; color: #fff;">
 							Join Video Call
 						</button>
-						<a href="<?php echo esc_url( remove_query_arg( array( 'meditaj_payment', 'id' ) ) ); ?>" style="color: #0f766e; text-decoration: none; font-weight: bold; font-size: 14px;">Book Another Appointment</a>
+						<a href="<?php echo esc_url( remove_query_arg( array( 'eg_care_payment', 'id' ) ) ); ?>" style="color: #0f766e; text-decoration: none; font-weight: bold; font-size: 14px;">Book Another Appointment</a>
 					</div>
 				</div>
 				<?php
 			} else {
 				?>
-				<div class="meditaj-payment-status-container pending" style="max-width: 600px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;">
+				<div class="eg-care-payment-status-container pending" style="max-width: 600px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;">
 					<div style="width: 70px; height: 70px; background: #fef3c7; color: #d97706; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 32px; font-weight: bold;">🕒</div>
 					<h2 style="color: #0f172a; margin-bottom: 10px; font-size: 24px;">Verifying Payment...</h2>
 					<p style="color: #64748b; margin-bottom: 30px;">We are currently verifying your payment with SSLCommerz. This usually takes a few seconds. Please do not close this window.</p>
 					
 					<div style="display: flex; flex-direction: column; gap: 12px; align-items: center;">
-						<div class="meditaj-loading-spinner small" style="margin-bottom: 15px;"></div>
-						<button type="button" onclick="window.location.reload();" class="meditaj-btn-register cyan-btn" style="width: 100%; max-width: 250px; padding: 12px; font-weight: bold; border-radius: 8px;">Check Status Again</button>
+						<div class="eg-care-loading-spinner small" style="margin-bottom: 15px;"></div>
+						<button type="button" onclick="window.location.reload();" class="eg-care-btn-register cyan-btn" style="width: 100%; max-width: 250px; padding: 12px; font-weight: bold; border-radius: 8px;">Check Status Again</button>
 					</div>
 				</div>
 				<?php
 			}
 		} else {
 			?>
-			<div class="meditaj-payment-status-container error" style="max-width: 600px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;">
+			<div class="eg-care-payment-status-container error" style="max-width: 600px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;">
 				<div style="width: 70px; height: 70px; background: #fee2e2; color: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 32px; font-weight: bold;">✕</div>
 				<h2 style="color: #0f172a; margin-bottom: 10px; font-size: 24px;">Payment Failed / Cancelled</h2>
 				<p style="color: #64748b; margin-bottom: 30px;">Unfortunately, the transaction could not be completed successfully. Please try again or choose another payment method.</p>
 				
 				<div style="display: flex; flex-direction: column; gap: 12px;">
-					<a href="<?php echo esc_url( remove_query_arg( array( 'meditaj_payment', 'id' ) ) ); ?>" class="meditaj-btn-register cyan-btn" style="display: block; text-decoration: none; padding: 14px; font-weight: bold; font-size: 16px; border-radius: 8px; text-align: center;">Try Again</a>
+					<a href="<?php echo esc_url( remove_query_arg( array( 'eg_care_payment', 'id' ) ) ); ?>" class="eg-care-btn-register cyan-btn" style="display: block; text-decoration: none; padding: 14px; font-weight: bold; font-size: 16px; border-radius: 8px; text-align: center;">Try Again</a>
 				</div>
 			</div>
 			<?php
@@ -154,43 +154,43 @@ if ( isset( $_GET['meditaj_payment'] ) ) {
 }
 ?>
 
-<div class="meditaj-booking-flow-wrapper">
+<div class="eg-care-booking-flow-wrapper">
 	<!-- Step Progress Indicator -->
-	<div class="meditaj-booking-steps-bar">
-		<div class="meditaj-step-indicator active" data-step="1">
+	<div class="eg-care-booking-steps-bar">
+		<div class="eg-care-step-indicator active" data-step="1">
 			<span class="step-num">1</span>
-			<span class="step-label"><?php esc_html_e( 'Select Specialty', 'meditaj' ); ?></span>
+			<span class="step-label"><?php esc_html_e( 'Select Specialty', 'eg-care' ); ?></span>
 		</div>
-		<div class="meditaj-step-line"></div>
-		<div class="meditaj-step-indicator" data-step="2">
+		<div class="eg-care-step-line"></div>
+		<div class="eg-care-step-indicator" data-step="2">
 			<span class="step-num">2</span>
-			<span class="step-label"><?php esc_html_e( 'Choose Doctor', 'meditaj' ); ?></span>
+			<span class="step-label"><?php esc_html_e( 'Choose Doctor', 'eg-care' ); ?></span>
 		</div>
-		<div class="meditaj-step-line"></div>
-		<div class="meditaj-step-indicator" data-step="3">
+		<div class="eg-care-step-line"></div>
+		<div class="eg-care-step-indicator" data-step="3">
 			<span class="step-num">3</span>
-			<span class="step-label"><?php esc_html_e( 'Details & Payout', 'meditaj' ); ?></span>
+			<span class="step-label"><?php esc_html_e( 'Details & Payout', 'eg-care' ); ?></span>
 		</div>
 	</div>
 
 	<!-- Main Shell where JS will inject views -->
-	<div id="meditaj-booking-flow-app" class="meditaj-booking-app-body">
+	<div id="eg-care-booking-flow-app" class="eg-care-booking-app-body">
 		<!-- Loading Spinner -->
-		<div class="meditaj-spinner-wrapper">
-			<div class="meditaj-loading-spinner"></div>
-			<p><?php esc_html_e( 'Loading platform data...', 'meditaj' ); ?></p>
+		<div class="eg-care-spinner-wrapper">
+			<div class="eg-care-loading-spinner"></div>
+			<p><?php esc_html_e( 'Loading platform data...', 'eg-care' ); ?></p>
 		</div>
 	</div>
 </div>
 
-<template id="meditaj-tmpl-specialty-grid">
-	<?php include MEDITAJ_PATH . 'templates/partials/specialty-grid.php'; ?>
+<template id="eg-care-tmpl-specialty-grid">
+	<?php include EG_CARE_PATH . 'templates/partials/specialty-grid.php'; ?>
 </template>
 
-<template id="meditaj-tmpl-doctor-card">
-	<?php include MEDITAJ_PATH . 'templates/partials/doctor-card.php'; ?>
+<template id="eg-care-tmpl-doctor-card">
+	<?php include EG_CARE_PATH . 'templates/partials/doctor-card.php'; ?>
 </template>
 
-<template id="meditaj-tmpl-checkout-summary">
-	<?php include MEDITAJ_PATH . 'templates/partials/checkout-summary.php'; ?>
+<template id="eg-care-tmpl-checkout-summary">
+	<?php include EG_CARE_PATH . 'templates/partials/checkout-summary.php'; ?>
 </template>

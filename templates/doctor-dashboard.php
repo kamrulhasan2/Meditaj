@@ -2,7 +2,7 @@
 /**
  * Template for Doctor-Facing Dashboard.
  *
- * @package Meditaj
+ * @package EG Care
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,16 +12,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 $user = wp_get_current_user();
 ?>
 
-<div class="meditaj-dashboard-wrapper">
+<div class="eg-care-dashboard-wrapper">
 	<!-- Header Banner -->
-	<div class="meditaj-dashboard-header">
+	<div class="eg-care-dashboard-header">
 		<div class="welcome-text">
 			<h2>Welcome back, <?php echo esc_html( $user->display_name ); ?>!</h2>
-			<p class="role-caption"><?php esc_html_e( 'Registered Meditaj Specialist', 'meditaj' ); ?></p>
+			<p class="role-caption"><?php esc_html_e( 'Registered EG Care Specialist', 'eg-care' ); ?></p>
 		</div>
 		<div class="instant-status-toggle">
-			<span class="toggle-label"><?php esc_html_e( 'Go Online (Instant Call)', 'meditaj' ); ?></span>
-			<label class="meditaj-switch">
+			<span class="toggle-label"><?php esc_html_e( 'Go Online (Instant Call)', 'eg-care' ); ?></span>
+			<label class="eg-care-switch">
 				<input type="checkbox" id="dashboard-instant-toggle">
 				<span class="slider round"></span>
 			</label>
@@ -29,46 +29,46 @@ $user = wp_get_current_user();
 	</div>
 
 	<!-- Stats Overview Cards -->
-	<div class="meditaj-stats-row">
-		<div class="meditaj-stat-card">
+	<div class="eg-care-stats-row">
+		<div class="eg-care-stat-card">
 			<div class="stat-icon purple">📅</div>
 			<div class="stat-details">
 				<span class="stat-num" id="stat-total-appointments">0</span>
-				<span class="stat-label"><?php esc_html_e( 'Total Consultations', 'meditaj' ); ?></span>
+				<span class="stat-label"><?php esc_html_e( 'Total Consultations', 'eg-care' ); ?></span>
 			</div>
 		</div>
-		<div class="meditaj-stat-card">
+		<div class="eg-care-stat-card">
 			<div class="stat-icon green">৳</div>
 			<div class="stat-details">
 				<span class="stat-num" id="stat-net-earnings">0.00 BDT</span>
-				<span class="stat-label"><?php esc_html_e( 'Net Earnings (85%)', 'meditaj' ); ?></span>
+				<span class="stat-label"><?php esc_html_e( 'Net Earnings (85%)', 'eg-care' ); ?></span>
 				<span class="stat-help" id="stat-gross-breakdown">Gross: 0.00 BDT</span>
 			</div>
 		</div>
-		<div class="meditaj-stat-card">
+		<div class="eg-care-stat-card">
 			<div class="stat-icon blue">⚡</div>
 			<div class="stat-details">
 				<span class="stat-num" id="stat-online-badge">Offline</span>
-				<span class="stat-label"><?php esc_html_e( 'Status', 'meditaj' ); ?></span>
+				<span class="stat-label"><?php esc_html_e( 'Status', 'eg-care' ); ?></span>
 			</div>
 		</div>
 	</div>
 
 	<!-- Tab Navigation -->
-	<div class="meditaj-dashboard-tabs">
-		<button type="button" class="tab-trigger active" data-tab="appointments"><?php esc_html_e( 'Today\'s Appointments', 'meditaj' ); ?></button>
-		<button type="button" class="tab-trigger" data-tab="upcoming"><?php esc_html_e( 'Upcoming Consultations', 'meditaj' ); ?></button>
-		<button type="button" class="tab-trigger" data-tab="slots"><?php esc_html_e( 'Schedules & Slots', 'meditaj' ); ?></button>
-		<button type="button" class="tab-trigger" data-tab="profile"><?php esc_html_e( 'Profile Settings', 'meditaj' ); ?></button>
+	<div class="eg-care-dashboard-tabs">
+		<button type="button" class="tab-trigger active" data-tab="appointments"><?php esc_html_e( 'Today\'s Appointments', 'eg-care' ); ?></button>
+		<button type="button" class="tab-trigger" data-tab="upcoming"><?php esc_html_e( 'Upcoming Consultations', 'eg-care' ); ?></button>
+		<button type="button" class="tab-trigger" data-tab="slots"><?php esc_html_e( 'Schedules & Slots', 'eg-care' ); ?></button>
+		<button type="button" class="tab-trigger" data-tab="profile"><?php esc_html_e( 'Profile Settings', 'eg-care' ); ?></button>
 	</div>
 
 	<!-- Tab Content Panes -->
-	<div class="meditaj-tab-contents">
+	<div class="eg-care-tab-contents">
 		<!-- Pane: Today's Appointments -->
 		<div class="tab-pane active" id="pane-appointments">
-			<h3><?php esc_html_e( 'Today\'s Appointed Consultations', 'meditaj' ); ?></h3>
-			<div class="meditaj-table-responsive">
-				<table class="meditaj-dashboard-table">
+			<h3><?php esc_html_e( 'Today\'s Appointed Consultations', 'eg-care' ); ?></h3>
+			<div class="eg-care-table-responsive">
+				<table class="eg-care-dashboard-table">
 					<thead>
 						<tr>
 							<th>Patient Name</th>
@@ -89,9 +89,9 @@ $user = wp_get_current_user();
 
 		<!-- Pane: Upcoming Appointments -->
 		<div class="tab-pane" id="pane-upcoming">
-			<h3><?php esc_html_e( 'Upcoming Scheduled Appointments', 'meditaj' ); ?></h3>
-			<div class="meditaj-table-responsive">
-				<table class="meditaj-dashboard-table">
+			<h3><?php esc_html_e( 'Upcoming Scheduled Appointments', 'eg-care' ); ?></h3>
+			<div class="eg-care-table-responsive">
+				<table class="eg-care-dashboard-table">
 					<thead>
 						<tr>
 							<th>Patient Name</th>
@@ -112,10 +112,10 @@ $user = wp_get_current_user();
 
 		<!-- Pane: Slots Scheduler -->
 		<div class="tab-pane" id="pane-slots">
-			<h3><?php esc_html_e( 'Configure Availability Slot Grid', 'meditaj' ); ?></h3>
-			<p class="pane-desc"><?php esc_html_e( 'Define standard hourly duration slots for each day of the week to enable patients to book appointments.', 'meditaj' ); ?></p>
+			<h3><?php esc_html_e( 'Configure Availability Slot Grid', 'eg-care' ); ?></h3>
+			<p class="pane-desc"><?php esc_html_e( 'Define standard hourly duration slots for each day of the week to enable patients to book appointments.', 'eg-care' ); ?></p>
 			
-			<form id="meditaj-slots-form">
+			<form id="eg-care-slots-form">
 				<div class="schedules-weekly-grid">
 					<?php
 					$days = array(
@@ -137,43 +137,43 @@ $user = wp_get_current_user();
 							<div class="day-slots-blocks-container">
 								<!-- Slot blocks will be dynamically loaded/inserted here -->
 							</div>
-							<button type="button" class="meditaj-add-slot-btn" style="margin-top: 8px; font-size: 13px; padding: 8px 16px; background: #e0f2fe; color: #0369a1; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s;">+ Add New Slot</button>
+							<button type="button" class="eg-care-add-slot-btn" style="margin-top: 8px; font-size: 13px; padding: 8px 16px; background: #e0f2fe; color: #0369a1; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s;">+ Add New Slot</button>
 						</div>
 					</div>
 					<?php endforeach; ?>
 				</div>
-				<button type="submit" class="meditaj-btn-register cyan-btn" style="margin-top:20px;">Save Schedule Grid</button>
+				<button type="submit" class="eg-care-btn-register cyan-btn" style="margin-top:20px;">Save Schedule Grid</button>
 			</form>
 		</div>
 
 		<!-- Pane: Profile Settings -->
 		<div class="tab-pane" id="pane-profile">
-			<h3><?php esc_html_e( 'Update Profile Credentials', 'meditaj' ); ?></h3>
+			<h3><?php esc_html_e( 'Update Profile Credentials', 'eg-care' ); ?></h3>
 			
-			<form id="meditaj-profile-form">
-				<div class="meditaj-fields-grid text-fields">
-					<div class="meditaj-field">
+			<form id="eg-care-profile-form">
+				<div class="eg-care-fields-grid text-fields">
+					<div class="eg-care-field">
 						<label for="profile-fee">Consultation Fee (BDT) *</label>
 						<input type="number" id="profile-fee" value="" required>
 					</div>
-					<div class="meditaj-field">
+					<div class="eg-care-field">
 						<label for="profile-instant-fee">Instant Call Fee (BDT)</label>
 						<input type="number" id="profile-instant-fee" value="">
 					</div>
-					<div class="meditaj-field span-full">
+					<div class="eg-care-field span-full">
 						<label for="profile-bio">Biography *</label>
 						<textarea id="profile-bio" rows="6" required></textarea>
 					</div>
-					<div class="meditaj-field span-full">
+					<div class="eg-care-field span-full">
 						<label>Featured Profile Picture</label>
-						<div class="meditaj-modern-upload-wrapper">
-							<label for="profile-photo" class="meditaj-modern-upload-label">Choose New Photo</label>
-							<input type="file" id="profile-photo" accept="image/*" class="meditaj-hidden-file-input">
-							<span class="meditaj-file-name" id="profile-photo-name">No file chosen</span>
+						<div class="eg-care-modern-upload-wrapper">
+							<label for="profile-photo" class="eg-care-modern-upload-label">Choose New Photo</label>
+							<input type="file" id="profile-photo" accept="image/*" class="eg-care-hidden-file-input">
+							<span class="eg-care-file-name" id="profile-photo-name">No file chosen</span>
 						</div>
 					</div>
 				</div>
-				<button type="submit" class="meditaj-btn-register cyan-btn" style="margin-top:20px;">Save Profile Changes</button>
+				<button type="submit" class="eg-care-btn-register cyan-btn" style="margin-top:20px;">Save Profile Changes</button>
 			</form>
 		</div>
 	</div>

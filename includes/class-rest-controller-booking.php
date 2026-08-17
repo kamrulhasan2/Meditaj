@@ -2,10 +2,10 @@
 /**
  * REST API Controller for Bookings.
  *
- * @package Meditaj
+ * @package EG Care
  */
 
-namespace Meditaj;
+namespace EGCare;
 
 use WP_REST_Controller;
 use WP_REST_Server;
@@ -25,7 +25,7 @@ class RestControllerBooking extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes() {
-		$namespace = 'meditaj/v1';
+		$namespace = 'eg-care/v1';
 
 		register_rest_route(
 			$namespace,
@@ -95,7 +95,7 @@ class RestControllerBooking extends WP_REST_Controller {
 	 */
 	public function check_logged_in_permission() {
 		if ( ! is_user_logged_in() ) {
-			return new WP_Error( 'rest_forbidden', __( 'You must be logged in to access this endpoint.', 'meditaj' ), array( 'status' => 401 ) );
+			return new WP_Error( 'rest_forbidden', __( 'You must be logged in to access this endpoint.', 'eg-care' ), array( 'status' => 401 ) );
 		}
 		return true;
 	}
@@ -124,15 +124,15 @@ class RestControllerBooking extends WP_REST_Controller {
 
 		// 1. Validation.
 		if ( empty( $doctor_id ) || empty( $booking_type ) || empty( $date ) || empty( $time ) || empty( $relation ) ) {
-			return new WP_Error( 'rest_bad_request', __( 'Required fields are missing.', 'meditaj' ), array( 'status' => 400 ) );
+			return new WP_Error( 'rest_bad_request', __( 'Required fields are missing.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
 		if ( ! in_array( $booking_type, array( 'instant', 'scheduled' ), true ) ) {
-			return new WP_Error( 'rest_bad_request', __( 'Invalid booking type.', 'meditaj' ), array( 'status' => 400 ) );
+			return new WP_Error( 'rest_bad_request', __( 'Invalid booking type.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
 		// Verify target doctor is active and approved.
-		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 		$doctor     = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT m.*, p.post_title FROM $table_meta m 
@@ -143,13 +143,13 @@ class RestControllerBooking extends WP_REST_Controller {
 		);
 
 		if ( ! $doctor ) {
-			return new WP_Error( 'rest_not_found', __( 'Selected doctor profile not found or not approved.', 'meditaj' ), array( 'status' => 404 ) );
+			return new WP_Error( 'rest_not_found', __( 'Selected doctor profile not found or not approved.', 'eg-care' ), array( 'status' => 404 ) );
 		}
 
 		// 2. Wrap block in transaction for race condition protection.
 		$wpdb->query( 'START TRANSACTION' );
 
-		$table_appointments = \Meditaj\DB::get_table( 'appointments' );
+		$table_appointments = \EGCare\DB::get_table( 'appointments' );
 
 		// Check lock for the exact slot.
 		$exists = $wpdb->get_var(
@@ -167,7 +167,7 @@ class RestControllerBooking extends WP_REST_Controller {
 		if ( $exists ) {
 			// Rollback and exit on race condition conflict.
 			$wpdb->query( 'ROLLBACK' );
-			return new WP_Error( 'meditaj_slot_conflict', __( 'This consultation slot has already been booked or is pending payment.', 'meditaj' ), array( 'status' => 409 ) );
+			return new WP_Error( 'eg_care_slot_conflict', __( 'This consultation slot has already been booked or is pending payment.', 'eg-care' ), array( 'status' => 409 ) );
 		}
 
 		// Calculate Fees.
@@ -217,7 +217,7 @@ class RestControllerBooking extends WP_REST_Controller {
 
 		if ( false === $inserted ) {
 			$wpdb->query( 'ROLLBACK' );
-			return new WP_Error( 'meditaj_db_error', __( 'Failed to record appointment details in DB.', 'meditaj' ), array( 'status' => 500 ) );
+			return new WP_Error( 'eg_care_db_error', __( 'Failed to record appointment details in DB.', 'eg-care' ), array( 'status' => 500 ) );
 		}
 
 		$appointment_id = $wpdb->insert_id;
@@ -243,7 +243,7 @@ class RestControllerBooking extends WP_REST_Controller {
 	public function get_appointment( $request ) {
 		global $wpdb;
 		$id                 = intval( $request->get_param( 'id' ) );
-		$table_appointments = \Meditaj\DB::get_table( 'appointments' );
+		$table_appointments = \EGCare\DB::get_table( 'appointments' );
 
 		$appointment = $wpdb->get_row(
 			$wpdb->prepare(
@@ -253,13 +253,13 @@ class RestControllerBooking extends WP_REST_Controller {
 		);
 
 		if ( ! $appointment ) {
-			return new WP_Error( 'rest_not_found', __( 'Appointment request not found.', 'meditaj' ), array( 'status' => 404 ) );
+			return new WP_Error( 'rest_not_found', __( 'Appointment request not found.', 'eg-care' ), array( 'status' => 404 ) );
 		}
 
 		// Enforce ownership / authorization checks: Patient owner or admin only.
 		$current_user_id = get_current_user_id();
 		if ( intval( $appointment->patient_user_id ) !== $current_user_id && ! current_user_can( 'manage_options' ) ) {
-			return new WP_Error( 'rest_forbidden', __( 'You do not have permission to view this booking.', 'meditaj' ), array( 'status' => 403 ) );
+			return new WP_Error( 'rest_forbidden', __( 'You do not have permission to view this booking.', 'eg-care' ), array( 'status' => 403 ) );
 		}
 
 		return new WP_REST_Response( $appointment, 200 );
@@ -275,11 +275,11 @@ class RestControllerBooking extends WP_REST_Controller {
 		global $wpdb;
 		$appointment_id = intval( $request->get_param( 'appointment_id' ) );
 		if ( ! $appointment_id ) {
-			return new WP_Error( 'rest_bad_request', __( 'Missing appointment_id parameter.', 'meditaj' ), array( 'status' => 400 ) );
+			return new WP_Error( 'rest_bad_request', __( 'Missing appointment_id parameter.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
-		$table_appointments = \Meditaj\DB::get_table( 'appointments' );
-		$table_meta         = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_appointments = \EGCare\DB::get_table( 'appointments' );
+		$table_meta         = \EGCare\DB::get_table( 'doctors_meta' );
 
 		// Retrieve appointment details and doctor user ID.
 		$appointment = $wpdb->get_row(
@@ -293,7 +293,7 @@ class RestControllerBooking extends WP_REST_Controller {
 		);
 
 		if ( ! $appointment ) {
-			return new WP_Error( 'rest_not_found', __( 'Appointment not found.', 'meditaj' ), array( 'status' => 404 ) );
+			return new WP_Error( 'rest_not_found', __( 'Appointment not found.', 'eg-care' ), array( 'status' => 404 ) );
 		}
 
 		// Security Check: requester must be the doctor_user_id or patient_user_id.
@@ -302,12 +302,12 @@ class RestControllerBooking extends WP_REST_Controller {
 		$is_patient      = ( intval( $current_user_id ) === intval( $appointment->patient_user_id ) );
 
 		if ( ! $is_doctor && ! $is_patient ) {
-			return new WP_Error( 'rest_forbidden', __( 'You do not have permission to access this call.', 'meditaj' ), array( 'status' => 403 ) );
+			return new WP_Error( 'rest_forbidden', __( 'You do not have permission to access this call.', 'eg-care' ), array( 'status' => 403 ) );
 		}
 
 		// Validate status is 'confirmed' or 'ongoing'.
 		if ( 'confirmed' !== $appointment->status && 'ongoing' !== $appointment->status ) {
-			return new WP_Error( 'rest_forbidden', __( 'Video calling is only allowed for confirmed appointments.', 'meditaj' ), array( 'status' => 403 ) );
+			return new WP_Error( 'rest_forbidden', __( 'Video calling is only allowed for confirmed appointments.', 'eg-care' ), array( 'status' => 403 ) );
 		}
 
 		// Validate time window (except for instant call which starts immediately).
@@ -320,11 +320,11 @@ class RestControllerBooking extends WP_REST_Controller {
 			$window_end   = $appointment_timestamp + ( 60 * 60 );
 
 			if ( $now_timestamp < $window_start ) {
-				return new WP_Error( 'rest_forbidden', __( 'The call window has not opened yet. You can join 15 minutes before the start time.', 'meditaj' ), array( 'status' => 403 ) );
+				return new WP_Error( 'rest_forbidden', __( 'The call window has not opened yet. You can join 15 minutes before the start time.', 'eg-care' ), array( 'status' => 403 ) );
 			}
 
 			if ( $now_timestamp > $window_end ) {
-				return new WP_Error( 'rest_forbidden', __( 'The call window has closed.', 'meditaj' ), array( 'status' => 403 ) );
+				return new WP_Error( 'rest_forbidden', __( 'The call window has closed.', 'eg-care' ), array( 'status' => 403 ) );
 			}
 		}
 
@@ -345,13 +345,13 @@ class RestControllerBooking extends WP_REST_Controller {
 		$token = AgoraToken::generate_token( $video_room_id, 0, 1, 3600 );
 
 		if ( ! $token ) {
-			return new WP_Error( 'rest_internal_error', __( 'Failed to generate video credentials. Ensure App Credentials are configured in settings.', 'meditaj' ), array( 'status' => 500 ) );
+			return new WP_Error( 'rest_internal_error', __( 'Failed to generate video credentials. Ensure App Credentials are configured in settings.', 'eg-care' ), array( 'status' => 500 ) );
 		}
 
 		return new WP_REST_Response(
 			array(
 				'token'        => $token,
-				'app_id'       => get_option( 'meditaj_agora_app_id', '' ),
+				'app_id'       => get_option( 'eg_care_agora_app_id', '' ),
 				'channel_name' => $video_room_id,
 				'uid'          => 0,
 				'is_doctor'    => $is_doctor,
@@ -372,8 +372,8 @@ class RestControllerBooking extends WP_REST_Controller {
 		global $wpdb;
 		$id = intval( $request->get_param( 'id' ) );
 
-		$table_appointments = \Meditaj\DB::get_table( 'appointments' );
-		$table_meta         = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_appointments = \EGCare\DB::get_table( 'appointments' );
+		$table_meta         = \EGCare\DB::get_table( 'doctors_meta' );
 
 		// Retrieve appointment details and doctor user ID.
 		$appointment = $wpdb->get_row(
@@ -387,7 +387,7 @@ class RestControllerBooking extends WP_REST_Controller {
 		);
 
 		if ( ! $appointment ) {
-			return new WP_Error( 'rest_not_found', __( 'Appointment not found.', 'meditaj' ), array( 'status' => 404 ) );
+			return new WP_Error( 'rest_not_found', __( 'Appointment not found.', 'eg-care' ), array( 'status' => 404 ) );
 		}
 
 		// Security Check: requester must be the doctor_user_id or patient_user_id.
@@ -396,16 +396,16 @@ class RestControllerBooking extends WP_REST_Controller {
 		$is_patient      = ( intval( $current_user_id ) === intval( $appointment->patient_user_id ) );
 
 		if ( ! $is_doctor && ! $is_patient ) {
-			return new WP_Error( 'rest_forbidden', __( 'You do not have permission to modify this appointment.', 'meditaj' ), array( 'status' => 403 ) );
+			return new WP_Error( 'rest_forbidden', __( 'You do not have permission to modify this appointment.', 'eg-care' ), array( 'status' => 403 ) );
 		}
 
 		// State Validation: appointment must be paid and currently confirmed/ongoing.
 		if ( 'paid' !== $appointment->payment_status ) {
-			return new WP_Error( 'rest_bad_request', __( 'Cannot complete an unpaid appointment.', 'meditaj' ), array( 'status' => 400 ) );
+			return new WP_Error( 'rest_bad_request', __( 'Cannot complete an unpaid appointment.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
 		if ( ! in_array( $appointment->status, array( 'confirmed', 'ongoing' ), true ) ) {
-			return new WP_Error( 'rest_bad_request', __( 'Only confirmed or ongoing appointments can be marked as completed.', 'meditaj' ), array( 'status' => 400 ) );
+			return new WP_Error( 'rest_bad_request', __( 'Only confirmed or ongoing appointments can be marked as completed.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
 		// Update appointment status to 'completed'.
@@ -434,7 +434,7 @@ class RestControllerBooking extends WP_REST_Controller {
 		$comment        = isset( $params['comment'] ) ? sanitize_textarea_field( $params['comment'] ) : '';
 
 		if ( $rating < 1 || $rating > 5 ) {
-			return new \WP_Error( 'invalid_rating', __( 'Rating must be between 1 and 5.', 'meditaj' ), array( 'status' => 400 ) );
+			return new \WP_Error( 'invalid_rating', __( 'Rating must be between 1 and 5.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
 		$table_appointments = DB::get_table( 'appointments' );
@@ -444,24 +444,24 @@ class RestControllerBooking extends WP_REST_Controller {
 		// Fetch appointment
 		$appointment = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_appointments WHERE id = %d", $appointment_id ) );
 		if ( ! $appointment ) {
-			return new \WP_Error( 'not_found', __( 'Appointment not found.', 'meditaj' ), array( 'status' => 404 ) );
+			return new \WP_Error( 'not_found', __( 'Appointment not found.', 'eg-care' ), array( 'status' => 404 ) );
 		}
 
 		// Security: must be the patient who booked this
 		$current_user_id = get_current_user_id();
 		if ( intval( $current_user_id ) !== intval( $appointment->patient_user_id ) ) {
-			return new \WP_Error( 'rest_forbidden', __( 'You do not have permission to review this appointment.', 'meditaj' ), array( 'status' => 403 ) );
+			return new \WP_Error( 'rest_forbidden', __( 'You do not have permission to review this appointment.', 'eg-care' ), array( 'status' => 403 ) );
 		}
 
 		// Verify appointment is completed
 		if ( 'completed' !== $appointment->status ) {
-			return new \WP_Error( 'invalid_status', __( 'You can only review completed appointments.', 'meditaj' ), array( 'status' => 400 ) );
+			return new \WP_Error( 'invalid_status', __( 'You can only review completed appointments.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
 		// Check if a review already exists
 		$exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $table_reviews WHERE appointment_id = %d", $appointment_id ) );
 		if ( $exists ) {
-			return new \WP_Error( 'review_exists', __( 'You have already reviewed this appointment.', 'meditaj' ), array( 'status' => 400 ) );
+			return new \WP_Error( 'review_exists', __( 'You have already reviewed this appointment.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
 		// Insert Review

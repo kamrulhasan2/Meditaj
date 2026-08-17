@@ -2,10 +2,10 @@
 /**
  * REST API Controller for Doctor Dashboard.
  *
- * @package Meditaj
+ * @package EG Care
  */
 
-namespace Meditaj;
+namespace EGCare;
 
 use WP_REST_Controller;
 use WP_REST_Server;
@@ -25,7 +25,7 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes() {
-		$namespace = 'meditaj/v1';
+		$namespace = 'eg-care/v1';
 
 		register_rest_route(
 			$namespace,
@@ -88,12 +88,12 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 	 */
 	public function check_doctor_permission() {
 		if ( ! is_user_logged_in() ) {
-			return new WP_Error( 'rest_forbidden', __( 'You must be logged in.', 'meditaj' ), array( 'status' => 401 ) );
+			return new WP_Error( 'rest_forbidden', __( 'You must be logged in.', 'eg-care' ), array( 'status' => 401 ) );
 		}
 
 		$doctor_id = $this->get_current_doctor_id();
 		if ( 0 === $doctor_id ) {
-			return new WP_Error( 'rest_forbidden', __( 'You do not have a doctor profile registered or approved on this platform.', 'meditaj' ), array( 'status' => 403 ) );
+			return new WP_Error( 'rest_forbidden', __( 'You do not have a doctor profile registered or approved on this platform.', 'eg-care' ), array( 'status' => 403 ) );
 		}
 
 		return true;
@@ -111,7 +111,7 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 			return 0;
 		}
 
-		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 		$doctor_id  = $wpdb->get_var( $wpdb->prepare( "SELECT post_id FROM $table_meta WHERE user_id = %d", $user_id ) );
 
 		return $doctor_id ? intval( $doctor_id ) : 0;
@@ -125,7 +125,7 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 	public function get_doctor_appointments() {
 		global $wpdb;
 		$doctor_id = $this->get_current_doctor_id();
-		$table_appointments = \Meditaj\DB::get_table( 'appointments' );
+		$table_appointments = \EGCare\DB::get_table( 'appointments' );
 
 		// Query today's and upcoming appointments.
 		$appointments = $wpdb->get_results(
@@ -166,7 +166,7 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 	public function get_doctor_slots() {
 		global $wpdb;
 		$doctor_id = $this->get_current_doctor_id();
-		$table_schedules = \Meditaj\DB::get_table( 'schedules' );
+		$table_schedules = \EGCare\DB::get_table( 'schedules' );
 
 		$slots = $wpdb->get_results(
 			$wpdb->prepare(
@@ -190,10 +190,10 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 		$slots     = $request->get_param( 'slots' ); // Expects array of { day_of_week, start_time, end_time, slot_duration_min }
 
 		if ( ! is_array( $slots ) ) {
-			return new WP_Error( 'rest_bad_request', __( 'Invalid slots parameter format.', 'meditaj' ), array( 'status' => 400 ) );
+			return new WP_Error( 'rest_bad_request', __( 'Invalid slots parameter format.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
-		$table_schedules = \Meditaj\DB::get_table( 'schedules' );
+		$table_schedules = \EGCare\DB::get_table( 'schedules' );
 
 		// Execute deletion and insertion in transaction.
 		$wpdb->query( 'START TRANSACTION' );
@@ -201,7 +201,7 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 		$deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM $table_schedules WHERE doctor_id = %d", $doctor_id ) );
 		if ( false === $deleted ) {
 			$wpdb->query( 'ROLLBACK' );
-			return new WP_Error( 'meditaj_db_error', __( 'Failed to clear old schedules.', 'meditaj' ), array( 'status' => 500 ) );
+			return new WP_Error( 'eg_care_db_error', __( 'Failed to clear old schedules.', 'eg-care' ), array( 'status' => 500 ) );
 		}
 
 		foreach ( $slots as $slot ) {
@@ -232,7 +232,7 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 
 			if ( false === $inserted ) {
 				$wpdb->query( 'ROLLBACK' );
-				return new WP_Error( 'meditaj_db_error', __( 'Failed to record schedule rule in database.', 'meditaj' ), array( 'status' => 500 ) );
+				return new WP_Error( 'eg_care_db_error', __( 'Failed to record schedule rule in database.', 'eg-care' ), array( 'status' => 500 ) );
 			}
 		}
 
@@ -258,7 +258,7 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 		$photo_id    = intval( $request->get_param( 'photo_id' ) );
 
 		if ( $fee <= 0 ) {
-			return new WP_Error( 'rest_bad_request', __( 'Consultation fee must be positive.', 'meditaj' ), array( 'status' => 400 ) );
+			return new WP_Error( 'rest_bad_request', __( 'Consultation fee must be positive.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
 		// Update post content.
@@ -270,7 +270,7 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 		);
 
 		// Update doctors_meta.
-		$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 		$updated = $wpdb->update(
 			$table_meta,
 			array(
@@ -284,7 +284,7 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 		);
 
 		if ( false === $updated ) {
-			return new WP_Error( 'meditaj_db_error', __( 'Failed to save doctor metadata details.', 'meditaj' ), array( 'status' => 500 ) );
+			return new WP_Error( 'eg_care_db_error', __( 'Failed to save doctor metadata details.', 'eg-care' ), array( 'status' => 500 ) );
 		}
 
 		// Update thumbnail if passed.
@@ -312,7 +312,7 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 	public function get_doctor_stats() {
 		global $wpdb;
 		$doctor_id = $this->get_current_doctor_id();
-		$table_appointments = \Meditaj\DB::get_table( 'appointments' );
+		$table_appointments = \EGCare\DB::get_table( 'appointments' );
 
 		// Count total appointments.
 		$total_appointments = intval(
@@ -336,7 +336,7 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 		);
 
 		// Configurable platform commission.
-		$commission_pct = floatval( get_option( 'meditaj_commission_percentage', 15 ) );
+		$commission_pct = floatval( get_option( 'eg_care_commission_percentage', 15 ) );
 		$commission_amt = $gross_earnings * ( $commission_pct / 100 );
 		$net_earnings   = $gross_earnings - $commission_amt;
 

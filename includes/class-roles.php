@@ -1,5 +1,5 @@
 <?php
-namespace Meditaj;
+namespace EGCare;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -12,7 +12,7 @@ class Roles {
 	/**
 	 * Custom doctor role name.
 	 */
-	const DOCTOR_ROLE = 'meditaj_doctor';
+	const DOCTOR_ROLE = 'eg_care_doctor';
 
 	/**
 	 * Initialize hook listeners.
@@ -38,12 +38,12 @@ class Roles {
 	public static function add_roles() {
 		add_role(
 			self::DOCTOR_ROLE,
-			__( 'Meditaj Doctor', 'meditaj' ),
+			__( 'EG Care Doctor', 'eg-care' ),
 			array(
 				'read'                            => true,
 				'upload_files'                    => true,
-				'meditaj_manage_own_appointments' => true,
-				'meditaj_manage_own_slots'        => true,
+				'eg_care_manage_own_appointments' => true,
+				'eg_care_manage_own_slots'        => true,
 			)
 		);
 	}
@@ -69,7 +69,7 @@ class Roles {
 
 		if ( in_array( self::DOCTOR_ROLE, $user->roles, true ) ) {
 			global $wpdb;
-			$table_meta = \Meditaj\DB::get_table( 'doctors_meta' );
+			$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
 
 			$status = $wpdb->get_var(
 				$wpdb->prepare(
@@ -81,14 +81,14 @@ class Roles {
 			if ( 'approved' !== $status ) {
 				if ( 'rejected' === $status ) {
 					return new \WP_Error(
-						'meditaj_doctor_rejected',
-						__( '<strong>ERROR</strong>: Your doctor account has been rejected. Please contact support.', 'meditaj' )
+						'eg_care_doctor_rejected',
+						__( '<strong>ERROR</strong>: Your doctor account has been rejected. Please contact support.', 'eg-care' )
 					);
 				}
 				// Default to pending if record missing or pending.
 				return new \WP_Error(
-					'meditaj_doctor_pending',
-					__( '<strong>ERROR</strong>: Your doctor account is pending verification. You will be notified via email once approved.', 'meditaj' )
+					'eg_care_doctor_pending',
+					__( '<strong>ERROR</strong>: Your doctor account is pending verification. You will be notified via email once approved.', 'eg-care' )
 				);
 			}
 		}

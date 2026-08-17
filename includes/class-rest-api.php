@@ -2,10 +2,10 @@
 /**
  * REST API entrypoint register.
  *
- * @package Meditaj
+ * @package EG Care
  */
 
-namespace Meditaj;
+namespace EGCare;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -23,7 +23,7 @@ class RestApi {
 	}
 
 	/**
-	 * Register Meditaj REST routes.
+	 * Register EG Care REST routes.
 	 */
 	public static function register_routes() {
 		$doctors = new RestControllerDoctors();

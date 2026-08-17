@@ -2,7 +2,7 @@
 /**
  * Partial: Specialty Grid Container and Card template.
  *
- * @package Meditaj
+ * @package EG Care
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -10,19 +10,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 
-<div class="meditaj-specialties-container">
-	<h3 class="meditaj-step-title"><?php esc_html_e( 'Select a Medical Specialty', 'meditaj' ); ?></h3>
-	<div class="meditaj-specialties-grid" id="meditaj-specialties-target">
+<div class="eg-care-specialties-container">
+	<h3 class="eg-care-step-title"><?php esc_html_e( 'Select a Medical Specialty', 'eg-care' ); ?></h3>
+	<div class="eg-care-specialties-grid" id="eg-care-specialties-target">
 		<!-- JavaScript will inject cards matching the structure below: -->
 	</div>
 </div>
 
 <!-- Template for individual Specialty Card -->
-<div id="meditaj-tmpl-specialty-card-item" style="display: none;">
-	<div class="meditaj-specialty-card" data-slug="{{slug}}">
-		<div class="meditaj-specialty-icon">
+<div id="eg-care-tmpl-specialty-card-item" style="display: none;">
+	<div class="eg-care-specialty-card" data-slug="{{slug}}">
+		<div class="eg-care-specialty-icon">
 			{{icon}}
 		</div>
-		<h4 class="meditaj-specialty-name">{{name}}</h4>
+		<h4 class="eg-care-specialty-name">{{name}}</h4>
 	</div>
 </div>

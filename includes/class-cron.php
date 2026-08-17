@@ -1,5 +1,5 @@
 <?php
-namespace Meditaj;
+namespace EGCare;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -12,7 +12,7 @@ class Cron {
 	public static function init() {
 		add_filter( 'cron_schedules', array( __CLASS__, 'add_custom_intervals' ) );
 		add_action( 'wp', array( __CLASS__, 'schedule_jobs' ) );
-		add_action( 'meditaj_appointment_reminder_cron', array( __CLASS__, 'run_reminders' ) );
+		add_action( 'eg_care_appointment_reminder_cron', array( __CLASS__, 'run_reminders' ) );
 	}
 
 	/**
@@ -22,9 +22,9 @@ class Cron {
 	 * @return array Modified schedules.
 	 */
 	public static function add_custom_intervals( $schedules ) {
-		$schedules['meditaj_every_ten_minutes'] = array(
+		$schedules['eg_care_every_ten_minutes'] = array(
 			'interval' => 10 * MINUTE_IN_SECONDS,
-			'display'  => esc_html__( 'Every 10 Minutes', 'meditaj' ),
+			'display'  => esc_html__( 'Every 10 Minutes', 'eg-care' ),
 		);
 		return $schedules;
 	}
@@ -33,8 +33,8 @@ class Cron {
 	 * Schedule the reminder event if not already scheduled.
 	 */
 	public static function schedule_jobs() {
-		if ( ! wp_next_scheduled( 'meditaj_appointment_reminder_cron' ) ) {
-			wp_schedule_event( time(), 'meditaj_every_ten_minutes', 'meditaj_appointment_reminder_cron' );
+		if ( ! wp_next_scheduled( 'eg_care_appointment_reminder_cron' ) ) {
+			wp_schedule_event( time(), 'eg_care_every_ten_minutes', 'eg_care_appointment_reminder_cron' );
 		}
 	}
 
@@ -76,7 +76,7 @@ class Cron {
 
 		// Dispatch reminder emails if not already sent
 		foreach ( $appointments as $appt ) {
-			$option_key = 'meditaj_reminder_sent_' . $appt->id;
+			$option_key = 'eg_care_reminder_sent_' . $appt->id;
 			$already_sent = get_option( $option_key );
 
 			if ( ! $already_sent ) {
@@ -90,6 +90,6 @@ class Cron {
 	 * Clear scheduled cron jobs on plugin deactivation.
 	 */
 	public static function clear_schedule() {
-		wp_clear_scheduled_hook( 'meditaj_appointment_reminder_cron' );
+		wp_clear_scheduled_hook( 'eg_care_appointment_reminder_cron' );
 	}
 }

@@ -1,14 +1,14 @@
 /**
- * Meditaj Doctor Dashboard Javascript Controller.
+ * EG Care Doctor Dashboard Javascript Controller.
  *
  * Handles tab navigation, stats queries, weekly availability grid toggles,
  * call window validation, and profile updates.
  *
- * @package Meditaj
+ * @package EG Care
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-	const wrapper = document.querySelector('.meditaj-dashboard-wrapper');
+	const wrapper = document.querySelector('.eg-care-dashboard-wrapper');
 	if ( ! wrapper ) {
 		return;
 	}
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 
 	// 2. INITIALIZE PROFILE FROM LOCALIZED VARIABLES
-	const docSettings = meditajSettings.doctor;
+	const docSettings = egCareSettings.doctor;
 	const feeInput = document.getElementById('profile-fee');
 	const instantFeeInput = document.getElementById('profile-instant-fee');
 	const bioInput = document.getElementById('profile-bio');
@@ -59,11 +59,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		const state = onlineToggle.checked;
 		updateOnlineBadge(state);
 
-		fetch(meditajSettings.restUrl + 'doctor/me/profile', {
+		fetch(egCareSettings.restUrl + 'doctor/me/profile', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-WP-Nonce': meditajSettings.nonce
+				'X-WP-Nonce': egCareSettings.nonce
 			},
 			body: JSON.stringify({
 				bio: bioInput.value,
@@ -83,8 +83,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// 3. FETCH AND RENDER DASHBOARD STATS
 	function loadStats() {
-		fetch(meditajSettings.restUrl + 'doctor/me/stats', {
-			headers: { 'X-WP-Nonce': meditajSettings.nonce }
+		fetch(egCareSettings.restUrl + 'doctor/me/stats', {
+			headers: { 'X-WP-Nonce': egCareSettings.nonce }
 		})
 		.then(res => res.json())
 		.then(data => {
@@ -100,8 +100,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		const todayTarget = document.getElementById('today-appointments-target');
 		const upcomingTarget = document.getElementById('upcoming-appointments-target');
 
-		fetch(meditajSettings.restUrl + 'doctor/me/appointments', {
-			headers: { 'X-WP-Nonce': meditajSettings.nonce }
+		fetch(egCareSettings.restUrl + 'doctor/me/appointments', {
+			headers: { 'X-WP-Nonce': egCareSettings.nonce }
 		})
 		.then(res => res.json())
 		.then(data => {
@@ -146,17 +146,17 @@ document.addEventListener('DOMContentLoaded', function() {
 						<td><span class="symptom-notes-cell" title="${escapedNotes}">${escapedNotes || '-'}</span></td>
 						<td>${app.amount} BDT</td>
 						<td>
-							<button type="button" class="meditaj-btn-join-call ${isCallWindow ? 'active' : 'disabled'}" ${isCallWindow ? '' : 'disabled'}>
+							<button type="button" class="eg-care-btn-join-call ${isCallWindow ? 'active' : 'disabled'}" ${isCallWindow ? '' : 'disabled'}>
 								Join Call
 							</button>
 						</td>
 					`;
 
-					const joinBtn = tr.querySelector('.meditaj-btn-join-call');
+					const joinBtn = tr.querySelector('.eg-care-btn-join-call');
 					if ( isCallWindow ) {
 						joinBtn.addEventListener('click', function() {
-							if ( window.MeditajVideoCall ) {
-								window.MeditajVideoCall.join(app.id);
+							if ( window.EG CareVideoCall ) {
+								window.EG CareVideoCall.join(app.id);
 							} else {
 								alert('Video call manager is not initialized.');
 							}
@@ -248,11 +248,11 @@ document.addEventListener('DOMContentLoaded', function() {
 			</div>
 			
 			<!-- Remove Button -->
-			<button type="button" class="meditaj-remove-slot-btn" style="background: #fee2e2 !important; color: #b91c1c !important; border: none !important; border-radius: 6px !important; padding: 6px 12px !important; cursor: pointer !important; font-size: 12px !important; font-weight: bold !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; height: 32px !important; margin-top: 15px !important; box-shadow: none !important;">✕ Remove</button>
+			<button type="button" class="eg-care-remove-slot-btn" style="background: #fee2e2 !important; color: #b91c1c !important; border: none !important; border-radius: 6px !important; padding: 6px 12px !important; cursor: pointer !important; font-size: 12px !important; font-weight: bold !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; height: 32px !important; margin-top: 15px !important; box-shadow: none !important;">✕ Remove</button>
 		`;
 
 		// Attach remove button listener
-		block.querySelector('.meditaj-remove-slot-btn').addEventListener('click', function() {
+		block.querySelector('.eg-care-remove-slot-btn').addEventListener('click', function() {
 			block.remove();
 		});
 
@@ -263,7 +263,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		// First attach add button listeners (once)
 		document.querySelectorAll('.day-slot-row').forEach(row => {
 			const container = row.querySelector('.day-slots-blocks-container');
-			const addBtn = row.querySelector('.meditaj-add-slot-btn');
+			const addBtn = row.querySelector('.eg-care-add-slot-btn');
 			
 			// Prevent duplicate bindings
 			if (!addBtn.dataset.bound) {
@@ -276,8 +276,8 @@ document.addEventListener('DOMContentLoaded', function() {
 			container.innerHTML = ''; // clear loading state
 		});
 
-		fetch(meditajSettings.restUrl + 'doctor/me/slots', {
-			headers: { 'X-WP-Nonce': meditajSettings.nonce }
+		fetch(egCareSettings.restUrl + 'doctor/me/slots', {
+			headers: { 'X-WP-Nonce': egCareSettings.nonce }
 		})
 		.then(res => res.json())
 		.then(slots => {
@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	// Save Weekly Grid Scheduler Form Submit
-	const slotsForm = document.getElementById('meditaj-slots-form');
+	const slotsForm = document.getElementById('eg-care-slots-form');
 	slotsForm.addEventListener('submit', function(e) {
 		e.preventDefault();
 
@@ -325,11 +325,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		saveBtn.disabled = true;
 		saveBtn.textContent = 'Saving Schedule...';
 
-		fetch(meditajSettings.restUrl + 'doctor/me/slots', {
+		fetch(egCareSettings.restUrl + 'doctor/me/slots', {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-WP-Nonce': meditajSettings.nonce
+				'X-WP-Nonce': egCareSettings.nonce
 			},
 			body: JSON.stringify({ slots: slotsPayload })
 		})
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 
 	// 6. SAVE PROFILE UPDATES
-	const profileForm = document.getElementById('meditaj-profile-form');
+	const profileForm = document.getElementById('eg-care-profile-form');
 	const fileInput = document.getElementById('profile-photo');
 	const fileNameDisplay = document.getElementById('profile-photo-name');
 
@@ -387,11 +387,11 @@ document.addEventListener('DOMContentLoaded', function() {
 				profilePayload.photo_id = photoId;
 			}
 
-			fetch(meditajSettings.restUrl + 'doctor/me/profile', {
+			fetch(egCareSettings.restUrl + 'doctor/me/profile', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-WP-Nonce': meditajSettings.nonce
+					'X-WP-Nonce': egCareSettings.nonce
 				},
 				body: JSON.stringify(profilePayload)
 			})
@@ -414,10 +414,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		if ( fileInput.files.length > 0 ) {
 			const file = fileInput.files[0];
 
-			fetch(meditajSettings.restUrl.replace('meditaj/v1/', 'wp/v2/media'), {
+			fetch(egCareSettings.restUrl.replace('eg-care/v1/', 'wp/v2/media'), {
 				method: 'POST',
 				headers: {
-					'X-WP-Nonce': meditajSettings.nonce,
+					'X-WP-Nonce': egCareSettings.nonce,
 					'Content-Disposition': 'attachment; filename="' + encodeURIComponent(file.name) + '"',
 					'Content-Type': file.type
 				},

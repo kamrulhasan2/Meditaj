@@ -2,10 +2,10 @@
 /**
  * REST API Controller for Payments.
  *
- * @package Meditaj
+ * @package EG Care
  */
 
-namespace Meditaj;
+namespace EGCare;
 
 use WP_REST_Controller;
 use WP_REST_Server;
@@ -25,7 +25,7 @@ class RestControllerPayment extends WP_REST_Controller {
 	 * Register routes.
 	 */
 	public function register_routes() {
-		$namespace = 'meditaj/v1';
+		$namespace = 'eg-care/v1';
 
 		register_rest_route(
 			$namespace,
@@ -59,7 +59,7 @@ class RestControllerPayment extends WP_REST_Controller {
 	 */
 	public function check_logged_in_permission() {
 		if ( ! is_user_logged_in() ) {
-			return new WP_Error( 'rest_forbidden', __( 'You must be logged in to access this endpoint.', 'meditaj' ), array( 'status' => 401 ) );
+			return new WP_Error( 'rest_forbidden', __( 'You must be logged in to access this endpoint.', 'eg-care' ), array( 'status' => 401 ) );
 		}
 		return true;
 	}
@@ -77,11 +77,11 @@ class RestControllerPayment extends WP_REST_Controller {
 		$appointment_id = intval( $request->get_param( 'appointment_id' ) );
 
 		if ( empty( $appointment_id ) ) {
-			return new WP_Error( 'rest_bad_request', __( 'Appointment ID is required.', 'meditaj' ), array( 'status' => 400 ) );
+			return new WP_Error( 'rest_bad_request', __( 'Appointment ID is required.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
 		// Retrieve appointment.
-		$table_appointments = \Meditaj\DB::get_table( 'appointments' );
+		$table_appointments = \EGCare\DB::get_table( 'appointments' );
 		$appointment        = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM $table_appointments WHERE id = %d",
@@ -90,34 +90,34 @@ class RestControllerPayment extends WP_REST_Controller {
 		);
 
 		if ( ! $appointment ) {
-			return new WP_Error( 'rest_not_found', __( 'Selected appointment not found.', 'meditaj' ), array( 'status' => 404 ) );
+			return new WP_Error( 'rest_not_found', __( 'Selected appointment not found.', 'eg-care' ), array( 'status' => 404 ) );
 		}
 
 		// Verify ownership (owner or admin only).
 		if ( intval( $appointment->patient_user_id ) !== $user_id && ! current_user_can( 'manage_options' ) ) {
-			return new WP_Error( 'rest_forbidden', __( 'You are not authorized to pay for this appointment.', 'meditaj' ), array( 'status' => 403 ) );
+			return new WP_Error( 'rest_forbidden', __( 'You are not authorized to pay for this appointment.', 'eg-care' ), array( 'status' => 403 ) );
 		}
 
 		// Verify payment status is unpaid.
 		if ( 'paid' === $appointment->payment_status ) {
-			return new WP_Error( 'rest_bad_request', __( 'This appointment has already been paid for.', 'meditaj' ), array( 'status' => 400 ) );
+			return new WP_Error( 'rest_bad_request', __( 'This appointment has already been paid for.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
 		// Generate Transaction ID.
 		$tran_id = 'TXN_' . $appointment->id . '_' . time();
 
-		$store_id     = defined( 'MEDITAJ_SSL_STORE_ID' ) ? MEDITAJ_SSL_STORE_ID : get_option( 'meditaj_ssl_store_id', 'testbox' );
-		$store_passwd = defined( 'MEDITAJ_SSL_STORE_PASSWD' ) ? MEDITAJ_SSL_STORE_PASSWD : get_option( 'meditaj_ssl_store_passwd', 'testbox@ssl' );
-		$is_sandbox   = defined( 'MEDITAJ_SSL_SANDBOX' ) ? MEDITAJ_SSL_SANDBOX : ( '1' === get_option( 'meditaj_ssl_sandbox', '1' ) );
+		$store_id     = defined( 'EG_CARE_SSL_STORE_ID' ) ? EG_CARE_SSL_STORE_ID : get_option( 'eg_care_ssl_store_id', 'testbox' );
+		$store_passwd = defined( 'EG_CARE_SSL_STORE_PASSWD' ) ? EG_CARE_SSL_STORE_PASSWD : get_option( 'eg_care_ssl_store_passwd', 'testbox@ssl' );
+		$is_sandbox   = defined( 'EG_CARE_SSL_SANDBOX' ) ? EG_CARE_SSL_SANDBOX : ( '1' === get_option( 'eg_care_ssl_sandbox', '1' ) );
 
 		$return_url = $request->get_param( 'return_url' );
 		if ( empty( $return_url ) ) {
 			$return_url = home_url( '/' );
 		}
 
-		$success_url = add_query_arg( array( 'meditaj_payment' => 'success', 'id' => $appointment->id ), $return_url );
-		$fail_url    = add_query_arg( array( 'meditaj_payment' => 'fail', 'id' => $appointment->id ), $return_url );
-		$cancel_url  = add_query_arg( array( 'meditaj_payment' => 'cancel', 'id' => $appointment->id ), $return_url );
+		$success_url = add_query_arg( array( 'eg_care_payment' => 'success', 'id' => $appointment->id ), $return_url );
+		$fail_url    = add_query_arg( array( 'eg_care_payment' => 'fail', 'id' => $appointment->id ), $return_url );
+		$cancel_url  = add_query_arg( array( 'eg_care_payment' => 'cancel', 'id' => $appointment->id ), $return_url );
 
 		// Configure SSLCommerz Gateway Arguments.
 		$post_args = array(
@@ -129,7 +129,7 @@ class RestControllerPayment extends WP_REST_Controller {
 			'success_url'      => esc_url_raw( $success_url ),
 			'fail_url'         => esc_url_raw( $fail_url ),
 			'cancel_url'       => esc_url_raw( $cancel_url ),
-			'ipn_url'          => rest_url( 'meditaj/v1/payment/webhook/sslcommerz' ),
+			'ipn_url'          => rest_url( 'eg-care/v1/payment/webhook/sslcommerz' ),
 			'cus_name'         => wp_get_current_user()->display_name,
 			'cus_email'        => wp_get_current_user()->user_email,
 			'cus_phone'        => '01700000000', // Default placeholder phone.
@@ -159,19 +159,19 @@ class RestControllerPayment extends WP_REST_Controller {
 
 		if ( is_wp_error( $response ) ) {
 			error_log( 'SSLCommerz Init Error: ' . $response->get_error_message() );
-			return new WP_Error( 'meditaj_gateway_error', __( 'Failed to initiate gateway session. Please try again later.', 'meditaj' ), array( 'status' => 502 ) );
+			return new WP_Error( 'eg_care_gateway_error', __( 'Failed to initiate gateway session. Please try again later.', 'eg-care' ), array( 'status' => 502 ) );
 		}
 
 		$body = wp_remote_retrieve_body( $response );
 		$data = json_decode( $body, true );
 
 		if ( ! is_array( $data ) || ! isset( $data['status'] ) ) {
-			return new WP_Error( 'meditaj_gateway_error', __( 'Invalid response payload from payment gateway.', 'meditaj' ), array( 'status' => 502 ) );
+			return new WP_Error( 'eg_care_gateway_error', __( 'Invalid response payload from payment gateway.', 'eg-care' ), array( 'status' => 502 ) );
 		}
 
 		if ( 'SUCCESS' !== $data['status'] ) {
-			$msg = isset( $data['failedreason'] ) ? $data['failedreason'] : __( 'Failed to initiate payment session.', 'meditaj' );
-			return new WP_Error( 'meditaj_gateway_error', $msg, array( 'status' => 502 ) );
+			$msg = isset( $data['failedreason'] ) ? $data['failedreason'] : __( 'Failed to initiate payment session.', 'eg-care' );
+			return new WP_Error( 'eg_care_gateway_error', $msg, array( 'status' => 502 ) );
 		}
 
 		// Update appointment record with generated transaction ID.
@@ -211,12 +211,12 @@ class RestControllerPayment extends WP_REST_Controller {
 		$bank_tran_id = sanitize_text_field( $request->get_param( 'bank_tran_id' ) );
 
 		if ( empty( $val_id ) || empty( $tran_id ) || empty( $status ) ) {
-			return new WP_Error( 'rest_bad_request', __( 'Webhook payload missing details.', 'meditaj' ), array( 'status' => 400 ) );
+			return new WP_Error( 'rest_bad_request', __( 'Webhook payload missing details.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
-		$store_id        = defined( 'MEDITAJ_SSL_STORE_ID' ) ? MEDITAJ_SSL_STORE_ID : get_option( 'meditaj_ssl_store_id', 'testbox' );
-		$store_passwd    = defined( 'MEDITAJ_SSL_STORE_PASSWD' ) ? MEDITAJ_SSL_STORE_PASSWD : get_option( 'meditaj_ssl_store_passwd', 'testbox@ssl' );
-		$is_sandbox      = defined( 'MEDITAJ_SSL_SANDBOX' ) ? MEDITAJ_SSL_SANDBOX : ( '1' === get_option( 'meditaj_ssl_sandbox', '1' ) );
+		$store_id        = defined( 'EG_CARE_SSL_STORE_ID' ) ? EG_CARE_SSL_STORE_ID : get_option( 'eg_care_ssl_store_id', 'testbox' );
+		$store_passwd    = defined( 'EG_CARE_SSL_STORE_PASSWD' ) ? EG_CARE_SSL_STORE_PASSWD : get_option( 'eg_care_ssl_store_passwd', 'testbox@ssl' );
+		$is_sandbox      = defined( 'EG_CARE_SSL_SANDBOX' ) ? EG_CARE_SSL_SANDBOX : ( '1' === get_option( 'eg_care_ssl_sandbox', '1' ) );
 		$validation_host = $is_sandbox ? 'sandbox.sslcommerz.com' : 'securepay.sslcommerz.com';
 
 		// 1. Verify webhook signature via Gateway Validation API query.
@@ -238,23 +238,23 @@ class RestControllerPayment extends WP_REST_Controller {
 
 		if ( is_wp_error( $response ) ) {
 			error_log( 'SSLCommerz IPN validation error: ' . $response->get_error_message() );
-			return new WP_Error( 'meditaj_gateway_error', __( 'Unable to verify payment authenticity.', 'meditaj' ), array( 'status' => 502 ) );
+			return new WP_Error( 'eg_care_gateway_error', __( 'Unable to verify payment authenticity.', 'eg-care' ), array( 'status' => 502 ) );
 		}
 
 		$body = wp_remote_retrieve_body( $response );
 		$data = json_decode( $body );
 
 		if ( ! $data || ! isset( $data->status ) ) {
-			return new WP_Error( 'meditaj_gateway_error', __( 'Failed to validate payload with payment gateway.', 'meditaj' ), array( 'status' => 502 ) );
+			return new WP_Error( 'eg_care_gateway_error', __( 'Failed to validate payload with payment gateway.', 'eg-care' ), array( 'status' => 502 ) );
 		}
 
 		// 2. Validate transaction status.
 		if ( 'VALID' !== $data->status && 'VALIDATED' !== $data->status ) {
-			return new WP_Error( 'meditaj_payment_failed', __( 'Transaction is invalid on gateway.', 'meditaj' ), array( 'status' => 400 ) );
+			return new WP_Error( 'eg_care_payment_failed', __( 'Transaction is invalid on gateway.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
 		// Retrieve matching appointment.
-		$table_appointments = \Meditaj\DB::get_table( 'appointments' );
+		$table_appointments = \EGCare\DB::get_table( 'appointments' );
 		$appointment        = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT * FROM $table_appointments WHERE transaction_id = %s",
@@ -263,12 +263,12 @@ class RestControllerPayment extends WP_REST_Controller {
 		);
 
 		if ( ! $appointment ) {
-			return new WP_Error( 'rest_not_found', __( 'Target appointment booking not found.', 'meditaj' ), array( 'status' => 404 ) );
+			return new WP_Error( 'rest_not_found', __( 'Target appointment booking not found.', 'eg-care' ), array( 'status' => 404 ) );
 		}
 
 		// Double-check amount matches to avoid payload faking.
 		if ( abs( floatval( $data->amount ) - floatval( $appointment->amount ) ) > 0.01 ) {
-			return new WP_Error( 'meditaj_payment_error', __( 'Transaction amount mismatch.', 'meditaj' ), array( 'status' => 400 ) );
+			return new WP_Error( 'eg_care_payment_error', __( 'Transaction amount mismatch.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
 		// Prevent double updates if already paid.
@@ -292,10 +292,10 @@ class RestControllerPayment extends WP_REST_Controller {
 		);
 
 		// Trigger booking confirmation notifications.
-		\Meditaj\Notifications::send_booking_confirmation_emails( $appointment->id );
+		\EGCare\Notifications::send_booking_confirmation_emails( $appointment->id );
 
-		// Insert row into wp_meditaj_transactions.
-		$table_transactions = \Meditaj\DB::get_table( 'transactions' );
+		// Insert row into wp_eg_care_transactions.
+		$table_transactions = \EGCare\DB::get_table( 'transactions' );
 		$wpdb->insert(
 			$table_transactions,
 			array(
@@ -323,14 +323,14 @@ class RestControllerPayment extends WP_REST_Controller {
 		);
 
 		// Dispatch confirmation emails.
-		$doctor_user = get_userdata( $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM {\Meditaj\DB::get_table('doctors_meta')} WHERE post_id = %d", $appointment->doctor_id ) ) );
+		$doctor_user = get_userdata( $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM {\EGCare\DB::get_table('doctors_meta')} WHERE post_id = %d", $appointment->doctor_id ) ) );
 		$patient_user = get_userdata( $appointment->patient_user_id );
 
 		if ( $patient_user && $doctor_user ) {
 			// Trigger booking notification emails.
-			$subject = __( 'Consultation Booking Confirmed', 'meditaj' );
+			$subject = __( 'Consultation Booking Confirmed', 'eg-care' );
 			$message = sprintf(
-				__( "Hello,\n\nYour consultation booking is confirmed.\nAppointment Date: %s\nAppointment Time: %s\nAmount Paid: %s BDT.\n\nThank you.", 'meditaj' ),
+				__( "Hello,\n\nYour consultation booking is confirmed.\nAppointment Date: %s\nAppointment Time: %s\nAmount Paid: %s BDT.\n\nThank you.", 'eg-care' ),
 				$appointment->appointment_date,
 				$appointment->appointment_time,
 				$appointment->amount

@@ -1,18 +1,18 @@
 /**
- * Meditaj Admin Dashboard Charts rendering.
+ * EG Care Admin Dashboard Charts rendering.
  *
- * @package Meditaj
+ * @package EG Care
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-	if ( typeof meditajChartsData === 'undefined' || ! window.Chart ) {
+	if ( typeof eg-careChartsData === 'undefined' || ! window.Chart ) {
 		return;
 	}
 
-	const data = meditajChartsData;
+	const data = eg-careChartsData;
 
 	// --- 1. Daily Trend Dual-Line Chart ---
-	const dailyCtx = document.getElementById('meditajDailyTrendChart');
+	const dailyCtx = document.getElementById('eg-careDailyTrendChart');
 	if ( dailyCtx ) {
 		const labels = data.trend.map(item => item.label);
 		const counts = data.trend.map(item => item.count);
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	// --- 2. Consultation Types Doughnut Chart ---
-	const typeCtx = document.getElementById('meditajTypeChart');
+	const typeCtx = document.getElementById('eg-careTypeChart');
 	if ( typeCtx ) {
 		const total = data.instant + data.scheduled;
 

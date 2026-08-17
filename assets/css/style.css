@@ -1,9 +1,9 @@
 /**
- * Meditaj Frontend Stylesheet
+ * EG Care Frontend Stylesheet
  */
 
 /* Main Container */
-.meditaj-registration-container {
+.eg-care-registration-container {
 	max-width: 800px;
 	margin: 40px auto;
 	padding: 40px;
@@ -16,12 +16,12 @@
 }
 
 /* Header styling */
-.meditaj-register-header {
+.eg-care-register-header {
 	text-align: center;
 	margin-bottom: 40px;
 }
 
-.meditaj-register-tagline {
+.eg-care-register-tagline {
 	display: inline-block;
 	font-size: 13px;
 	font-weight: 700;
@@ -31,7 +31,7 @@
 	margin-bottom: 8px;
 }
 
-.meditaj-register-title {
+.eg-care-register-title {
 	font-size: 32px;
 	font-weight: 800;
 	color: #0f172a;
@@ -39,14 +39,14 @@
 	letter-spacing: -0.5px;
 }
 
-.meditaj-register-desc {
+.eg-care-register-desc {
 	font-size: 15px;
 	color: #64748b;
 	margin: 0;
 }
 
 /* Form sections */
-.meditaj-card-section {
+.eg-care-card-section {
 	background: #f8fafc;
 	border: 1px solid #e2e8f0;
 	border-radius: 12px;
@@ -55,12 +55,12 @@
 	transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.meditaj-card-section:hover {
+.eg-care-card-section:hover {
 	border-color: #cbd5e1;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
 }
 
-.meditaj-section-title {
+.eg-care-section-title {
 	display: flex;
 	align-items: center;
 	font-size: 18px;
@@ -69,7 +69,7 @@
 	margin: 0 0 20px 0;
 }
 
-.meditaj-step-num {
+.eg-care-step-num {
 	display: inline-flex;
 	justify-content: center;
 	align-items: center;
@@ -84,48 +84,48 @@
 }
 
 /* Fields Grid & inputs */
-.meditaj-fields-grid {
+.eg-care-fields-grid {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
 	gap: 20px;
 }
 
-.meditaj-fields-grid.profile-fields,
-.meditaj-fields-grid.meta-fields {
+.eg-care-fields-grid.profile-fields,
+.eg-care-fields-grid.meta-fields {
 	grid-template-columns: repeat(2, 1fr);
 }
 
 @media (max-width: 640px) {
-	.meditaj-fields-grid {
+	.eg-care-fields-grid {
 		grid-template-columns: 1fr !important;
 	}
-	.meditaj-field.span-full {
+	.eg-care-field.span-full {
 		grid-column: span 1 !important;
 	}
 }
 
-.meditaj-field {
+.eg-care-field {
 	display: flex;
 	flex-direction: column;
 }
 
-.meditaj-field.span-full {
+.eg-care-field.span-full {
 	grid-column: span 2;
 }
 
-.meditaj-field label {
+.eg-care-field label {
 	font-size: 14px;
 	font-weight: 600;
 	color: #475569;
 	margin-bottom: 6px;
 }
 
-.meditaj-field input[type="text"],
-.meditaj-field input[type="email"],
-.meditaj-field input[type="password"],
-.meditaj-field input[type="number"],
-.meditaj-field select,
-.meditaj-field textarea {
+.eg-care-field input[type="text"],
+.eg-care-field input[type="email"],
+.eg-care-field input[type="password"],
+.eg-care-field input[type="number"],
+.eg-care-field select,
+.eg-care-field textarea {
 	padding: 10px 14px;
 	border: 1px solid #cbd5e1;
 	border-radius: 8px;
@@ -135,16 +135,16 @@
 	transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
-.meditaj-field input:focus,
-.meditaj-field select:focus,
-.meditaj-field textarea:focus {
+.eg-care-field input:focus,
+.eg-care-field select:focus,
+.eg-care-field textarea:focus {
 	border-color: #0f766e;
 	box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
 	outline: none;
 }
 
 /* Custom Modern File Upload & Toggle Buttons Styling */
-.meditaj-hidden-file-input {
+.eg-care-hidden-file-input {
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -155,7 +155,7 @@
 	z-index: 10;
 }
 
-.meditaj-modern-upload-wrapper {
+.eg-care-modern-upload-wrapper {
 	display: flex;
 	align-items: center;
 	gap: 15px;
@@ -163,7 +163,7 @@
 	position: relative;
 }
 
-.meditaj-modern-upload-label {
+.eg-care-modern-upload-label {
 	padding: 8px 16px;
 	border: 1px solid #cbd5e1;
 	border-radius: 6px;
@@ -177,24 +177,24 @@
 	user-select: none;
 }
 
-.meditaj-modern-upload-label:hover {
+.eg-care-modern-upload-label:hover {
 	background-color: #cbd5e1;
 	border-color: #94a3b8;
 }
 
-.meditaj-file-name {
+.eg-care-file-name {
 	font-size: 13px;
 	color: #64748b;
 }
 
 /* Modern Toggle Buttons */
-.meditaj-toggle-buttons {
+.eg-care-toggle-buttons {
 	display: flex;
 	gap: 8px;
 	margin-top: 5px;
 }
 
-.meditaj-toggle-btn {
+.eg-care-toggle-btn {
 	padding: 8px 18px;
 	border: 1px solid #cbd5e1;
 	background-color: #f8fafc;
@@ -206,13 +206,13 @@
 	transition: all 0.25s ease;
 }
 
-.meditaj-toggle-btn:hover {
+.eg-care-toggle-btn:hover {
 	background-color: #f1f5f9;
 	color: #1e293b;
 	border-color: #94a3b8;
 }
 
-.meditaj-toggle-btn.active {
+.eg-care-toggle-btn.active {
 	background-color: #0f766e;
 	color: #ffffff;
 	border-color: #0f766e;
@@ -220,7 +220,7 @@
 }
 
 /* Modern Attachment Box */
-.meditaj-modern-attachment-box {
+.eg-care-modern-attachment-box {
 	border: 1px dashed #cbd5e1;
 	border-radius: 8px;
 	background-color: #f8fafc;
@@ -230,11 +230,11 @@
 	transition: border-color 0.2s;
 }
 
-.meditaj-modern-attachment-box:hover {
+.eg-care-modern-attachment-box:hover {
 	border-color: #0d9488;
 }
 
-.meditaj-attachment-uploader {
+.eg-care-attachment-uploader {
 	display: flex;
 	align-items: center;
 	flex-wrap: wrap;
@@ -242,32 +242,32 @@
 	position: relative;
 }
 
-.meditaj-attachment-icon {
+.eg-care-attachment-icon {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 	margin-right: 5px;
 }
 
-.meditaj-attachment-label {
+.eg-care-attachment-label {
 	font-size: 14px;
 	font-weight: 600;
 	color: #475569;
 }
 
-.meditaj-attachment-help {
+.eg-care-attachment-help {
 	font-size: 12px;
 	color: #64748b;
 	margin: 0;
 }
 
 /* Submit Block */
-.meditaj-submit-wrap {
+.eg-care-submit-wrap {
 	text-align: center;
 	margin-top: 30px;
 }
 
-.meditaj-btn-register {
+.eg-care-btn-register {
 	background-color: #0f766e;
 	color: #ffffff;
 	border: none;
@@ -280,18 +280,18 @@
 	transition: background-color 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 
-.meditaj-btn-register:hover {
+.eg-care-btn-register:hover {
 	background-color: #0d9488;
 	transform: translateY(-1px);
 	box-shadow: 0 6px 20px rgba(13, 148, 136, 0.4);
 }
 
-.meditaj-btn-register:active {
+.eg-care-btn-register:active {
 	transform: translateY(0);
 }
 
 /* Alerts */
-.meditaj-alert {
+.eg-care-alert {
 	display: flex;
 	align-items: flex-start;
 	background-color: #fef2f2;
@@ -302,7 +302,7 @@
 	color: #991b1b;
 }
 
-.meditaj-alert-icon {
+.eg-care-alert-icon {
 	width: 20px;
 	height: 20px;
 	margin-right: 12px;
@@ -310,22 +310,22 @@
 	color: #dc2626;
 }
 
-.meditaj-alert-content {
+.eg-care-alert-content {
 	font-size: 14px;
 }
 
-.meditaj-alert-content ul {
+.eg-care-alert-content ul {
 	margin: 5px 0 0 0;
 	padding-left: 20px;
 }
 
 /* Success Card */
-.meditaj-success-card {
+.eg-care-success-card {
 	text-align: center;
 	padding: 40px 20px;
 }
 
-.meditaj-success-icon {
+.eg-care-success-icon {
 	display: inline-flex;
 	justify-content: center;
 	align-items: center;
@@ -337,19 +337,19 @@
 	margin-bottom: 24px;
 }
 
-.meditaj-success-icon svg {
+.eg-care-success-icon svg {
 	width: 32px;
 	height: 32px;
 }
 
-.meditaj-success-card h2 {
+.eg-care-success-card h2 {
 	font-size: 24px;
 	font-weight: 800;
 	color: #0f172a;
 	margin: 0 0 12px 0;
 }
 
-.meditaj-success-msg {
+.eg-care-success-msg {
 	font-size: 16px;
 	color: #475569;
 	max-width: 500px;
@@ -357,7 +357,7 @@
 	line-height: 1.6;
 }
 
-.meditaj-success-sub {
+.eg-care-success-sub {
 	font-size: 13px;
 	color: #94a3b8;
 	margin: 0;
@@ -368,7 +368,7 @@
    ========================================================================== */
 
 /* Step Progress Indicator Bar */
-.meditaj-booking-steps-bar {
+.eg-care-booking-steps-bar {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -379,7 +379,7 @@
 	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.meditaj-step-indicator {
+.eg-care-step-indicator {
 	display: flex;
 	align-items: center;
 	gap: 10px;
@@ -389,7 +389,7 @@
 	transition: color 0.3s;
 }
 
-.meditaj-step-indicator .step-num {
+.eg-care-step-indicator .step-num {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -402,16 +402,16 @@
 	transition: all 0.3s;
 }
 
-.meditaj-step-indicator.active {
+.eg-care-step-indicator.active {
 	color: #0f766e;
 }
 
-.meditaj-step-indicator.active .step-num {
+.eg-care-step-indicator.active .step-num {
 	background-color: #0f766e;
 	color: #ffffff;
 }
 
-.meditaj-step-line {
+.eg-care-step-line {
 	flex-grow: 1;
 	height: 2px;
 	background-color: #e2e8f0;
@@ -419,18 +419,18 @@
 }
 
 /* Specialties Grid (Step 1) */
-.meditaj-specialties-container {
+.eg-care-specialties-container {
 	animation: fadeIn 0.4s ease-out;
 }
 
-.meditaj-specialties-grid {
+.eg-care-specialties-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
 	gap: 20px;
 	margin-top: 20px;
 }
 
-.meditaj-specialty-card {
+.eg-care-specialty-card {
 	background: #ffffff;
 	border: 1px solid #e2e8f0;
 	border-radius: 12px;
@@ -441,13 +441,13 @@
 	transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.meditaj-specialty-card:hover {
+.eg-care-specialty-card:hover {
 	transform: translateY(-3px);
 	border-color: #0d9488;
 	box-shadow: 0 10px 15px -3px rgba(13, 148, 136, 0.1);
 }
 
-.meditaj-specialty-icon {
+.eg-care-specialty-icon {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -459,11 +459,11 @@
 	transition: background-color 0.2s;
 }
 
-.meditaj-specialty-card:hover .meditaj-specialty-icon {
+.eg-care-specialty-card:hover .eg-care-specialty-icon {
 	background-color: #ccfbf1;
 }
 
-.meditaj-specialty-name {
+.eg-care-specialty-name {
 	font-size: 15px;
 	font-weight: 700;
 	color: #1e293b;
@@ -471,7 +471,7 @@
 }
 
 /* Step 2: Doctors List & Filters Grid Layout */
-.meditaj-step2-wrapper {
+.eg-care-step2-wrapper {
 	display: grid;
 	grid-template-columns: 280px 1fr;
 	gap: 30px;
@@ -479,12 +479,12 @@
 }
 
 @media (max-width: 768px) {
-	.meditaj-step2-wrapper {
+	.eg-care-step2-wrapper {
 		grid-template-columns: 1fr;
 	}
 }
 
-.meditaj-filters-sidebar {
+.eg-care-filters-sidebar {
 	background: #ffffff;
 	border: 1px solid #e2e8f0;
 	border-radius: 12px;
@@ -493,7 +493,7 @@
 	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
 }
 
-.meditaj-filters-sidebar h3 {
+.eg-care-filters-sidebar h3 {
 	font-size: 16px;
 	font-weight: 800;
 	color: #0f172a;
@@ -502,11 +502,11 @@
 	padding-bottom: 10px;
 }
 
-.meditaj-filter-group {
+.eg-care-filter-group {
 	margin-bottom: 20px;
 }
 
-.meditaj-filter-group label {
+.eg-care-filter-group label {
 	display: block;
 	font-size: 13px;
 	font-weight: 700;
@@ -514,8 +514,8 @@
 	margin-bottom: 8px;
 }
 
-.meditaj-filter-group input[type="text"],
-.meditaj-filter-group select {
+.eg-care-filter-group input[type="text"],
+.eg-care-filter-group select {
 	width: 100%;
 	padding: 8px 12px;
 	border: 1px solid #cbd5e1;
@@ -525,13 +525,13 @@
 	background-color: #ffffff;
 }
 
-.meditaj-filter-group input[type="range"] {
+.eg-care-filter-group input[type="range"] {
 	width: 100%;
 	accent-color: #0f766e;
 	cursor: pointer;
 }
 
-.meditaj-filter-group .range-values {
+.eg-care-filter-group .range-values {
 	display: flex;
 	justify-content: space-between;
 	font-size: 11px;
@@ -539,25 +539,25 @@
 	margin-top: 4px;
 }
 
-.meditaj-filter-group.checkbox label {
+.eg-care-filter-group.checkbox label {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	cursor: pointer;
 }
 
-.meditaj-filter-group.checkbox input[type="checkbox"] {
+.eg-care-filter-group.checkbox input[type="checkbox"] {
 	accent-color: #0f766e;
 }
 
 /* Doctors Grids */
-.meditaj-doctors-list-content {
+.eg-care-doctors-list-content {
 	display: flex;
 	flex-direction: column;
 	gap: 30px;
 }
 
-.meditaj-doctors-section .section-title {
+.eg-care-doctors-section .section-title {
 	font-size: 18px;
 	font-weight: 800;
 	color: #0f172a;
@@ -576,14 +576,14 @@
 	box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
 }
 
-.meditaj-doctors-grid {
+.eg-care-doctors-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 	gap: 20px;
 }
 
 /* Doctor Card Item */
-.meditaj-doctor-card {
+.eg-care-doctor-card {
 	background: #ffffff;
 	border: 1px solid #e2e8f0;
 	border-radius: 12px;
@@ -595,25 +595,25 @@
 	transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.meditaj-doctor-card:hover {
+.eg-care-doctor-card:hover {
 	border-color: #0d9488;
 	box-shadow: 0 10px 15px -3px rgba(13, 148, 136, 0.05);
 }
 
-.meditaj-doctor-card-header {
+.eg-care-doctor-card-header {
 	display: flex;
 	gap: 15px;
 	margin-bottom: 15px;
 }
 
-.meditaj-doctor-card-avatar-wrap {
+.eg-care-doctor-card-avatar-wrap {
 	position: relative;
 	width: 64px;
 	height: 64px;
 	flex-shrink: 0;
 }
 
-.meditaj-doc-avatar {
+.eg-care-doc-avatar {
 	width: 64px;
 	height: 64px;
 	border-radius: 50%;
@@ -621,7 +621,7 @@
 	border: 2px solid #f1f5f9;
 }
 
-.meditaj-doc-initials {
+.eg-care-doc-initials {
 	width: 64px;
 	height: 64px;
 	border-radius: 50%;
@@ -635,7 +635,7 @@
 	border: 2px solid #ccfbf1;
 }
 
-.meditaj-status-indicator {
+.eg-care-status-indicator {
 	position: absolute;
 	bottom: 2px;
 	right: 2px;
@@ -645,45 +645,45 @@
 	border: 2px solid #ffffff;
 }
 
-.meditaj-status-indicator.online {
+.eg-care-status-indicator.online {
 	background-color: #22c55e;
 }
 
-.meditaj-status-indicator.offline {
+.eg-care-status-indicator.offline {
 	background-color: #94a3b8;
 }
 
-.meditaj-doctor-card-meta-summary {
+.eg-care-doctor-card-meta-summary {
 	display: flex;
 	flex-direction: column;
 }
 
-.meditaj-doctor-card-name {
+.eg-care-doctor-card-name {
 	font-size: 15px;
 	font-weight: 800;
 	color: #1e293b;
 	margin: 0 0 4px 0;
 }
 
-.meditaj-doctor-card-designation {
+.eg-care-doctor-card-designation {
 	font-size: 12px;
 	color: #475569;
 	margin: 0;
 }
 
-.meditaj-doctor-card-degree {
+.eg-care-doctor-card-degree {
 	font-size: 11px;
 	color: #64748b;
 	margin: 4px 0 0 0;
 }
 
-.meditaj-doctor-card-body {
+.eg-care-doctor-card-body {
 	border-top: 1px solid #f1f5f9;
 	padding-top: 12px;
 	margin-bottom: 15px;
 }
 
-.meditaj-doctor-card-meta-row {
+.eg-care-doctor-card-meta-row {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -704,7 +704,7 @@
 	color: #475569;
 }
 
-.meditaj-doctor-card-price-row {
+.eg-care-doctor-card-price-row {
 	display: flex;
 	justify-content: space-between;
 	background-color: #f8fafc;
@@ -730,7 +730,7 @@
 	color: #1e293b;
 }
 
-.meditaj-btn-card-action {
+.eg-care-btn-card-action {
 	width: 100%;
 	padding: 10px;
 	background-color: #0f766e;
@@ -743,12 +743,12 @@
 	transition: background-color 0.2s;
 }
 
-.meditaj-btn-card-action:hover {
+.eg-care-btn-card-action:hover {
 	background-color: #0d9488;
 }
 
 /* Step 3: Doctor Details & Checkout Screen */
-.meditaj-step3-wrapper {
+.eg-care-step3-wrapper {
 	display: grid;
 	grid-template-columns: 1fr 340px;
 	gap: 30px;
@@ -756,12 +756,12 @@
 }
 
 @media (max-width: 768px) {
-	.meditaj-step3-wrapper {
+	.eg-care-step3-wrapper {
 		grid-template-columns: 1fr;
 	}
 }
 
-.meditaj-doctor-detail-panel {
+.eg-care-doctor-detail-panel {
 	background: #ffffff;
 	border: 1px solid #e2e8f0;
 	border-radius: 12px;
@@ -769,7 +769,7 @@
 	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
 }
 
-.meditaj-detail-header {
+.eg-care-detail-header {
 	display: flex;
 	gap: 24px;
 	align-items: center;
@@ -784,7 +784,7 @@
 	flex-shrink: 0;
 }
 
-.meditaj-detail-avatar {
+.eg-care-detail-avatar {
 	width: 96px;
 	height: 96px;
 	border-radius: 50%;
@@ -792,7 +792,7 @@
 	border: 3px solid #f1f5f9;
 }
 
-.meditaj-detail-avatar-placeholder {
+.eg-care-detail-avatar-placeholder {
 	width: 96px;
 	height: 96px;
 	border-radius: 50%;
@@ -834,14 +834,14 @@
 	border-radius: 20px;
 }
 
-.meditaj-detail-body h3 {
+.eg-care-detail-body h3 {
 	font-size: 15px;
 	font-weight: 800;
 	color: #0f172a;
 	margin: 0 0 10px 0;
 }
 
-.meditaj-detail-body p {
+.eg-care-detail-body p {
 	font-size: 13px;
 	line-height: 1.6;
 	color: #475569;
@@ -912,7 +912,7 @@
 }
 
 /* Hourly Slots Grid */
-.meditaj-slots-grid {
+.eg-care-slots-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
 	gap: 10px;
@@ -920,7 +920,7 @@
 }
 
 /* Hourly Slots Grid */
-.meditaj-slots-grid button.meditaj-slot-pill {
+.eg-care-slots-grid button.eg-care-slot-pill {
 	padding: 8px !important;
 	background-color: #ffffff !important;
 	border: 1px solid #cbd5e1 !important;
@@ -935,26 +935,26 @@
 	line-height: 1.5 !important;
 }
 
-.meditaj-slots-grid button.meditaj-slot-pill:hover {
+.eg-care-slots-grid button.eg-care-slot-pill:hover {
 	border-color: #0f766e !important;
 	color: #0f766e !important;
 	background-color: #f0fdfa !important;
 }
 
-.meditaj-slots-grid button.meditaj-slot-pill.active {
+.eg-care-slots-grid button.eg-care-slot-pill.active {
 	background-color: #0f766e !important;
 	color: #ffffff !important;
 	border-color: #0f766e !important;
 }
 
-.meditaj-slots-grid button.meditaj-slot-pill.active:hover {
+.eg-care-slots-grid button.eg-care-slot-pill.active:hover {
 	background-color: #0d9488 !important;
 	color: #ffffff !important;
 	border-color: #0d9488 !important;
 }
 
-.meditaj-slots-grid button.meditaj-slot-pill:disabled,
-.meditaj-slots-grid button.meditaj-slot-pill.booked {
+.eg-care-slots-grid button.eg-care-slot-pill:disabled,
+.eg-care-slots-grid button.eg-care-slot-pill.booked {
 	background-color: #f1f5f9 !important;
 	border-color: #e2e8f0 !important;
 	color: #cbd5e1 !important;
@@ -963,13 +963,13 @@
 }
 
 /* Checkout Summary Side Panel */
-.meditaj-checkout-panel-wrapper {
+.eg-care-checkout-panel-wrapper {
 	height: fit-content;
 	position: sticky;
 	top: 30px;
 }
 
-.meditaj-checkout-summary-card {
+.eg-care-checkout-summary-card {
 	background: #ffffff;
 	border: 1px solid #e2e8f0;
 	border-radius: 12px;
@@ -977,7 +977,7 @@
 	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
 }
 
-.meditaj-checkout-title {
+.eg-care-checkout-title {
 	font-size: 16px;
 	font-weight: 800;
 	color: #0f172a;
@@ -986,19 +986,19 @@
 	padding-bottom: 10px;
 }
 
-.meditaj-checkout-section {
+.eg-care-checkout-section {
 	margin-bottom: 18px;
 	padding-bottom: 12px;
 	border-bottom: 1px dashed #e2e8f0;
 }
 
-.meditaj-checkout-section.totals {
+.eg-care-checkout-section.totals {
 	border-bottom: none;
 	margin-bottom: 0;
 	padding-bottom: 0;
 }
 
-.meditaj-checkout-subtitle {
+.eg-care-checkout-subtitle {
 	font-size: 11px;
 	font-weight: 800;
 	color: #64748b;
@@ -1006,43 +1006,43 @@
 	margin: 0 0 10px 0;
 }
 
-.meditaj-checkout-item {
+.eg-care-checkout-item {
 	display: flex;
 	justify-content: space-between;
 	font-size: 13px;
 	margin-bottom: 8px;
 }
 
-.meditaj-checkout-item .label {
+.eg-care-checkout-item .label {
 	color: #64748b;
 }
 
-.meditaj-checkout-item .value {
+.eg-care-checkout-item .value {
 	font-weight: 700;
 	color: #334155;
 	text-align: right;
 }
 
-.meditaj-checkout-item.total-row {
+.eg-care-checkout-item.total-row {
 	border-top: 1px solid #e2e8f0;
 	padding-top: 12px;
 	margin-top: 8px;
 	margin-bottom: 0;
 }
 
-.meditaj-checkout-item.total-row .label {
+.eg-care-checkout-item.total-row .label {
 	font-size: 14px;
 	font-weight: 800;
 	color: #0f172a;
 }
 
-.meditaj-checkout-item.total-row .value {
+.eg-care-checkout-item.total-row .value {
 	font-size: 18px;
 	font-weight: 800;
 	color: #0f766e;
 }
 
-.meditaj-btn-secondary {
+.eg-care-btn-secondary {
 	background-color: #ffffff;
 	border: 1px solid #cbd5e1;
 	color: #475569;
@@ -1054,14 +1054,14 @@
 	transition: all 0.2s;
 }
 
-.meditaj-btn-secondary:hover {
+.eg-care-btn-secondary:hover {
 	background-color: #f8fafc;
 	color: #1e293b;
 	border-color: #94a3b8;
 }
 
 /* Success Popup overlay screen */
-.meditaj-booking-success-overlay {
+.eg-care-booking-success-overlay {
 	position: fixed;
 	top: 0;
 	left: 0;
@@ -1077,7 +1077,7 @@
 	animation: fadeIn 0.3s ease-out;
 }
 
-.meditaj-success-popup-card {
+.eg-care-success-popup-card {
 	background: #ffffff;
 	border-radius: 16px;
 	width: 100%;
@@ -1088,7 +1088,7 @@
 	animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.meditaj-success-popup-icon {
+.eg-care-success-popup-icon {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -1099,7 +1099,7 @@
 	margin-bottom: 20px;
 }
 
-.meditaj-success-popup-card h2 {
+.eg-care-success-popup-card h2 {
 	font-size: 22px;
 	font-weight: 800;
 	color: #0f172a;
@@ -1169,13 +1169,13 @@
    Phase 6: Doctor-Facing Dashboard Styles
    ========================================================================== */
 
-.meditaj-dashboard-wrapper {
+.eg-care-dashboard-wrapper {
 	max-width: 1200px;
 	margin: 0 auto;
 	animation: fadeIn 0.4s ease-out;
 }
 
-.meditaj-dashboard-header {
+.eg-care-dashboard-header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -1188,14 +1188,14 @@
 }
 
 @media (max-width: 768px) {
-	.meditaj-dashboard-header {
+	.eg-care-dashboard-header {
 		flex-direction: column;
 		align-items: flex-start;
 		gap: 20px;
 	}
 }
 
-.meditaj-dashboard-header h2 {
+.eg-care-dashboard-header h2 {
 	font-size: 24px;
 	font-weight: 800;
 	color: #0f172a;
@@ -1226,20 +1226,20 @@
 }
 
 /* Switch styling */
-.meditaj-switch {
+.eg-care-switch {
 	position: relative;
 	display: inline-block;
 	width: 44px;
 	height: 24px;
 }
 
-.meditaj-switch input {
+.eg-care-switch input {
 	opacity: 0;
 	width: 0;
 	height: 0;
 }
 
-.meditaj-switch .slider {
+.eg-care-switch .slider {
 	position: absolute;
 	cursor: pointer;
 	top: 0;
@@ -1250,7 +1250,7 @@
 	transition: .3s;
 }
 
-.meditaj-switch .slider:before {
+.eg-care-switch .slider:before {
 	position: absolute;
 	content: "";
 	height: 16px;
@@ -1261,31 +1261,31 @@
 	transition: .3s;
 }
 
-.meditaj-switch input:checked + .slider {
+.eg-care-switch input:checked + .slider {
 	background-color: #0f766e;
 }
 
-.meditaj-switch input:checked + .slider:before {
+.eg-care-switch input:checked + .slider:before {
 	transform: translateX(20px);
 }
 
-.meditaj-switch .slider.round {
+.eg-care-switch .slider.round {
 	border-radius: 24px;
 }
 
-.meditaj-switch .slider.round:before {
+.eg-care-switch .slider.round:before {
 	border-radius: 50%;
 }
 
 /* Stats Cards */
-.meditaj-stats-row {
+.eg-care-stats-row {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 	gap: 20px;
 	margin-bottom: 30px;
 }
 
-.meditaj-stat-card {
+.eg-care-stat-card {
 	background: #ffffff;
 	border: 1px solid #e2e8f0;
 	border-radius: 12px;
@@ -1343,7 +1343,7 @@
 }
 
 /* Tabs */
-.meditaj-dashboard-tabs {
+.eg-care-dashboard-tabs {
 	display: flex;
 	gap: 10px;
 	border-bottom: 2px solid #e2e8f0;
@@ -1352,7 +1352,7 @@
 	padding-bottom: 4px;
 }
 
-.meditaj-dashboard-tabs button.tab-trigger {
+.eg-care-dashboard-tabs button.tab-trigger {
 	padding: 12px 20px !important;
 	background: transparent !important;
 	border: none !important;
@@ -1368,12 +1368,12 @@
 	line-height: 1.5 !important;
 }
 
-.meditaj-dashboard-tabs button.tab-trigger:hover {
+.eg-care-dashboard-tabs button.tab-trigger:hover {
 	color: #0f766e !important;
 	background: transparent !important;
 }
 
-.meditaj-dashboard-tabs button.tab-trigger.active {
+.eg-care-dashboard-tabs button.tab-trigger.active {
 	color: #0f766e !important;
 	border-bottom: 2px solid #0f766e !important;
 	background: transparent !important;
@@ -1403,21 +1403,21 @@
 }
 
 /* Tables */
-.meditaj-table-responsive {
+.eg-care-table-responsive {
 	overflow-x: auto;
 	border: 1px solid #e2e8f0;
 	border-radius: 8px;
 	background: #ffffff;
 }
 
-.meditaj-dashboard-table {
+.eg-care-dashboard-table {
 	width: 100%;
 	border-collapse: collapse;
 	text-align: left;
 	font-size: 13px;
 }
 
-.meditaj-dashboard-table th {
+.eg-care-dashboard-table th {
 	background-color: #f8fafc;
 	color: #475569;
 	font-weight: 700;
@@ -1425,14 +1425,14 @@
 	border-bottom: 1px solid #e2e8f0;
 }
 
-.meditaj-dashboard-table td {
+.eg-care-dashboard-table td {
 	padding: 14px 18px;
 	border-bottom: 1px solid #f1f5f9;
 	color: #334155;
 	vertical-align: middle;
 }
 
-.meditaj-dashboard-table tr:last-child td {
+.eg-care-dashboard-table tr:last-child td {
 	border-bottom: none;
 }
 
@@ -1468,7 +1468,7 @@
 }
 
 /* Buttons */
-.meditaj-btn-join-call {
+.eg-care-btn-join-call {
 	padding: 8px 16px;
 	border: none;
 	border-radius: 6px;
@@ -1478,17 +1478,17 @@
 	transition: all 0.2s;
 }
 
-.meditaj-btn-join-call.active {
+.eg-care-btn-join-call.active {
 	background-color: #16a34a;
 	color: #ffffff;
 	box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2);
 }
 
-.meditaj-btn-join-call.active:hover {
+.eg-care-btn-join-call.active:hover {
 	background-color: #15803d;
 }
 
-.meditaj-btn-join-call.disabled {
+.eg-care-btn-join-call.disabled {
 	background-color: #e2e8f0;
 	color: #94a3b8;
 	cursor: not-allowed;
@@ -1582,7 +1582,7 @@
 }
 
 /* Agora Video Call Overlay Modal */
-.meditaj-video-modal {
+.eg-care-video-modal {
 	position: fixed !important;
 	top: 0 !important;
 	left: 0 !important;
@@ -1747,16 +1747,16 @@
 
 /* Custom Responsive Overrides for Mobile Telemedicine Portals */
 @media (max-width: 768px) {
-	.meditaj-stats-row {
+	.eg-care-stats-row {
 		grid-template-columns: 1fr !important;
 	}
-	.meditaj-fields-grid {
+	.eg-care-fields-grid {
 		grid-template-columns: 1fr !important;
 	}
-	.meditaj-field.span-full {
+	.eg-care-field.span-full {
 		grid-column: span 1 !important;
 	}
-	.meditaj-dashboard-header {
+	.eg-care-dashboard-header {
 		padding: 16px 20px !important;
 	}
 	.day-slot-row {
@@ -1769,12 +1769,12 @@
 	}
 }
 
-.meditaj-dashboard-table {
+.eg-care-dashboard-table {
 	width: 100% !important;
 	min-width: 750px !important;
 }
 
-.meditaj-patient-table {
+.eg-care-patient-table {
 	width: 100% !important;
 	min-width: 750px !important;
 	border-collapse: collapse !important;

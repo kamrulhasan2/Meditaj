@@ -1,16 +1,16 @@
 <?php
 /**
- * Plugin Name: Meditaj - Doctor Calling & Appointment System
- * Plugin URI:  https://github.com/kamrulhasan2/Meditaj
+ * Plugin Name: EG Care - Doctor Calling & Appointment System
+ * Plugin URI:  https://github.com/kamrulhasan2/EG Care
  * Description: Telemedicine and doctor appointment booking platform with Agora video integration and local payment options.
  * Version:     1.0.1
  * Author:      Kamrul Hasan
- * Text Domain: meditaj
+ * Text Domain: eg-care
  * Domain Path: /languages
  * Requires at least: 5.8
  * Requires PHP: 7.4
  *
- * @package Meditaj
+ * @package EGCare
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -18,18 +18,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define constants.
-define( 'MEDITAJ_VERSION', '1.0.0' );
-define( 'MEDITAJ_PATH', plugin_dir_path( __FILE__ ) );
-define( 'MEDITAJ_URL', plugin_dir_url( __FILE__ ) );
+define( 'EG_CARE_VERSION', '1.0.0' );
+define( 'EG_CARE_PATH', plugin_dir_path( __FILE__ ) );
+define( 'EG_CARE_URL', plugin_dir_url( __FILE__ ) );
 
 /**
- * Register Autoloader for Meditaj Namespaced Classes.
- * Maps e.g. \Meditaj\DB to includes/class-db.php.
+ * Register Autoloader for EG Care Namespaced Classes.
+ * Maps e.g. \EGCare\DB to includes/class-db.php.
  */
 spl_autoload_register(
 	function ( $class ) {
-		$prefix   = 'Meditaj\\';
-		$base_dir = MEDITAJ_PATH . 'includes/';
+		$prefix   = 'EGCare\\';
+		$base_dir = EG_CARE_PATH . 'includes/';
 
 		$len = strlen( $prefix );
 		if ( strncmp( $prefix, $class, $len ) !== 0 ) {
@@ -53,7 +53,7 @@ spl_autoload_register(
 // Run dynamic database migrations on load if needed.
 add_action( 'plugins_loaded', function() {
 	global $wpdb;
-	$table_schedules = \Meditaj\DB::get_table( 'schedules' );
+	$table_schedules = \EGCare\DB::get_table( 'schedules' );
 
 	if ( $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_schedules ) ) === $table_schedules ) {
 		$has_break_col = $wpdb->get_results( "SHOW COLUMNS FROM `$table_schedules` LIKE 'break_duration_min'" );
@@ -64,25 +64,25 @@ add_action( 'plugins_loaded', function() {
 } );
 
 // Register Activation and Deactivation Hooks.
-register_activation_hook( __FILE__, 'meditaj_activate_plugin' );
-register_deactivation_hook( __FILE__, 'meditaj_deactivate_plugin' );
+register_activation_hook( __FILE__, 'eg_care_activate_plugin' );
+register_deactivation_hook( __FILE__, 'eg_care_deactivate_plugin' );
 
 /**
  * Plugin activation operations.
  */
-function meditaj_activate_plugin() {
+function eg_care_activate_plugin() {
 	// Create Database Tables.
-	\Meditaj\DB::create_tables();
+	\EGCare\DB::create_tables();
 
 	// Setup Roles and Capabilities.
-	\Meditaj\Roles::add_roles();
+	\EGCare\Roles::add_roles();
 
 	// Register CPT and taxonomy definitions so rewrite rules flush properly.
-	\Meditaj\CPT::register_post_types();
-	\Meditaj\CPT::register_taxonomies();
+	\EGCare\CPT::register_post_types();
+	\EGCare\CPT::register_taxonomies();
 
 	// Seed dummy doctors for testing.
-	\Meditaj\DB::seed_dummy_doctors();
+	\EGCare\DB::seed_dummy_doctors();
 
 	flush_rewrite_rules();
 }
@@ -90,7 +90,7 @@ function meditaj_activate_plugin() {
 /**
  * Plugin deactivation operations.
  */
-function meditaj_deactivate_plugin() {
+function eg_care_deactivate_plugin() {
 	// Tables and roles are kept intact to preserve data during update/deactivation.
 	flush_rewrite_rules();
 }
@@ -99,9 +99,9 @@ function meditaj_deactivate_plugin() {
 add_action(
 	'admin_enqueue_scripts',
 	function ( $hook ) {
-		// Only enqueue on Meditaj admin pages or doctor post edit screens.
-		if ( false !== strpos( $hook, 'meditaj' ) || ( ( 'post.php' === $hook || 'post-new.php' === $hook ) && 'doctors' === get_post_type() ) ) {
-			wp_enqueue_style( 'meditaj-admin-style', MEDITAJ_URL . 'assets/css/admin.css', array(), MEDITAJ_VERSION );
+		// Only enqueue on EG Care admin pages or doctor post edit screens.
+		if ( false !== strpos( $hook, 'eg-care' ) || ( ( 'post.php' === $hook || 'post-new.php' === $hook ) && 'doctors' === get_post_type() ) ) {
+			wp_enqueue_style( 'eg-care-admin-style', EG_CARE_URL . 'assets/css/admin.css', array(), EG_CARE_VERSION );
 		}
 	}
 );
@@ -110,7 +110,7 @@ add_action(
 add_action(
 	'wp_enqueue_scripts',
 	function () {
-		wp_enqueue_style( 'meditaj-style', MEDITAJ_URL . 'assets/css/style.css', array(), time() );
+		wp_enqueue_style( 'eg-care-style', EG_CARE_URL . 'assets/css/style.css', array(), time() );
 	}
 );
 
@@ -118,22 +118,20 @@ add_action(
 add_action(
 	'plugins_loaded',
 	function () {
-		if ( get_option( \Meditaj\DB::DB_VERSION_OPTION ) !== \Meditaj\DB::DB_VERSION ) {
-			\Meditaj\DB::create_tables();
+		if ( get_option( \EGCare\DB::DB_VERSION_OPTION ) !== \EGCare\DB::DB_VERSION ) {
+			\EGCare\DB::create_tables();
 		}
 	}
 );
 
 // Bootstrap Components.
-\Meditaj\CPT::init();
-\Meditaj\Roles::init();
-\Meditaj\Shortcodes::init();
-\Meditaj\AdminMenu::init();
-\Meditaj\AdminDoctors::init();
-\Meditaj\RestApi::init();
-\Meditaj\Cron::init();
+\EGCare\CPT::init();
+\EGCare\Roles::init();
+\EGCare\Shortcodes::init();
+\EGCare\AdminMenu::init();
+\EGCare\AdminDoctors::init();
+\EGCare\RestApi::init();
+\EGCare\Cron::init();
 
 // Register cleanup on deactivation.
-register_deactivation_hook( __FILE__, array( '\Meditaj\Cron', 'clear_schedule' ) );
-
-
+register_deactivation_hook( __FILE__, array( '\EGCare\Cron', 'clear_schedule' ) );

@@ -1,5 +1,5 @@
 <?php
-namespace Meditaj;
+namespace EGCare;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
@@ -12,7 +12,7 @@ class DB {
 	/**
 	 * Schema version option name.
 	 */
-	const DB_VERSION_OPTION = 'meditaj_db_version';
+	const DB_VERSION_OPTION = 'eg_care_db_version';
 
 	/**
 	 * Current database schema version.
@@ -27,11 +27,11 @@ class DB {
 	public static function get_tables() {
 		global $wpdb;
 		return array(
-			'doctors_meta' => $wpdb->prefix . 'meditaj_doctors_meta',
-			'schedules'    => $wpdb->prefix . 'meditaj_schedules',
-			'appointments' => $wpdb->prefix . 'meditaj_appointments',
-			'reviews'      => $wpdb->prefix . 'meditaj_reviews',
-			'transactions' => $wpdb->prefix . 'meditaj_transactions',
+			'doctors_meta' => $wpdb->prefix . 'eg_care_doctors_meta',
+			'schedules'    => $wpdb->prefix . 'eg_care_schedules',
+			'appointments' => $wpdb->prefix . 'eg_care_appointments',
+			'reviews'      => $wpdb->prefix . 'eg_care_reviews',
+			'transactions' => $wpdb->prefix . 'eg_care_transactions',
 		);
 	}
 
@@ -57,7 +57,7 @@ class DB {
 
 		$sql = array();
 
-		// 1. wp_meditaj_doctors_meta
+		// 1. wp_eg_care_doctors_meta
 		$sql[] = "CREATE TABLE {$tables['doctors_meta']} (
   id bigint(20) NOT NULL AUTO_INCREMENT,
   post_id bigint(20) NOT NULL,
@@ -96,7 +96,7 @@ class DB {
   KEY fee_verification (consultation_fee, verification_status)
 ) $charset_collate;";
 
-		// 2. wp_meditaj_schedules
+		// 2. wp_eg_care_schedules
 		$sql[] = "CREATE TABLE {$tables['schedules']} (
   id bigint(20) NOT NULL AUTO_INCREMENT,
   doctor_id bigint(20) NOT NULL,
@@ -110,7 +110,7 @@ class DB {
   KEY doctor_id (doctor_id)
 ) $charset_collate;";
 
-		// 3. wp_meditaj_appointments
+		// 3. wp_eg_care_appointments
 		$sql[] = "CREATE TABLE {$tables['appointments']} (
   id bigint(20) NOT NULL AUTO_INCREMENT,
   doctor_id bigint(20) NOT NULL,
@@ -140,7 +140,7 @@ class DB {
   KEY doctor_slot (doctor_id, appointment_date, appointment_time)
 ) $charset_collate;";
 
-		// 4. wp_meditaj_reviews
+		// 4. wp_eg_care_reviews
 		$sql[] = "CREATE TABLE {$tables['reviews']} (
   id bigint(20) NOT NULL AUTO_INCREMENT,
   appointment_id bigint(20) NOT NULL,
@@ -155,7 +155,7 @@ class DB {
   KEY patient_user_id (patient_user_id)
 ) $charset_collate;";
 
-		// 5. wp_meditaj_transactions
+		// 5. wp_eg_care_transactions
 		$sql[] = "CREATE TABLE {$tables['transactions']} (
   id bigint(20) NOT NULL AUTO_INCREMENT,
   appointment_id bigint(20) NOT NULL,
@@ -219,10 +219,10 @@ class DB {
 
 		// Ensure taxonomy and post type are registered
 		if ( ! taxonomy_exists( 'specialty' ) ) {
-			\Meditaj\CPT::register_taxonomies();
+			\EGCare\CPT::register_taxonomies();
 		}
 		if ( ! post_type_exists( 'doctors' ) ) {
-			\Meditaj\CPT::register_post_types();
+			\EGCare\CPT::register_post_types();
 		}
 
 		// Check if dummy doctor meta already exists
@@ -315,7 +315,7 @@ class DB {
 					array(
 						'ID'           => $user_id,
 						'display_name' => $doctor['display_name'],
-						'role'         => 'meditaj_doctor',
+						'role'         => 'eg_care_doctor',
 					)
 				);
 			} else {
@@ -327,7 +327,7 @@ class DB {
 				if ( $user_id ) {
 					// Ensure they have the correct role
 					$u = new \WP_User( $user_id );
-					$u->set_role( 'meditaj_doctor' );
+					$u->set_role( 'eg_care_doctor' );
 				}
 			}
 
