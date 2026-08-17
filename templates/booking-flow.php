@@ -25,9 +25,19 @@ if ( isset( $_GET['meditaj_payment'] ) ) {
 	$appointment = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_appointments WHERE id = %d", $appointment_id ) );
 	
 	if ( $appointment ) {
-		// Local development helper: Since localhost cannot receive public SSLCommerz webhook/IPN queries,
-		// we automatically process the confirmation updates when the patient returns successfully.
-		if ( 'pending_payment' === $appointment->status && 'success' === $payment_status ) {
+		// Enforce user ownership of the appointment to prevent IDOR disclosure.
+		if ( ! is_user_logged_in() || get_current_user_id() !== intval( $appointment->patient_user_id ) ) {
+			wp_die( esc_html__( 'Unauthorized access. You do not have permission to view this appointment.', 'meditaj' ), '', array( 'response' => 403 ) );
+		}
+
+		// Local development helper: Only run database updates on local/debug environments
+		// AND ensure that the current logged-in user owns this appointment.
+		$is_local_env = (
+			( defined( 'WP_DEBUG' ) && WP_DEBUG ) && 
+			( 'local' === wp_get_environment_type() || in_array( $_SERVER['REMOTE_ADDR'], array( '127.0.0.1', '::1' ), true ) )
+		);
+
+		if ( $is_local_env && 'pending_payment' === $appointment->status && 'success' === $payment_status ) {
 			$now = current_time( 'mysql' );
 			$wpdb->update(
 				$table_appointments,
@@ -78,39 +88,54 @@ if ( isset( $_GET['meditaj_payment'] ) ) {
 		$status = $appointment->status;
 		
 		if ( 'success' === $payment_status ) {
-			?>
-			<div class="meditaj-payment-status-container success" style="max-width: 600px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;">
-				<div style="width: 70px; height: 70px; background: #d1fae5; color: #059669; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 32px; font-weight: bold;">✓</div>
-				<h2 style="color: #0f172a; margin-bottom: 10px; font-size: 24px;">Booking Confirmed & Paid!</h2>
-				<p style="color: #64748b; margin-bottom: 30px;">Your appointment has been successfully scheduled and paid. You can now join the telemedicine video consultation room.</p>
-				
-				<div style="background: #f8fafc; border-radius: 8px; padding: 20px; text-align: left; margin-bottom: 30px; border: 1px solid #e2e8f0;">
-					<div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
-						<span style="color: #64748b;">Doctor</span>
-						<strong><?php echo esc_html( $doctor_title ); ?></strong>
+			if ( 'paid' === $appointment->payment_status ) {
+				?>
+				<div class="meditaj-payment-status-container success" style="max-width: 600px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;">
+					<div style="width: 70px; height: 70px; background: #d1fae5; color: #059669; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 32px; font-weight: bold;">✓</div>
+					<h2 style="color: #0f172a; margin-bottom: 10px; font-size: 24px;">Booking Confirmed & Paid!</h2>
+					<p style="color: #64748b; margin-bottom: 30px;">Your appointment has been successfully scheduled and paid. You can now join the telemedicine video consultation room.</p>
+					
+					<div style="background: #f8fafc; border-radius: 8px; padding: 20px; text-align: left; margin-bottom: 30px; border: 1px solid #e2e8f0;">
+						<div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+							<span style="color: #64748b;">Doctor</span>
+							<strong><?php echo esc_html( $doctor_title ); ?></strong>
+						</div>
+						<div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+							<span style="color: #64748b;">Patient</span>
+							<strong><?php echo esc_html( $patient_name ); ?> (<?php echo esc_html( $relation ); ?>)</strong>
+						</div>
+						<div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+							<span style="color: #64748b;">Schedule</span>
+							<strong><?php echo 'instant' === $type ? 'Instant Call' : esc_html( $date . ' @ ' . $time ); ?></strong>
+						</div>
+						<div style="display: flex; justify-content: space-between;">
+							<span style="color: #64748b;">Paid Amount</span>
+							<strong style="color: #0f766e;"><?php echo esc_html( $amount ); ?> BDT</strong>
+						</div>
 					</div>
-					<div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
-						<span style="color: #64748b;">Patient</span>
-						<strong><?php echo esc_html( $patient_name ); ?> (<?php echo esc_html( $relation ); ?>)</strong>
-					</div>
-					<div style="display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
-						<span style="color: #64748b;">Schedule</span>
-						<strong><?php echo 'instant' === $type ? 'Instant Call' : esc_html( $date . ' @ ' . $time ); ?></strong>
-					</div>
-					<div style="display: flex; justify-content: space-between;">
-						<span style="color: #64748b;">Paid Amount</span>
-						<strong style="color: #0f766e;"><?php echo esc_html( $amount ); ?> BDT</strong>
-					</div>
-				</div>
 
-				<div style="display: flex; flex-direction: column; gap: 12px;">
-					<button type="button" class="meditaj-btn-join-call active" data-id="<?php echo intval( $appointment_id ); ?>" style="width: 100%; padding: 14px; font-weight: bold; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; background-color: #0f766e; color: #fff;">
-						Join Video Call
-					</button>
-					<a href="<?php echo esc_url( remove_query_arg( array( 'meditaj_payment', 'id' ) ) ); ?>" style="color: #0f766e; text-decoration: none; font-weight: bold; font-size: 14px;">Book Another Appointment</a>
+					<div style="display: flex; flex-direction: column; gap: 12px;">
+						<button type="button" class="meditaj-btn-join-call active" data-id="<?php echo intval( $appointment_id ); ?>" style="width: 100%; padding: 14px; font-weight: bold; font-size: 16px; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; background-color: #0f766e; color: #fff;">
+							Join Video Call
+						</button>
+						<a href="<?php echo esc_url( remove_query_arg( array( 'meditaj_payment', 'id' ) ) ); ?>" style="color: #0f766e; text-decoration: none; font-weight: bold; font-size: 14px;">Book Another Appointment</a>
+					</div>
 				</div>
-			</div>
-			<?php
+				<?php
+			} else {
+				?>
+				<div class="meditaj-payment-status-container pending" style="max-width: 600px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;">
+					<div style="width: 70px; height: 70px; background: #fef3c7; color: #d97706; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 32px; font-weight: bold;">🕒</div>
+					<h2 style="color: #0f172a; margin-bottom: 10px; font-size: 24px;">Verifying Payment...</h2>
+					<p style="color: #64748b; margin-bottom: 30px;">We are currently verifying your payment with SSLCommerz. This usually takes a few seconds. Please do not close this window.</p>
+					
+					<div style="display: flex; flex-direction: column; gap: 12px; align-items: center;">
+						<div class="meditaj-loading-spinner small" style="margin-bottom: 15px;"></div>
+						<button type="button" onclick="window.location.reload();" class="meditaj-btn-register cyan-btn" style="width: 100%; max-width: 250px; padding: 12px; font-weight: bold; border-radius: 8px;">Check Status Again</button>
+					</div>
+				</div>
+				<?php
+			}
 		} else {
 			?>
 			<div class="meditaj-payment-status-container error" style="max-width: 600px; margin: 40px auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: center; border: 1px solid #e2e8f0;">
