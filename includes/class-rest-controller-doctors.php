@@ -412,8 +412,6 @@ class RestControllerDoctors extends WP_REST_Controller {
 			'avg_rating'          => floatval( $row->avg_rating ),
 			'total_reviews'       => intval( $row->total_reviews ),
 			'photo_url'           => $photo_url,
-			'mobile'              => $row->mobile,
-			'nid'                 => $row->nid,
 			'nationality'         => $row->nationality,
 			'organization'        => $row->organization,
 			'follow_up_days'      => intval( $row->follow_up_days ),

@@ -18,6 +18,20 @@ document.addEventListener('DOMContentLoaded', function() {
 		return text;
 	}
 
+	// Helper to escape HTML tags and attributes for security
+	function escapeHtml(text) {
+		if (typeof text !== 'string') return text;
+		return text.replace(/[&<>"']/g, function(m) {
+			return {
+				'&': '&amp;',
+				'<': '&lt;',
+				'>': '&gt;',
+				'"': '&quot;',
+				"'": '&#039;'
+			}[m];
+		});
+	}
+
 	// 1. STATE MANAGEMENT
 	let state = {
 		step: 1,
@@ -261,11 +275,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
 						const avatarContainer = card.querySelector('.meditaj-doctor-card-avatar-wrap');
 						if ( doc.photo_url ) {
-							avatarContainer.innerHTML = `<img src="${doc.photo_url}" class="meditaj-doc-avatar" alt="${doc.name}"><span class="meditaj-status-indicator ${doc.is_online ? 'online' : 'offline'}"></span>`;
+							avatarContainer.innerHTML = `<img src="${doc.photo_url}" class="meditaj-doc-avatar" alt="${escapeHtml(doc.name)}"><span class="meditaj-status-indicator ${doc.is_online ? 'online' : 'offline'}"></span>`;
 						} else {
 							// Initials placeholder
 							const initials = doc.name.split(' ').filter(n => n !== 'Dr.').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-							avatarContainer.innerHTML = `<div class="meditaj-doc-initials">${initials}</div><span class="meditaj-status-indicator ${doc.is_online ? 'online' : 'offline'}"></span>`;
+							avatarContainer.innerHTML = `<div class="meditaj-doc-initials">${escapeHtml(initials)}</div><span class="meditaj-status-indicator ${doc.is_online ? 'online' : 'offline'}"></span>`;
 						}
 
 						// Click selector
@@ -433,10 +447,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		// Populate Avatar
 		const avatarWrap = app.querySelector('.detail-avatar-wrap');
 		if ( doc.photo_url ) {
-			avatarWrap.innerHTML = `<img src="${doc.photo_url}" class="meditaj-detail-avatar" alt="${doc.name}">`;
+			avatarWrap.innerHTML = `<img src="${doc.photo_url}" class="meditaj-detail-avatar" alt="${escapeHtml(doc.name)}">`;
 		} else {
 			const initials = doc.name.split(' ').filter(n => n !== 'Dr.').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-			avatarWrap.innerHTML = `<div class="meditaj-detail-avatar-placeholder">${initials}</div>`;
+			avatarWrap.innerHTML = `<div class="meditaj-detail-avatar-placeholder">${escapeHtml(initials)}</div>`;
 		}
 
 		// Disable Instant toggle if doctor is offline

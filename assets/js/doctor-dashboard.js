@@ -105,6 +105,20 @@ document.addEventListener('DOMContentLoaded', function() {
 		})
 		.then(res => res.json())
 		.then(data => {
+			// Helper to escape HTML tags and attributes for security
+			function escapeHtml(text) {
+				if (typeof text !== 'string') return text;
+				return text.replace(/[&<>"']/g, function(m) {
+					return {
+						'&': '&amp;',
+						'<': '&lt;',
+						'>': '&gt;',
+						'"': '&quot;',
+						"'": '&#039;'
+					}[m];
+				});
+			}
+
 			// Today's appointments
 			todayTarget.innerHTML = '';
 			if ( ! data.today || 0 === data.today.length ) {
@@ -122,10 +136,14 @@ document.addEventListener('DOMContentLoaded', function() {
 					
 					const isCallWindow = Math.abs(diffMin) <= 15;
 
+					const escapedName = escapeHtml(app.family_member_name);
+					const escapedRelation = escapeHtml(app.family_member_relation);
+					const escapedNotes = escapeHtml(app.symptom_notes || '');
+
 					tr.innerHTML = `
-						<td><strong>${app.family_member_name}</strong> <span class="relation-tag">${app.family_member_relation}</span></td>
+						<td><strong>${escapedName}</strong> <span class="relation-tag">${escapedRelation}</span></td>
 						<td>${formatTime24To12(app.appointment_time)}</td>
-						<td><span class="symptom-notes-cell" title="${app.symptom_notes || ''}">${app.symptom_notes || '-'}</span></td>
+						<td><span class="symptom-notes-cell" title="${escapedNotes}">${escapedNotes || '-'}</span></td>
 						<td>${app.amount} BDT</td>
 						<td>
 							<button type="button" class="meditaj-btn-join-call ${isCallWindow ? 'active' : 'disabled'}" ${isCallWindow ? '' : 'disabled'}>
@@ -158,11 +176,15 @@ document.addEventListener('DOMContentLoaded', function() {
 			} else {
 				data.upcoming.forEach(app => {
 					const tr = document.createElement('tr');
+					const escapedName = escapeHtml(app.family_member_name);
+					const escapedRelation = escapeHtml(app.family_member_relation);
+					const escapedNotes = escapeHtml(app.symptom_notes || '');
+
 					tr.innerHTML = `
-						<td><strong>${app.family_member_name}</strong> <span class="relation-tag">${app.family_member_relation}</span></td>
+						<td><strong>${escapedName}</strong> <span class="relation-tag">${escapedRelation}</span></td>
 						<td>${app.appointment_date}</td>
 						<td>${formatTime24To12(app.appointment_time)}</td>
-						<td><span class="symptom-notes-cell" title="${app.symptom_notes || ''}">${app.symptom_notes || '-'}</span></td>
+						<td><span class="symptom-notes-cell" title="${escapedNotes}">${escapedNotes || '-'}</span></td>
 						<td>${app.amount} BDT</td>
 					`;
 					upcomingTarget.appendChild(tr);
