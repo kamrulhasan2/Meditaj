@@ -82,7 +82,7 @@ class AdminPatientsTable extends \WP_List_Table {
 		// Build WHERE search clause
 		$where = "WHERE status IN ('confirmed', 'completed', 'ongoing')";
 		if ( isset( $_REQUEST['s'] ) && ! empty( $_REQUEST['s'] ) ) {
-			$search = '%' . $wpdb->like_escape( sanitize_text_field( $_REQUEST['s'] ) ) . '%';
+			$search = '%' . $wpdb->esc_like( sanitize_text_field( $_REQUEST['s'] ) ) . '%';
 			// Query users table matching display_name or user_email
 			$matching_users = $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM $wpdb->users WHERE display_name LIKE %s OR user_email LIKE %s", $search, $search ) );
 			if ( ! empty( $matching_users ) ) {

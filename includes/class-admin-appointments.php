@@ -265,7 +265,7 @@ class AdminAppointmentsTable extends \WP_List_Table {
 
 		// Search Query
 		if ( isset( $_REQUEST['s'] ) && ! empty( $_REQUEST['s'] ) ) {
-			$search = '%' . $wpdb->like_escape( sanitize_text_field( $_REQUEST['s'] ) ) . '%';
+			$search = '%' . $wpdb->esc_like( sanitize_text_field( $_REQUEST['s'] ) ) . '%';
 			$where[] = $wpdb->prepare( '(family_member_name LIKE %s OR transaction_id LIKE %s)', $search, $search );
 		}
 
