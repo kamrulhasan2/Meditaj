@@ -125,6 +125,7 @@ add_action(
 \EGCare\CPT::init();
 \EGCare\Roles::init();
 \EGCare\Shortcodes::init();
+\EGCare\Cache::init();
 \EGCare\AdminMenu::init();
 \EGCare\AdminDoctors::init();
 \EGCare\RestApi::init();
