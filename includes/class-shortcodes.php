@@ -193,7 +193,7 @@ class Shortcodes {
 		}
 
 		// 2. Certificate file.
-		$cert_id = media_handle_upload( 'reg_certificate', $post_id );
+		$cert_id = \EGCare\SecureUploads::handle_upload( 'reg_certificate', $post_id );
 		if ( is_wp_error( $cert_id ) ) {
 			// Rollback.
 			wp_delete_post( $post_id, true );

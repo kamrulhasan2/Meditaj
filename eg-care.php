@@ -97,6 +97,9 @@ function eg_care_activate_plugin() {
 	// Create Database Tables.
 	\EGCare\DB::create_tables();
 
+	// Create the guarded directory for verification documents.
+	\EGCare\SecureUploads::directory();
+
 	// Setup Roles and Capabilities.
 	\EGCare\Roles::add_roles();
 
@@ -149,6 +152,7 @@ add_action(
 \EGCare\Roles::init();
 \EGCare\Shortcodes::init();
 \EGCare\Cache::init();
+\EGCare\SecureUploads::init();
 \EGCare\AdminMenu::init();
 \EGCare\AdminDoctors::init();
 \EGCare\RestApi::init();

@@ -698,7 +698,7 @@ class AdminDoctors {
 									$certs = json_decode( $doctor->certificate_files, true );
 									if ( ! empty( $certs ) ) {
 										foreach ( $certs as $cert_id ) {
-											$url  = wp_get_attachment_url( $cert_id );
+											$url  = \EGCare\SecureUploads::get_view_url( $cert_id );
 											$mime = get_post_mime_type( $cert_id );
 											if ( $mime && strpos( $mime, 'image' ) !== false ) {
 												echo sprintf( '<a href="%1$s" target="_blank"><img src="%1$s" style="max-width: 80px; max-height: 80px; border: 1px solid #ccd0d4; border-radius: 4px; padding: 2px; margin-right: 5px;" alt="Certificate"/></a>', esc_url( $url ) );
