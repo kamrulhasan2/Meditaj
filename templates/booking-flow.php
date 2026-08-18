@@ -30,14 +30,29 @@ if ( isset( $_GET['eg_care_payment'] ) ) {
 			wp_die( esc_html__( 'Unauthorized access. You do not have permission to view this appointment.', 'eg-care' ), '', array( 'response' => 403 ) );
 		}
 
-		// Local development helper: Only run database updates on local/debug environments
-		// AND ensure that the current logged-in user owns this appointment.
-		$is_local_env = (
-			( defined( 'WP_DEBUG' ) && WP_DEBUG ) && 
-			( 'local' === wp_get_environment_type() || in_array( $_SERVER['REMOTE_ADDR'], array( '127.0.0.1', '::1' ), true ) )
-		);
+		// Local testing helper. SSLCommerz cannot deliver an IPN to a machine that
+		// is not reachable from the internet, so this simulates a paid callback on
+		// the gateway return - but ONLY when the site owner has deliberately opted
+		// in by adding this line to wp-config.php:
+		//
+		//     define( 'EG_CARE_ALLOW_FAKE_PAYMENTS', true );
+		//
+		// Never enable it on a public site. With it on, any logged-in patient can
+		// confirm their own booking without paying, just by loading the success URL.
+		// Environment sniffing is deliberately not used here: WP_DEBUG is routinely
+		// left on in production, and REMOTE_ADDR is 127.0.0.1 on any site sitting
+		// behind a local reverse proxy, so neither is evidence of a private machine.
+		$fake_payments_allowed = defined( 'EG_CARE_ALLOW_FAKE_PAYMENTS' ) && EG_CARE_ALLOW_FAKE_PAYMENTS;
 
-		if ( $is_local_env && 'pending_payment' === $appointment->status && 'success' === $payment_status ) {
+		if ( $fake_payments_allowed && 'pending_payment' === $appointment->status && 'success' === $payment_status ) {
+			error_log(
+				sprintf(
+					'EG Care: simulated payment recorded for appointment #%d by user #%d because EG_CARE_ALLOW_FAKE_PAYMENTS is enabled.',
+					$appointment->id,
+					get_current_user_id()
+				)
+			);
+
 			$now = current_time( 'mysql' );
 			$wpdb->update(
 				$table_appointments,

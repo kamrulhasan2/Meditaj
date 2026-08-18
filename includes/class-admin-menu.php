@@ -438,7 +438,7 @@ class AdminMenu {
 					<li><?php printf( __( 'Navigate to the <a href="%s">Settings page</a> in this plugin.', 'eg-care' ), admin_url( 'admin.php?page=eg-care-settings' ) ); ?></li>
 					<li><?php esc_html_e( 'Paste your Store ID and Store Password provided by SSLCommerz.', 'eg-care' ); ?></li>
 					<li><?php esc_html_e( 'Check the Sandbox checkbox for local/staging testing. Uncheck it when migrating to production/live merchant credentials.', 'eg-care' ); ?></li>
-					<li><strong><?php esc_html_e( 'Local Webhook Limitation Note:', 'eg-care' ); ?></strong> <?php esc_html_e( 'Localhost environments cannot receive public webhooks. EG Care automatically processes dummy transactions for testing on localhost returns, while production utilizes real-time IPN handlers.', 'eg-care' ); ?></li>
+					<li><strong><?php esc_html_e( 'Local Webhook Limitation Note:', 'eg-care' ); ?></strong> <?php esc_html_e( 'Localhost environments cannot receive public webhooks. To simulate a paid booking while testing locally, add define( \'EG_CARE_ALLOW_FAKE_PAYMENTS\', true ); to your wp-config.php. Never set this on a live site - it lets any logged-in patient confirm a booking without paying. Production relies on the real IPN handler.', 'eg-care' ); ?></li>
 				</ol>
 			</div>
 
