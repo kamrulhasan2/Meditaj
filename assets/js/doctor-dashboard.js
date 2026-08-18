@@ -127,14 +127,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				data.today.forEach(app => {
 					const tr = document.createElement('tr');
 					
-					// Calculate if current time is within +/- 15 minutes of appointment window
-					const now = new Date();
-					const [hh, mm, ss] = app.appointment_time.split(':');
-					const appTime = new Date();
-					appTime.setHours(parseInt(hh), parseInt(mm), parseInt(ss));
-					const diffMin = (appTime - now) / 60000;
-					
-					const isCallWindow = Math.abs(diffMin) <= 15;
+					const isCallWindow = isJoinable(app);
 
 					const escapedName = escapeHtml(app.family_member_name);
 					const escapedRelation = escapeHtml(app.family_member_relation);
@@ -162,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
 							}
 						});
 					} else {
-						joinBtn.title = 'Available only within 15 minutes of scheduled time.';
+						joinBtn.title = 'Available from 15 minutes before until 60 minutes after the scheduled time.';
 					}
 
 					todayTarget.appendChild(tr);
@@ -445,6 +438,22 @@ document.addEventListener('DOMContentLoaded', function() {
 			saveProfileText(0);
 		}
 	});
+
+	// Whether the Join Call button should be enabled for an appointment.
+	// Mirrors generate_video_token() in includes/class-rest-controller-booking.php:
+	// instant calls are always joinable, scheduled calls open 15 minutes before the
+	// start time and close 60 minutes after it. starts_at is an absolute UTC
+	// timestamp, so this holds whatever timezone the doctor's browser is in.
+	function isJoinable(app) {
+		if ( 'instant' === app.appointment_type ) {
+			return true;
+		}
+		if ( ! app.starts_at ) {
+			return false;
+		}
+		const diffMin = ( ( parseInt(app.starts_at, 10) * 1000 ) - Date.now() ) / 60000;
+		return diffMin <= 15 && diffMin >= -60;
+	}
 
 	// Formats 24-hour time "16:30:00" or "16:30" to 12-hour "4:30 PM"
 	function formatTime24To12(time24) {

@@ -141,7 +141,22 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 		$today_list = array();
 		$upcoming_list = array();
 
+		$site_timezone = wp_timezone();
+
 		foreach ( $appointments as $app ) {
+			// Absolute UTC start time for the appointment. The browser cannot work
+			// this out from appointment_date/appointment_time on its own, because
+			// those are wall-clock values in the site's timezone, not the viewer's.
+			$app->starts_at = null;
+			if ( ! empty( $app->appointment_date ) && ! empty( $app->appointment_time ) ) {
+				try {
+					$start          = new \DateTime( $app->appointment_date . ' ' . $app->appointment_time, $site_timezone );
+					$app->starts_at = $start->getTimestamp();
+				} catch ( \Exception $e ) {
+					$app->starts_at = null;
+				}
+			}
+
 			if ( $app->appointment_date === $today_date ) {
 				$today_list[] = $app;
 			} elseif ( $app->appointment_date > $today_date ) {
