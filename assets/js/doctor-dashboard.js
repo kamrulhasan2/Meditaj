@@ -121,13 +121,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 			// Today's appointments
 			todayTarget.innerHTML = '';
+			joinButtonRows = [];
 			if ( ! data.today || 0 === data.today.length ) {
 				todayTarget.innerHTML = '<tr><td colspan="5" class="empty-cell">No consultations scheduled for today.</td></tr>';
 			} else {
 				data.today.forEach(app => {
 					const tr = document.createElement('tr');
-					
-					const isCallWindow = isJoinable(app);
 
 					const escapedName = escapeHtml(app.family_member_name);
 					const escapedRelation = escapeHtml(app.family_member_relation);
@@ -139,28 +138,25 @@ document.addEventListener('DOMContentLoaded', function() {
 						<td><span class="symptom-notes-cell" title="${escapedNotes}">${escapedNotes || '-'}</span></td>
 						<td>${app.amount} BDT</td>
 						<td>
-							<button type="button" class="eg-care-btn-join-call ${isCallWindow ? 'active' : 'disabled'}" ${isCallWindow ? '' : 'disabled'}>
+							<button type="button" class="eg-care-btn-join-call" data-id="${parseInt(app.id, 10)}">
 								Join Call
 							</button>
 						</td>
 					`;
 
+					// Clicks are handled by the shared delegator in video-call.js,
+					// which reads data-id. The open/closed state is applied here and
+					// then kept current by the interval timer, so it is never baked
+					// into the markup.
 					const joinBtn = tr.querySelector('.eg-care-btn-join-call');
-					if ( isCallWindow ) {
-						joinBtn.addEventListener('click', function() {
-							if ( window.EGCareVideoCall ) {
-								window.EGCareVideoCall.join(app.id);
-							} else {
-								alert('Video call manager is not initialized.');
-							}
-						});
-					} else {
-						joinBtn.title = 'Available from 15 minutes before until 60 minutes after the scheduled time.';
-					}
+					joinButtonRows.push({ app: app, btn: joinBtn });
+					syncJoinButton(app, joinBtn);
 
 					todayTarget.appendChild(tr);
 				});
 			}
+
+			startJoinButtonTimer();
 
 			// Upcoming appointments
 			upcomingTarget.innerHTML = '';
@@ -438,6 +434,36 @@ document.addEventListener('DOMContentLoaded', function() {
 			saveProfileText(0);
 		}
 	});
+
+	// Today's rows whose Join Call button must track the clock.
+	let joinButtonRows = [];
+	let joinButtonTimer = null;
+
+	// Apply the current window state to one row's button.
+	function syncJoinButton(app, btn) {
+		const canJoin = isJoinable(app);
+		btn.disabled = ! canJoin;
+		btn.classList.toggle('active', canJoin);
+		btn.classList.toggle('disabled', ! canJoin);
+		btn.title = canJoin ? '' : 'Available from 15 minutes before until 60 minutes after the scheduled time.';
+	}
+
+	// Re-evaluate every tracked button so a doctor who leaves the dashboard open
+	// sees the window open and close on its own, with no reload.
+	function startJoinButtonTimer() {
+		if ( joinButtonTimer ) {
+			clearInterval(joinButtonTimer);
+			joinButtonTimer = null;
+		}
+		if ( 0 === joinButtonRows.length ) {
+			return;
+		}
+		joinButtonTimer = setInterval(function() {
+			joinButtonRows.forEach(function(row) {
+				syncJoinButton(row.app, row.btn);
+			});
+		}, 30000);
+	}
 
 	// Whether the Join Call button should be enabled for an appointment.
 	// Mirrors generate_video_token() in includes/class-rest-controller-booking.php:
