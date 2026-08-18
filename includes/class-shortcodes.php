@@ -335,8 +335,8 @@ class Shortcodes {
 	 */
 	public static function render_booking_shortcode() {
 		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
-		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), time(), true );
-		wp_enqueue_script( 'eg-care-booking-js', EG_CARE_URL . 'assets/js/booking.js', array(), EG_CARE_VERSION, true );
+		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), eg_care_asset_version( 'assets/js/video-call.js' ), true );
+		wp_enqueue_script( 'eg-care-booking-js', EG_CARE_URL . 'assets/js/booking.js', array(), eg_care_asset_version( 'assets/js/booking.js' ), true );
 
 		wp_localize_script(
 			'eg-care-booking-js',
@@ -372,8 +372,8 @@ class Shortcodes {
 		}
 
 		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
-		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), time(), true );
-		wp_enqueue_script( 'eg-care-doctor-dashboard-js', EG_CARE_URL . 'assets/js/doctor-dashboard.js', array(), EG_CARE_VERSION, true );
+		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), eg_care_asset_version( 'assets/js/video-call.js' ), true );
+		wp_enqueue_script( 'eg-care-doctor-dashboard-js', EG_CARE_URL . 'assets/js/doctor-dashboard.js', array(), eg_care_asset_version( 'assets/js/doctor-dashboard.js' ), true );
 
 		// Localize parameters for AJAX requests.
 		wp_localize_script(
@@ -407,7 +407,7 @@ class Shortcodes {
 		}
 
 		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
-		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), time(), true );
+		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), eg_care_asset_version( 'assets/js/video-call.js' ), true );
 
 		// Localize parameters for AJAX requests.
 		wp_localize_script(

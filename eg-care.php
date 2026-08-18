@@ -18,9 +18,32 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define constants.
-define( 'EG_CARE_VERSION', '1.0.0' );
+define( 'EG_CARE_VERSION', '1.0.1' );
 define( 'EG_CARE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'EG_CARE_URL', plugin_dir_url( __FILE__ ) );
+
+/**
+ * Version string for a plugin asset.
+ *
+ * Returns the plugin version, so browsers, page caches and CSS/JS combining
+ * can actually hold on to the file. When WP_DEBUG is on it returns the file's
+ * modification time instead, so a local edit shows up without a hard refresh -
+ * unlike time(), which changed the URL on every single request and defeated
+ * caching altogether.
+ *
+ * @param string $relative_path Path relative to the plugin root, e.g. 'assets/js/booking.js'.
+ * @return string Version string.
+ */
+function eg_care_asset_version( $relative_path ) {
+	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+		$file = EG_CARE_PATH . ltrim( $relative_path, '/' );
+		if ( file_exists( $file ) ) {
+			return (string) filemtime( $file );
+		}
+	}
+
+	return EG_CARE_VERSION;
+}
 
 /**
  * Register Autoloader for EG Care Namespaced Classes.
@@ -98,7 +121,7 @@ add_action(
 	function ( $hook ) {
 		// Only enqueue on EG Care admin pages or doctor post edit screens.
 		if ( false !== strpos( $hook, 'eg-care' ) || ( ( 'post.php' === $hook || 'post-new.php' === $hook ) && 'doctors' === get_post_type() ) ) {
-			wp_enqueue_style( 'eg-care-admin-style', EG_CARE_URL . 'assets/css/admin.css', array(), EG_CARE_VERSION );
+			wp_enqueue_style( 'eg-care-admin-style', EG_CARE_URL . 'assets/css/admin.css', array(), eg_care_asset_version( 'assets/css/admin.css' ) );
 		}
 	}
 );
@@ -107,7 +130,7 @@ add_action(
 add_action(
 	'wp_enqueue_scripts',
 	function () {
-		wp_enqueue_style( 'eg-care-style', EG_CARE_URL . 'assets/css/style.css', array(), time() );
+		wp_enqueue_style( 'eg-care-style', EG_CARE_URL . 'assets/css/style.css', array(), eg_care_asset_version( 'assets/css/style.css' ) );
 	}
 );
 

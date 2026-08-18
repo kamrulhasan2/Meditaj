@@ -84,7 +84,7 @@ class AdminDashboard {
 
 		// Enqueue scripts with cache-busting
 		wp_enqueue_script( 'chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', array(), '4.4.1', true );
-		wp_enqueue_script( 'eg-care-admin-charts-js', EG_CARE_URL . 'assets/js/admin-charts.js', array( 'chart-js' ), time(), true );
+		wp_enqueue_script( 'eg-care-admin-charts-js', EG_CARE_URL . 'assets/js/admin-charts.js', array( 'chart-js' ), eg_care_asset_version( 'assets/js/admin-charts.js' ), true );
 		wp_localize_script(
 			'eg-care-admin-charts-js',
 			'egCareChartsData',
