@@ -31,7 +31,44 @@ class Shortcodes {
 		add_shortcode( 'eg_care_booking_flow', array( __CLASS__, 'render_booking_shortcode' ) );
 		add_shortcode( 'eg_care_doctor_dashboard', array( __CLASS__, 'render_doctor_dashboard_shortcode' ) );
 		add_shortcode( 'eg_care_patient_dashboard', array( __CLASS__, 'render_patient_dashboard_shortcode' ) );
+		add_action( 'template_redirect', array( __CLASS__, 'handle_gateway_return' ), 1 );
 		add_action( 'template_redirect', array( __CLASS__, 'process_registration_form' ) );
+	}
+
+	/**
+	 * Turn the gateway's POST back into a GET before anything is rendered.
+	 *
+	 * SSLCommerz returns the customer by POSTing to the success URL. A browser
+	 * will not attach a SameSite=Lax auth cookie to a cross-site POST, so that
+	 * request arrives logged out, and reloading it re-submits the form. Bouncing
+	 * it through a GET fixes both.
+	 *
+	 * This has to run on template_redirect: by the time a shortcode renders, the
+	 * theme has already sent output, the Location header is ignored, and the exit
+	 * that follows it truncates the page into a blank screen.
+	 */
+	public static function handle_gateway_return() {
+		if ( ! isset( $_GET['eg_care_payment'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+
+		$method = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) ) : 'GET';
+		if ( 'POST' !== $method ) {
+			return;
+		}
+
+		$host = isset( $_SERVER['HTTP_HOST'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+		$uri  = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+
+		if ( '' === $host || '' === $uri ) {
+			return;
+		}
+
+		// wp_safe_redirect() refuses any host other than this site's, so a forged
+		// Host header cannot send the customer somewhere else. 303 tells the browser
+		// to follow up with a GET.
+		wp_safe_redirect( esc_url_raw( set_url_scheme( '//' . $host . $uri ) ), 303 );
+		exit;
 	}
 
 	/**

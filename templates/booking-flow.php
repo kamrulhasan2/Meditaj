@@ -9,14 +9,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
+// The gateway's POST is turned into a GET by Shortcodes::handle_gateway_return()
+// on template_redirect, so by the time this template runs the request is a GET.
 if ( isset( $_GET['eg_care_payment'] ) ) {
-	// If the gateway returned via POST, redirect via GET to restore SameSite session cookies and nonces.
-	if ( 'POST' === $_SERVER['REQUEST_METHOD'] ) {
-		$redirect_url = ( is_ssl() ? 'https://' : 'http://' ) . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-		wp_safe_redirect( esc_url_raw( $redirect_url ) );
-		exit;
-	}
-
 	$payment_status = sanitize_key( $_GET['eg_care_payment'] );
 	$appointment_id = isset( $_GET['id'] ) ? intval( $_GET['id'] ) : 0;
 	
