@@ -282,36 +282,11 @@
 		}
 
 		try {
-			// Join the channel
-			await client.join(
-				credentials.app_id,
-				credentials.channel_name,
-				credentials.token,
-				null // Passing null lets Agora auto-assign a numeric UID
-			);
-
-			// Create Microphone and Camera Tracks
-			[localAudioTrack, localVideoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
-
-			// Play Local Camera feed inside PiP window
-			await localVideoTrack.play('local-video-container');
-
-			// Publish local tracks
-			await client.publish([localAudioTrack, localVideoTrack]);
-
-			// Start Call Timer
-			let callDurationSeconds = 0;
-			callTimerInterval = setInterval(() => {
-				callDurationSeconds++;
-				const mins = String(Math.floor(callDurationSeconds / 60)).padStart(2, '0');
-				const secs = String(callDurationSeconds % 60).padStart(2, '0');
-				const durationSpan = document.getElementById('video-call-duration');
-				if ( durationSpan ) {
-					durationSpan.textContent = `${mins}:${secs}`;
-				}
-			}, 1000);
-
-			// Subscribing to Remote Participant feeds
+			// Subscribing to Remote Participant feeds.
+			// NOTE: these listeners must be registered BEFORE client.join().
+			// Agora fires 'user-published' for already-present publishers as soon
+			// as join() resolves, so registering them afterwards makes whoever
+			// joins second miss the other party's streams permanently.
 			client.on('user-published', async (user, mediaType) => {
 				await client.subscribe(user, mediaType);
 				
@@ -340,6 +315,35 @@
 					}
 				}
 			});
+
+			// Join the channel
+			await client.join(
+				credentials.app_id,
+				credentials.channel_name,
+				credentials.token,
+				null // Passing null lets Agora auto-assign a numeric UID
+			);
+
+			// Create Microphone and Camera Tracks
+			[localAudioTrack, localVideoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
+
+			// Play Local Camera feed inside PiP window
+			await localVideoTrack.play('local-video-container');
+
+			// Publish local tracks
+			await client.publish([localAudioTrack, localVideoTrack]);
+
+			// Start Call Timer
+			let callDurationSeconds = 0;
+			callTimerInterval = setInterval(() => {
+				callDurationSeconds++;
+				const mins = String(Math.floor(callDurationSeconds / 60)).padStart(2, '0');
+				const secs = String(callDurationSeconds % 60).padStart(2, '0');
+				const durationSpan = document.getElementById('video-call-duration');
+				if ( durationSpan ) {
+					durationSpan.textContent = `${mins}:${secs}`;
+				}
+			}, 1000);
 
 			// Media Controls Mappings
 			let isMicMuted = false;
