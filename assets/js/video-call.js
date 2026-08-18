@@ -167,7 +167,15 @@
 					'X-WP-Nonce': egCareSettings.nonce
 				}
 			})
-			.then(() => {
+			.then((res) => {
+				// Let the doctor dashboard disable this appointment's Join Call button
+				// straight away, rather than leaving it live until the next page load.
+				if ( res && res.ok ) {
+					document.dispatchEvent(new CustomEvent('eg-care:call-completed', {
+						detail: { appointmentId: appointmentId }
+					}));
+				}
+
 				if ( typeof egCareSettings !== 'undefined' && egCareSettings.userType === 'patient' ) {
 					if ( loadingNotice ) {
 						loadingNotice.remove();
@@ -272,7 +280,11 @@
 						});
 					});
 				} else {
-					window.location.reload();
+					// The dashboard has already greyed the button and refreshed its
+					// figures, so there is nothing left to reload for.
+					if ( loadingNotice ) {
+						loadingNotice.remove();
+					}
 				}
 			})
 			.catch(err => {

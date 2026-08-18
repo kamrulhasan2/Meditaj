@@ -439,13 +439,21 @@ document.addEventListener('DOMContentLoaded', function() {
 	let joinButtonRows = [];
 	let joinButtonTimer = null;
 
-	// Apply the current window state to one row's button.
+	// Apply the current state to one row's button.
 	function syncJoinButton(app, btn) {
 		const canJoin = isJoinable(app);
 		btn.disabled = ! canJoin;
 		btn.classList.toggle('active', canJoin);
 		btn.classList.toggle('disabled', ! canJoin);
-		btn.title = canJoin ? '' : 'Available from 15 minutes before until 60 minutes after the scheduled time.';
+		btn.title = canJoin ? '' : joinBlockedReason(app);
+	}
+
+	// Why the button is greyed out, so the doctor is not left guessing.
+	function joinBlockedReason(app) {
+		if ( ! isOpenStatus(app) ) {
+			return 'This consultation is ' + String(app.status || '').replace(/_/g, ' ') + '.';
+		}
+		return 'Available from 15 minutes before until 60 minutes after the scheduled time.';
 	}
 
 	// Re-evaluate every tracked button so a doctor who leaves the dashboard open
@@ -465,12 +473,23 @@ document.addEventListener('DOMContentLoaded', function() {
 		}, 30000);
 	}
 
+	// The server only mints a video token while an appointment is confirmed or
+	// ongoing. The today list also returns completed ones, so without this a
+	// finished consultation kept an enabled button that failed on click.
+	function isOpenStatus(app) {
+		return 'confirmed' === app.status || 'ongoing' === app.status;
+	}
+
 	// Whether the Join Call button should be enabled for an appointment.
 	// Mirrors generate_video_token() in includes/class-rest-controller-booking.php:
-	// instant calls are always joinable, scheduled calls open 15 minutes before the
-	// start time and close 60 minutes after it. starts_at is an absolute UTC
-	// timestamp, so this holds whatever timezone the doctor's browser is in.
+	// the appointment must still be open, instant calls are always joinable, and
+	// scheduled calls open 15 minutes before the start time and close 60 minutes
+	// after it. starts_at is an absolute UTC timestamp, so this holds whatever
+	// timezone the doctor's browser is in.
 	function isJoinable(app) {
+		if ( ! isOpenStatus(app) ) {
+			return false;
+		}
 		if ( 'instant' === app.appointment_type ) {
 			return true;
 		}
@@ -492,6 +511,22 @@ document.addEventListener('DOMContentLoaded', function() {
 		hh = hh ? hh : 12; // the hour '0' should be '12'
 		return `${hh}:${mm} ${ampm}`;
 	}
+
+	// video-call.js fires this the moment a consultation is marked complete, so
+	// the button greys out straight away instead of staying live until a reload.
+	document.addEventListener('eg-care:call-completed', function(e) {
+		const finishedId = String((e.detail && e.detail.appointmentId) || '');
+		if ( ! finishedId ) {
+			return;
+		}
+		joinButtonRows.forEach(function(row) {
+			if ( String(row.app.id) === finishedId ) {
+				row.app.status = 'completed';
+				syncJoinButton(row.app, row.btn);
+			}
+		});
+		loadStats();
+	});
 
 	// Bootstrap Render
 	loadStats();
