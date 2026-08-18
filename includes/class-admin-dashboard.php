@@ -87,7 +87,7 @@ class AdminDashboard {
 		wp_enqueue_script( 'eg-care-admin-charts-js', EG_CARE_URL . 'assets/js/admin-charts.js', array( 'chart-js' ), time(), true );
 		wp_localize_script(
 			'eg-care-admin-charts-js',
-			'eg-careChartsData',
+			'egCareChartsData',
 			array(
 				'trend'     => $trend_data,
 				'instant'   => $instant_count,

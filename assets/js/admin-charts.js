@@ -5,11 +5,11 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-	if ( typeof eg-careChartsData === 'undefined' || ! window.Chart ) {
+	if ( typeof egCareChartsData === 'undefined' || ! window.Chart ) {
 		return;
 	}
 
-	const data = eg-careChartsData;
+	const data = egCareChartsData;
 
 	// --- 1. Daily Trend Dual-Line Chart ---
 	const dailyCtx = document.getElementById('eg-careDailyTrendChart');
