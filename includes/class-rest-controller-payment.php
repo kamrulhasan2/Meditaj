@@ -253,6 +253,22 @@ class RestControllerPayment extends WP_REST_Controller {
 			return new WP_Error( 'eg_care_payment_failed', __( 'Transaction is invalid on gateway.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
+		// The validation response is the only trustworthy copy of this payment, so
+		// the transaction it describes must be the one the caller is claiming.
+		// Without this, anyone holding a val_id from a payment they really made can
+		// point it at somebody else's unpaid booking of the same amount and settle
+		// it for free, over and over.
+		$validated_tran_id = isset( $data->tran_id ) ? (string) $data->tran_id : '';
+		if ( '' === $validated_tran_id || ! hash_equals( $validated_tran_id, $tran_id ) ) {
+			return new WP_Error( 'eg_care_payment_error', __( 'Transaction reference does not match the validated payment.', 'eg-care' ), array( 'status' => 400 ) );
+		}
+
+		// Payments are initiated in BDT, so a settlement in any other currency is
+		// not ours. Skipped when the gateway omits the field.
+		if ( ! empty( $data->currency_type ) && 'BDT' !== strtoupper( (string) $data->currency_type ) ) {
+			return new WP_Error( 'eg_care_payment_error', __( 'Unexpected settlement currency.', 'eg-care' ), array( 'status' => 400 ) );
+		}
+
 		// Retrieve matching appointment.
 		$table_appointments = \EGCare\DB::get_table( 'appointments' );
 		$appointment        = $wpdb->get_row(
@@ -271,25 +287,29 @@ class RestControllerPayment extends WP_REST_Controller {
 			return new WP_Error( 'eg_care_payment_error', __( 'Transaction amount mismatch.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
-		// Prevent double updates if already paid.
-		if ( 'paid' === $appointment->payment_status ) {
-			return new WP_REST_Response( array( 'status' => 'already_processed' ), 200 );
+		// 3. Confirm the booking. The UPDATE is conditional on the row still being
+		// unpaid, so a replayed IPN - or two of them arriving at once - can only
+		// ever settle the appointment a single time. Reading the status first and
+		// writing afterwards would leave a window between the two.
+		$now     = current_time( 'mysql' );
+		$settled = $wpdb->query(
+			$wpdb->prepare(
+				"UPDATE $table_appointments
+				SET payment_status = 'paid', status = 'confirmed', payment_method = 'sslcommerz', updated_at = %s
+				WHERE id = %d AND payment_status <> 'paid'",
+				$now,
+				$appointment->id
+			)
+		);
+
+		if ( false === $settled ) {
+			return new WP_Error( 'eg_care_db_error', __( 'Failed to record the payment.', 'eg-care' ), array( 'status' => 500 ) );
 		}
 
-		// 3. Confirm booking and record success.
-		$now = current_time( 'mysql' );
-		$wpdb->update(
-			$table_appointments,
-			array(
-				'payment_status' => 'paid',
-				'status'         => 'confirmed',
-				'payment_method' => 'sslcommerz',
-				'updated_at'     => $now,
-			),
-			array( 'id' => $appointment->id ),
-			array( '%s', '%s', '%s', '%s' ),
-			array( '%d' )
-		);
+		if ( 0 === (int) $settled ) {
+			// Another request already settled it.
+			return new WP_REST_Response( array( 'status' => 'already_processed' ), 200 );
+		}
 
 		// Trigger booking confirmation notifications.
 		\EGCare\Notifications::send_booking_confirmation_emails( $appointment->id );
@@ -321,23 +341,6 @@ class RestControllerPayment extends WP_REST_Controller {
 				'%s',
 			)
 		);
-
-		// Dispatch confirmation emails.
-		$doctor_user = get_userdata( $wpdb->get_var( $wpdb->prepare( "SELECT user_id FROM {\EGCare\DB::get_table('doctors_meta')} WHERE post_id = %d", $appointment->doctor_id ) ) );
-		$patient_user = get_userdata( $appointment->patient_user_id );
-
-		if ( $patient_user && $doctor_user ) {
-			// Trigger booking notification emails.
-			$subject = __( 'Consultation Booking Confirmed', 'eg-care' );
-			$message = sprintf(
-				__( "Hello,\n\nYour consultation booking is confirmed.\nAppointment Date: %s\nAppointment Time: %s\nAmount Paid: %s BDT.\n\nThank you.", 'eg-care' ),
-				$appointment->appointment_date,
-				$appointment->appointment_time,
-				$appointment->amount
-			);
-			wp_mail( $patient_user->user_email, $subject, $message );
-			wp_mail( $doctor_user->user_email, $subject, $message );
-		}
 
 		return new WP_REST_Response( array( 'status' => 'success' ), 200 );
 	}
