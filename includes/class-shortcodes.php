@@ -375,6 +375,10 @@ class Shortcodes {
 		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), eg_care_asset_version( 'assets/js/video-call.js' ), true );
 		wp_enqueue_script( 'eg-care-booking-js', EG_CARE_URL . 'assets/js/booking.js', array(), eg_care_asset_version( 'assets/js/booking.js' ), true );
 
+		if ( is_user_logged_in() ) {
+			wp_enqueue_script( 'eg-care-call-ring-js', EG_CARE_URL . 'assets/js/call-ring.js', array( 'eg-care-video-call-js' ), eg_care_asset_version( 'assets/js/call-ring.js' ), true );
+		}
+
 		wp_localize_script(
 			'eg-care-booking-js',
 			'egCareSettings',
@@ -411,6 +415,7 @@ class Shortcodes {
 		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
 		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), eg_care_asset_version( 'assets/js/video-call.js' ), true );
 		wp_enqueue_script( 'eg-care-doctor-dashboard-js', EG_CARE_URL . 'assets/js/doctor-dashboard.js', array(), eg_care_asset_version( 'assets/js/doctor-dashboard.js' ), true );
+		wp_enqueue_script( 'eg-care-call-ring-js', EG_CARE_URL . 'assets/js/call-ring.js', array( 'eg-care-video-call-js' ), eg_care_asset_version( 'assets/js/call-ring.js' ), true );
 
 		// Localize parameters for AJAX requests.
 		wp_localize_script(
@@ -445,6 +450,7 @@ class Shortcodes {
 
 		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
 		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), eg_care_asset_version( 'assets/js/video-call.js' ), true );
+		wp_enqueue_script( 'eg-care-call-ring-js', EG_CARE_URL . 'assets/js/call-ring.js', array( 'eg-care-video-call-js' ), eg_care_asset_version( 'assets/js/call-ring.js' ), true );
 
 		// Localize parameters for AJAX requests.
 		wp_localize_script(

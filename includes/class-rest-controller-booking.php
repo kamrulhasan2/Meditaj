@@ -22,6 +22,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 class RestControllerBooking extends WP_REST_Controller {
 
 	/**
+	 * How long an unanswered ring keeps sounding, in seconds.
+	 */
+	const RING_TTL = 90;
+
+	/**
 	 * Register routes.
 	 */
 	public function register_routes() {
@@ -58,6 +63,18 @@ class RestControllerBooking extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'generate_video_token' ),
+					'permission_callback' => array( $this, 'check_logged_in_permission' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			$namespace,
+			'/calls/incoming',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_incoming_call' ),
 					'permission_callback' => array( $this, 'check_logged_in_permission' ),
 				),
 			)
@@ -348,6 +365,9 @@ class RestControllerBooking extends WP_REST_Controller {
 			return new WP_Error( 'rest_internal_error', __( 'Failed to generate video credentials. Ensure App Credentials are configured in settings.', 'eg-care' ), array( 'status' => 500 ) );
 		}
 
+		// Someone has stepped into the room, so let the other party's dashboard ring.
+		$this->start_ringing( $appointment, $current_user_id );
+
 		return new WP_REST_Response(
 			array(
 				'token'        => $token,
@@ -417,7 +437,124 @@ class RestControllerBooking extends WP_REST_Controller {
 			array( '%d' )
 		);
 
+		// Nothing left to ring about.
+		$this->stop_ringing( $appointment );
+
 		return new WP_REST_Response( array( 'status' => 'success', 'appointment_status' => 'completed' ), 200 );
+	}
+
+	/**
+	 * Transient key holding the call waiting for a given user.
+	 *
+	 * @param int $user_id User ID.
+	 * @return string Transient key.
+	 */
+	private function ring_key( $user_id ) {
+		return 'eg_care_incoming_call_' . (int) $user_id;
+	}
+
+	/**
+	 * Flag an incoming call for whichever party is not already in the room.
+	 *
+	 * Deliberately a short-lived transient rather than a table: a ring is only
+	 * meaningful for a minute or two, and keying it by recipient means the poll
+	 * below is a single cache read when nobody is calling.
+	 *
+	 * @param object $appointment Appointment row joined with the doctor's user_id.
+	 * @param int    $caller_id   User who just asked for a token.
+	 */
+	private function start_ringing( $appointment, $caller_id ) {
+		$caller_id       = (int) $caller_id;
+		$doctor_user_id  = (int) $appointment->doctor_user_id;
+		$patient_user_id = (int) $appointment->patient_user_id;
+
+		// The caller is in the room now, so nothing is waiting for them.
+		delete_transient( $this->ring_key( $caller_id ) );
+
+		$callee_id = ( $caller_id === $doctor_user_id ) ? $patient_user_id : $doctor_user_id;
+
+		if ( ! $callee_id || $callee_id === $caller_id ) {
+			return;
+		}
+
+		set_transient(
+			$this->ring_key( $callee_id ),
+			array(
+				'appointment_id' => (int) $appointment->id,
+				'from'           => $caller_id,
+				'at'             => time(),
+			),
+			self::RING_TTL
+		);
+	}
+
+	/**
+	 * Clear any ring left over for either party.
+	 *
+	 * @param object $appointment Appointment row joined with the doctor's user_id.
+	 */
+	private function stop_ringing( $appointment ) {
+		delete_transient( $this->ring_key( $appointment->doctor_user_id ) );
+		delete_transient( $this->ring_key( $appointment->patient_user_id ) );
+	}
+
+	/**
+	 * Report whether a call is waiting for the current user.
+	 *
+	 * @param \WP_REST_Request $request REST request object.
+	 * @return \WP_REST_Response
+	 */
+	public function get_incoming_call( $request ) {
+		global $wpdb;
+
+		$user_id = get_current_user_id();
+		$ring    = get_transient( $this->ring_key( $user_id ) );
+
+		if ( ! is_array( $ring ) || empty( $ring['appointment_id'] ) ) {
+			return new WP_REST_Response( array( 'ringing' => false ), 200 );
+		}
+
+		$table_appointments = \EGCare\DB::get_table( 'appointments' );
+		$table_meta         = \EGCare\DB::get_table( 'doctors_meta' );
+
+		$appointment = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT a.*, d.user_id as doctor_user_id
+				 FROM $table_appointments a
+				 JOIN $table_meta d ON a.doctor_id = d.post_id
+				 WHERE a.id = %d",
+				(int) $ring['appointment_id']
+			)
+		);
+
+		$is_doctor  = $appointment && (int) $appointment->doctor_user_id === $user_id;
+		$is_patient = $appointment && (int) $appointment->patient_user_id === $user_id;
+
+		// Only ring while the call could actually be joined, and only for someone
+		// who is party to it.
+		if ( ! $appointment
+			|| ( ! $is_doctor && ! $is_patient )
+			|| ! in_array( $appointment->status, array( 'confirmed', 'ongoing' ), true ) ) {
+			delete_transient( $this->ring_key( $user_id ) );
+
+			return new WP_REST_Response( array( 'ringing' => false ), 200 );
+		}
+
+		if ( $is_doctor ) {
+			$from_name = $appointment->family_member_name ? $appointment->family_member_name : __( 'Your patient', 'eg-care' );
+		} else {
+			$from_name = get_the_title( $appointment->doctor_id );
+		}
+
+		return new WP_REST_Response(
+			array(
+				'ringing'        => true,
+				'appointment_id' => (int) $appointment->id,
+				'from_name'      => $from_name,
+				'started_at'     => (int) $ring['at'],
+			),
+			200
+		);
 	}
 
 	/**
