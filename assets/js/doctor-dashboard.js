@@ -127,6 +127,21 @@ document.addEventListener('DOMContentLoaded', function() {
 				});
 			}
 
+			// Links to whatever the patient attached. Both the label and the URL are
+			// escaped: the URL carries a nonce and a filename that came from a user.
+			function reportLinks(app) {
+				if ( ! app.reports || 0 === app.reports.length ) {
+					return '';
+				}
+
+				const links = app.reports.map(function (report, index) {
+					const label = escapeHtml(report.name || ('Report ' + ( index + 1 )));
+					return '<a class="eg-care-report-link" href="' + escapeHtml(report.url) + '" target="_blank" rel="noopener">' + label + '</a>';
+				}).join(', ');
+
+				return '<span class="eg-care-report-links">\u{1F4CE} ' + links + '</span>';
+			}
+
 			// Today's appointments
 			todayTarget.innerHTML = '';
 			joinButtonRows = [];
@@ -143,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					tr.innerHTML = `
 						<td><strong>${escapedName}</strong> <span class="relation-tag">${escapedRelation}</span></td>
 						<td>${formatTime24To12(app.appointment_time)}</td>
-						<td><span class="symptom-notes-cell" title="${escapedNotes}">${escapedNotes || '-'}</span></td>
+						<td><span class="symptom-notes-cell" title="${escapedNotes}">${escapedNotes || '-'}</span>${reportLinks(app)}</td>
 						<td>${app.amount} BDT</td>
 						<td>
 							<button type="button" class="eg-care-btn-join-call" data-id="${parseInt(app.id, 10)}">
@@ -181,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function() {
 						<td><strong>${escapedName}</strong> <span class="relation-tag">${escapedRelation}</span></td>
 						<td>${app.appointment_date}</td>
 						<td>${formatTime24To12(app.appointment_time)}</td>
-						<td><span class="symptom-notes-cell" title="${escapedNotes}">${escapedNotes || '-'}</span></td>
+						<td><span class="symptom-notes-cell" title="${escapedNotes}">${escapedNotes || '-'}</span>${reportLinks(app)}</td>
 						<td>${app.amount} BDT</td>
 					`;
 					upcomingTarget.appendChild(tr);

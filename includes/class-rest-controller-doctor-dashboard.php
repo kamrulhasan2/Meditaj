@@ -157,6 +157,16 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 				}
 			}
 
+			// Nonced links to whatever the patient attached. The files themselves
+			// never sit anywhere the web server will hand out.
+			$app->reports = array();
+			foreach ( \EGCare\SecureUploads::attachment_ids( $app->uploaded_files ) as $attachment_id ) {
+				$app->reports[] = array(
+					'name' => get_the_title( $attachment_id ),
+					'url'  => \EGCare\SecureUploads::get_report_url( $app->id, $attachment_id ),
+				);
+			}
+
 			if ( $app->appointment_date === $today_date ) {
 				$today_list[] = $app;
 			} elseif ( $app->appointment_date > $today_date ) {

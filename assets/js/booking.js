@@ -48,6 +48,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		files: []
 	};
 
+	// The File itself cannot live in sessionStorage, so it is held here and is
+	// deliberately lost on reload; state.files only carries what the label shows.
+	let pendingReport = null;
+
 	// Load existing state from sessionStorage if available
 	const savedState = sessionStorage.getItem('eg_care_booking_state');
 	if ( savedState ) {
@@ -591,6 +595,12 @@ document.addEventListener('DOMContentLoaded', function() {
 		// File Uploader metadata capturing
 		const fileInput = document.getElementById('patient-files');
 		const fileNameDisplay = document.getElementById('patient-files-name');
+		// A restored session remembers the name but not the file, so start clean.
+		if ( state.files.length && ! pendingReport ) {
+			state.files = [];
+			saveState();
+		}
+
 		fileInput.addEventListener('change', function(e) {
 			if ( e.target.files.length > 0 ) {
 				const f = e.target.files[0];
@@ -599,14 +609,17 @@ document.addEventListener('DOMContentLoaded', function() {
 					alert('File size exceeds the 2MB limit. Please upload a smaller document.');
 					fileInput.value = ''; // clear input
 					fileNameDisplay.textContent = 'No file chosen';
+					pendingReport = null;
 					state.files = [];
 					saveState();
 					return;
 				}
 				fileNameDisplay.textContent = f.name;
+				pendingReport = f;
 				state.files = [ { name: f.name, size: f.size } ];
 			} else {
 				fileNameDisplay.textContent = 'No file chosen';
+				pendingReport = null;
 				state.files = [];
 			}
 			saveState();
@@ -728,8 +741,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				patient_relation: state.patientType,
 				patient_name: state.patientType === 'self' ? wp_get_current_user_name() : state.patientName,
 				patient_age: state.patientType === 'self' ? null : parseInt(state.patientAge),
-				notes: state.notes,
-				files: state.files
+				notes: state.notes
 			};
 
 			const btnConfirm = document.getElementById('btn-confirm-booking');
@@ -752,19 +764,24 @@ document.addEventListener('DOMContentLoaded', function() {
 				return res.json();
 			})
 			.then(data => {
-				btnConfirm.textContent = 'Redirecting to Payment...';
 				const appointmentId = data.appointment_id;
 
-				return fetch(egCareSettings.restUrl + 'payment/init', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						'X-WP-Nonce': egCareSettings.nonce
-					},
-					body: JSON.stringify({
-						appointment_id: appointmentId,
-						return_url: window.location.href
-					})
+				// The report is attached to the appointment that now exists, so the
+				// server only has to check who owns it.
+				return uploadReport(appointmentId, btnConfirm).then(() => {
+					btnConfirm.textContent = 'Redirecting to Payment...';
+
+					return fetch(egCareSettings.restUrl + 'payment/init', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'X-WP-Nonce': egCareSettings.nonce
+						},
+						body: JSON.stringify({
+							appointment_id: appointmentId,
+							return_url: window.location.href
+						})
+					});
 				});
 			})
 			.then(res => {
@@ -784,6 +801,40 @@ document.addEventListener('DOMContentLoaded', function() {
 				btnConfirm.disabled = false;
 				btnConfirm.textContent = 'Confirm Booking';
 			});
+		});
+	}
+
+	// Sends the chosen report to the appointment that has just been created.
+	// A failure here must not cost the patient their booking, so it warns and
+	// lets the payment step carry on.
+	function uploadReport(appointmentId, btnConfirm) {
+		if ( ! pendingReport ) {
+			return Promise.resolve();
+		}
+
+		if ( btnConfirm ) {
+			btnConfirm.textContent = 'Uploading Report...';
+		}
+
+		const form = new FormData();
+		form.append('report', pendingReport, pendingReport.name);
+
+		// No Content-Type header: the browser has to set the multipart boundary.
+		return fetch(egCareSettings.restUrl + 'appointments/' + appointmentId + '/reports', {
+			method: 'POST',
+			headers: { 'X-WP-Nonce': egCareSettings.nonce },
+			body: form
+		})
+		.then(res => {
+			if ( res.ok ) {
+				pendingReport = null;
+				return res.json();
+			}
+			return res.json().then(err => { throw new Error(err.message || 'The report could not be uploaded.'); });
+		})
+		.catch(err => {
+			console.error('Report upload failed:', err);
+			alert('Your appointment was created, but the report could not be attached: ' + err.message + '\nYou can still share it with the doctor during the call.');
 		});
 	}
 

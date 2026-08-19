@@ -1782,3 +1782,23 @@
 	font-size: 13px !important;
 }
 
+/* Medical reports attached to an appointment. */
+.eg-care-report-links {
+	display: block;
+	margin-top: 4px;
+	font-size: 12px;
+	color: #475569;
+}
+
+.eg-care-report-links a,
+a.eg-care-report-link {
+	color: #2563eb;
+	text-decoration: underline;
+	word-break: break-all;
+}
+
+.eg-care-report-links a:hover,
+a.eg-care-report-link:hover {
+	color: #1d4ed8;
+}
+

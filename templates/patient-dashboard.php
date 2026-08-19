@@ -33,6 +33,24 @@ foreach ( $appointments as $a ) {
 	}
 }
 
+// Nonced links to the reports a patient attached. The files sit outside the
+// public uploads tree, so a link is the only way to reach one.
+$eg_care_report_links = static function ( $app ) {
+	$links = array();
+
+	foreach ( SecureUploads::attachment_ids( $app->uploaded_files ) as $attachment_id ) {
+		$name    = get_the_title( $attachment_id );
+		$links[] = '<a href="' . esc_url( SecureUploads::get_report_url( $app->id, $attachment_id ) ) . '" target="_blank" rel="noopener">'
+			. esc_html( $name ? $name : __( 'Report', 'eg-care' ) ) . '</a>';
+	}
+
+	if ( ! $links ) {
+		return '';
+	}
+
+	return '<div class="eg-care-report-links" style="font-size:12px;margin-top:4px;">&#128206; ' . implode( ', ', $links ) . '</div>';
+};
+
 // Categorize appointments
 $active_consultations = array();
 $upcoming_bookings    = array();
@@ -130,7 +148,7 @@ foreach ( $appointments as $appt ) {
 						?>
 							<tr style="border-bottom: 1px solid #f1f5f9;">
 								<td style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
-								<td><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?> (<?php echo esc_html( $app->family_member_relation ? $app->family_member_relation : 'Self' ); ?>)</td>
+								<td><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?> (<?php echo esc_html( $app->family_member_relation ? $app->family_member_relation : 'Self' ); ?>)<?php echo $eg_care_report_links( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
 								<td><?php echo esc_html( $time_val ); ?></td>
 								<td>
 									<span style="font-size: 11px; background: <?php echo 'instant' === $app->appointment_type ? '#e0f2fe; color: #0369a1;' : '#f0fdf4; color: #166534;'; ?> padding: 2px 8px; border-radius: 12px; font-weight: 600;">
@@ -176,7 +194,7 @@ foreach ( $appointments as $appt ) {
 						?>
 							<tr style="border-bottom: 1px solid #f1f5f9;">
 								<td style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
-								<td><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?></td>
+								<td><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?><?php echo $eg_care_report_links( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
 								<td><?php echo esc_html( $date_val . ' @ ' . $time_val ); ?></td>
 								<td><?php echo esc_html( $app->amount ); ?> BDT</td>
 								<td>
@@ -222,7 +240,7 @@ foreach ( $appointments as $appt ) {
 						?>
 							<tr style="border-bottom: 1px solid #f1f5f9;">
 								<td style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
-								<td><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?></td>
+								<td><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?><?php echo $eg_care_report_links( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
 								<td><?php echo esc_html( $date_val . ' @ ' . $time_val ); ?></td>
 								<td><?php echo esc_html( $app->amount ); ?> BDT</td>
 								<td>

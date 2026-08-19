@@ -38,6 +38,11 @@ class SecureUploads {
 	const ACTION = 'eg_care_view_certificate';
 
 	/**
+	 * admin-post.php action used to view a patient's medical report.
+	 */
+	const REPORT_ACTION = 'eg_care_view_report';
+
+	/**
 	 * File types accepted for a verification document.
 	 *
 	 * WordPress checks these against the file itself, not just its extension.
@@ -57,6 +62,7 @@ class SecureUploads {
 	 */
 	public static function init() {
 		add_action( 'admin_post_' . self::ACTION, array( __CLASS__, 'serve_document' ) );
+		add_action( 'admin_post_' . self::REPORT_ACTION, array( __CLASS__, 'serve_report' ) );
 	}
 
 	/**
@@ -116,6 +122,14 @@ class SecureUploads {
 	public static function handle_upload( $file_key, $post_id ) {
 		if ( empty( $_FILES[ $file_key ]['name'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			return new \WP_Error( 'eg_care_no_document', __( 'No document was uploaded.', 'eg-care' ) );
+		}
+
+		// media_handle_upload() lives in wp-admin, which is not loaded during a
+		// REST request, so pull it in explicitly.
+		if ( ! function_exists( 'media_handle_upload' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+			require_once ABSPATH . 'wp-admin/includes/image.php';
+			require_once ABSPATH . 'wp-admin/includes/media.php';
 		}
 
 		// Make sure the directory and its guards are in place before anything lands in it.
@@ -192,6 +206,128 @@ class SecureUploads {
 
 		check_admin_referer( self::ACTION . '_' . $attachment_id );
 
+		self::stream_attachment( $attachment_id );
+	}
+
+	/**
+	 * Nonced URL for a report attached to an appointment.
+	 *
+	 * @param int $appointment_id Appointment the report belongs to.
+	 * @param int $attachment_id  Attachment ID.
+	 * @return string URL.
+	 */
+	public static function get_report_url( $appointment_id, $attachment_id ) {
+		$appointment_id = (int) $appointment_id;
+		$attachment_id  = (int) $attachment_id;
+
+		return wp_nonce_url(
+			add_query_arg(
+				array(
+					'action'         => self::REPORT_ACTION,
+					'appointment_id' => $appointment_id,
+					'attachment_id'  => $attachment_id,
+				),
+				admin_url( 'admin-post.php' )
+			),
+			self::REPORT_ACTION . '_' . $appointment_id . '_' . $attachment_id
+		);
+	}
+
+	/**
+	 * Attachment IDs recorded against an appointment.
+	 *
+	 * Older rows hold { name, size } objects from before uploads actually
+	 * reached the server; those carry no file and are skipped.
+	 *
+	 * @param string $stored JSON from the uploaded_files column.
+	 * @return int[] Attachment IDs.
+	 */
+	public static function attachment_ids( $stored ) {
+		$decoded = json_decode( (string) $stored, true );
+
+		if ( ! is_array( $decoded ) ) {
+			return array();
+		}
+
+		$ids = array();
+
+		foreach ( $decoded as $entry ) {
+			if ( is_numeric( $entry ) ) {
+				$ids[] = (int) $entry;
+			}
+		}
+
+		return $ids;
+	}
+
+	/**
+	 * Stream a report to the doctor or the patient on that appointment.
+	 */
+	public static function serve_report() {
+		$appointment_id = isset( $_GET['appointment_id'] ) ? absint( $_GET['appointment_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$attachment_id  = isset( $_GET['attachment_id'] ) ? absint( $_GET['attachment_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		if ( ! $appointment_id || ! $attachment_id ) {
+			wp_die( esc_html__( 'You are not allowed to view this document.', 'eg-care' ), '', array( 'response' => 403 ) );
+		}
+
+		check_admin_referer( self::REPORT_ACTION . '_' . $appointment_id . '_' . $attachment_id );
+
+		if ( ! self::may_read_report( $appointment_id, $attachment_id ) ) {
+			wp_die( esc_html__( 'You are not allowed to view this document.', 'eg-care' ), '', array( 'response' => 403 ) );
+		}
+
+		self::stream_attachment( $attachment_id );
+	}
+
+	/**
+	 * Whether the current user may read a report on a given appointment.
+	 *
+	 * @param int $appointment_id Appointment ID.
+	 * @param int $attachment_id  Attachment ID.
+	 * @return bool
+	 */
+	private static function may_read_report( $appointment_id, $attachment_id ) {
+		global $wpdb;
+
+		$appointments = \EGCare\DB::get_table( 'appointments' );
+		$doctors_meta = \EGCare\DB::get_table( 'doctors_meta' );
+
+		$appointment = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT a.uploaded_files, a.patient_user_id, d.user_id AS doctor_user_id
+				 FROM $appointments a
+				 JOIN $doctors_meta d ON a.doctor_id = d.post_id
+				 WHERE a.id = %d",
+				$appointment_id
+			)
+		);
+
+		if ( ! $appointment ) {
+			return false;
+		}
+
+		// The attachment must be one this appointment actually carries, otherwise
+		// the id could simply be swapped for somebody else's file.
+		if ( ! in_array( (int) $attachment_id, self::attachment_ids( $appointment->uploaded_files ), true ) ) {
+			return false;
+		}
+
+		$user_id = get_current_user_id();
+
+		return (int) $appointment->patient_user_id === $user_id
+			|| (int) $appointment->doctor_user_id === $user_id
+			|| current_user_can( 'manage_options' );
+	}
+
+	/**
+	 * Send a stored file to the browser.
+	 *
+	 * Callers are responsible for authorising the request first.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 */
+	private static function stream_attachment( $attachment_id ) {
 		$path = get_attached_file( $attachment_id );
 
 		if ( ! $path || ! file_exists( $path ) ) {
@@ -224,4 +360,5 @@ class SecureUploads {
 		readfile( $realpath ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
 		exit;
 	}
+
 }

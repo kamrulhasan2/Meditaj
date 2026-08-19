@@ -27,6 +27,16 @@ class RestControllerBooking extends WP_REST_Controller {
 	const RING_TTL = 90;
 
 	/**
+	 * Largest medical report a patient may attach, in bytes.
+	 */
+	const MAX_REPORT_BYTES = 2097152;
+
+	/**
+	 * How many reports one appointment may carry.
+	 */
+	const MAX_REPORTS = 5;
+
+	/**
 	 * Register routes.
 	 */
 	public function register_routes() {
@@ -94,6 +104,18 @@ class RestControllerBooking extends WP_REST_Controller {
 
 		register_rest_route(
 			$namespace,
+			'/appointments/(?P<id>\d+)/reports',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'upload_report' ),
+					'permission_callback' => array( $this, 'check_logged_in_permission' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			$namespace,
 			'/appointments/(?P<id>\d+)/reviews',
 			array(
 				array(
@@ -137,7 +159,6 @@ class RestControllerBooking extends WP_REST_Controller {
 		$pat_name     = sanitize_text_field( $request->get_param( 'patient_name' ) );
 		$pat_age      = $request->get_param( 'patient_age' );
 		$notes        = wp_kses_post( $request->get_param( 'notes' ) );
-		$files        = $request->get_param( 'files' );
 
 		// 1. Validation.
 		if ( empty( $doctor_id ) || empty( $booking_type ) || empty( $date ) || empty( $time ) || empty( $relation ) ) {
@@ -208,7 +229,9 @@ class RestControllerBooking extends WP_REST_Controller {
 				'status'                 => 'pending_payment',
 				'payment_status'         => 'unpaid',
 				'amount'                 => $total_amount,
-				'uploaded_files'         => wp_json_encode( ! empty( $files ) ? $files : array() ),
+				// Reports are attached afterwards through /appointments/{id}/reports,
+				// so nothing the client sent here is trusted.
+				'uploaded_files'         => wp_json_encode( array() ),
 				'symptom_notes'          => $notes,
 				'created_at'             => $now,
 				'updated_at'             => $now,
@@ -646,5 +669,113 @@ class RestControllerBooking extends WP_REST_Controller {
 		);
 
 		return new \WP_REST_Response( array( 'status' => 'success', 'avg_rating' => $avg_rating, 'total_reviews' => $total_reviews ), 200 );
+	}
+
+	/**
+	 * Attach a medical report to an appointment the patient owns.
+	 *
+	 * The file lands in the protected directory rather than the public uploads
+	 * tree, and is only ever handed back through a nonced proxy that re-checks
+	 * who is asking.
+	 *
+	 * @param \WP_REST_Request $request REST request object.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function upload_report( $request ) {
+		global $wpdb;
+
+		$appointment_id = intval( $request->get_param( 'id' ) );
+		$user_id        = get_current_user_id();
+
+		$table_appointments = \EGCare\DB::get_table( 'appointments' );
+
+		$appointment = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT id, patient_user_id, status, uploaded_files FROM $table_appointments WHERE id = %d",
+				$appointment_id
+			)
+		);
+
+		if ( ! $appointment ) {
+			return new WP_Error( 'rest_not_found', __( 'Appointment request not found.', 'eg-care' ), array( 'status' => 404 ) );
+		}
+
+		// Only the patient who booked it may add to it.
+		if ( (int) $appointment->patient_user_id !== $user_id ) {
+			return new WP_Error( 'rest_forbidden', __( 'You do not have permission to add reports to this booking.', 'eg-care' ), array( 'status' => 403 ) );
+		}
+
+		if ( in_array( $appointment->status, array( 'completed', 'cancelled' ), true ) ) {
+			return new WP_Error( 'eg_care_closed_appointment', __( 'This appointment is closed, so reports can no longer be added.', 'eg-care' ), array( 'status' => 400 ) );
+		}
+
+		if ( empty( $_FILES['report']['name'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			return new WP_Error( 'eg_care_no_report', __( 'No report file was received.', 'eg-care' ), array( 'status' => 400 ) );
+		}
+
+		$size = isset( $_FILES['report']['size'] ) ? (int) $_FILES['report']['size'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+
+		if ( $size > self::MAX_REPORT_BYTES ) {
+			return new WP_Error(
+				'eg_care_report_too_large',
+				sprintf(
+					/* translators: %s: maximum file size, already formatted. */
+					__( 'Reports must be %s or smaller.', 'eg-care' ),
+					size_format( self::MAX_REPORT_BYTES )
+				),
+				array( 'status' => 413 )
+			);
+		}
+
+		$existing = SecureUploads::attachment_ids( $appointment->uploaded_files );
+
+		if ( count( $existing ) >= self::MAX_REPORTS ) {
+			return new WP_Error(
+				'eg_care_too_many_reports',
+				sprintf(
+					/* translators: %d: maximum number of reports per appointment. */
+					__( 'You can attach at most %d reports to one appointment.', 'eg-care' ),
+					self::MAX_REPORTS
+				),
+				array( 'status' => 400 )
+			);
+		}
+
+		$attachment_id = SecureUploads::handle_upload( 'report', 0 );
+
+		if ( is_wp_error( $attachment_id ) ) {
+			return new WP_Error( 'eg_care_report_rejected', $attachment_id->get_error_message(), array( 'status' => 400 ) );
+		}
+
+		$existing[] = (int) $attachment_id;
+		$existing   = array_values( array_unique( $existing ) );
+
+		$stored = $wpdb->update(
+			$table_appointments,
+			array(
+				'uploaded_files' => wp_json_encode( $existing ),
+				'updated_at'     => current_time( 'mysql' ),
+			),
+			array( 'id' => $appointment_id ),
+			array( '%s', '%s' ),
+			array( '%d' )
+		);
+
+		if ( false === $stored ) {
+			// Do not leave an orphan file behind that nothing can reach.
+			wp_delete_attachment( (int) $attachment_id, true );
+
+			return new WP_Error( 'eg_care_db_error', __( 'The report could not be saved against this appointment.', 'eg-care' ), array( 'status' => 500 ) );
+		}
+
+		return new WP_REST_Response(
+			array(
+				'attachment_id' => (int) $attachment_id,
+				'name'          => get_the_title( $attachment_id ),
+				'url'           => SecureUploads::get_report_url( $appointment_id, $attachment_id ),
+				'total'         => count( $existing ),
+			),
+			201
+		);
 	}
 }

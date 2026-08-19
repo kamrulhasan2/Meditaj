@@ -73,7 +73,7 @@ $user = wp_get_current_user();
 						<tr>
 							<th>Patient Name</th>
 							<th>Schedule Time</th>
-							<th>Symptoms Notes</th>
+							<th>Symptoms &amp; Reports</th>
 							<th>Fee (Gross)</th>
 							<th>Actions</th>
 						</tr>
@@ -97,7 +97,7 @@ $user = wp_get_current_user();
 							<th>Patient Name</th>
 							<th>Schedule Date</th>
 							<th>Schedule Time</th>
-							<th>Symptoms Notes</th>
+							<th>Symptoms &amp; Reports</th>
 							<th>Fee (Gross)</th>
 						</tr>
 					</thead>
