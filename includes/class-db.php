@@ -654,8 +654,22 @@ class DB {
 		$table_appointments = self::get_table( 'appointments' );
 		$appointments_count = $wpdb->get_var( "SELECT COUNT(*) FROM $table_appointments" );
 		if ( 0 === intval( $appointments_count ) ) {
-			// Find Dr. Anisur.
-			$anisur = get_page_by_title( 'Dr. Anisur Rahman', OBJECT, 'doctors' );
+			// Find Dr. Anisur. get_page_by_title() has been deprecated since
+			// WordPress 6.2; this is the replacement the deprecation notice points to.
+			$anisur_query = new \WP_Query(
+				array(
+					'post_type'              => 'doctors',
+					'title'                  => 'Dr. Anisur Rahman',
+					'post_status'            => 'any',
+					'posts_per_page'         => 1,
+					'no_found_rows'          => true,
+					'update_post_meta_cache' => false,
+					'update_post_term_cache' => false,
+				)
+			);
+
+			$anisur = empty( $anisur_query->posts ) ? null : $anisur_query->posts[0];
+
 			if ( $anisur ) {
 				// Seed an appointment for Dr. Anisur on next Monday at 09:30:00.
 				$next_monday = wp_date( 'Y-m-d', strtotime( 'next monday' ) );
