@@ -86,11 +86,19 @@ document.addEventListener('DOMContentLoaded', function() {
 		fetch(egCareSettings.restUrl + 'doctor/me/stats', {
 			headers: { 'X-WP-Nonce': egCareSettings.nonce }
 		})
-		.then(res => res.json())
+		.then(res => res.ok ? res.json() : null)
 		.then(data => {
-			document.getElementById('stat-total-appointments').textContent = data.total_appointments;
-			document.getElementById('stat-net-earnings').textContent = data.net_earnings.toFixed(2) + ' BDT';
-			document.getElementById('stat-gross-breakdown').textContent = 'Gross: ' + data.gross_earnings.toFixed(2) + ' BDT';
+			// A 403 or a malformed payload used to throw here and take the rest of
+			// the dashboard script down with it.
+			if ( ! data ) {
+				return;
+			}
+
+			const money = function (value) { return (Number(value) || 0).toFixed(2) + ' BDT'; };
+
+			document.getElementById('stat-total-appointments').textContent = Number(data.total_appointments) || 0;
+			document.getElementById('stat-net-earnings').textContent = money(data.net_earnings);
+			document.getElementById('stat-gross-breakdown').textContent = 'Gross: ' + money(data.gross_earnings);
 		})
 		.catch(err => console.error('Error fetching dashboard stats:', err));
 	}

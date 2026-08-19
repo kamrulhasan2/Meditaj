@@ -100,8 +100,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<label for="reg_nationality"><?php esc_html_e( 'Nationality *', 'eg-care' ); ?></label>
 						<select name="reg_nationality" id="reg_nationality" required>
 							<option value=""><?php esc_html_e( 'Select your nationality', 'eg-care' ); ?></option>
-							<option value="Bangladeshi" <?php echo ( isset( $_POST['reg_nationality'] ) && 'Bangladeshi' === $_POST['reg_nationality'] ) ? 'selected' : 'selected'; ?>>Bangladeshi</option>
-							<option value="Other">Other</option>
+							<?php $reg_nationality = isset( $_POST['reg_nationality'] ) ? sanitize_text_field( wp_unslash( $_POST['reg_nationality'] ) ) : 'Bangladeshi'; ?>
+							<option value="Bangladeshi" <?php selected( $reg_nationality, 'Bangladeshi' ); ?>>Bangladeshi</option>
+							<option value="Other" <?php selected( $reg_nationality, 'Other' ); ?>>Other</option>
 						</select>
 					</div>
 					<div class="eg-care-field">

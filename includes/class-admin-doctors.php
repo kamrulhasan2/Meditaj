@@ -990,14 +990,14 @@ class AdminDoctors {
 					if ( 'approved' === $verification_status ) {
 						\EGCare\Notifications::send_doctor_approval_email( $user_data->user_email, $user_data->display_name );
 						// Remove this hook temporarily to avoid infinite save_post loop
-						remove_action( 'save_post_doctors', array( __CLASS__, 'save_doctors_meta_box' ) );
+						remove_action( 'save_post_doctors', array( __CLASS__, 'save_doctor_meta_box_data' ) );
 						wp_update_post( array( 'ID' => $post_id, 'post_status' => 'publish' ) );
-						add_action( 'save_post_doctors', array( __CLASS__, 'save_doctors_meta_box' ) );
+						add_action( 'save_post_doctors', array( __CLASS__, 'save_doctor_meta_box_data' ) );
 					} elseif ( 'rejected' === $verification_status ) {
 						\EGCare\Notifications::send_doctor_rejection_email( $user_data->user_email, $user_data->display_name, '' );
-						remove_action( 'save_post_doctors', array( __CLASS__, 'save_doctors_meta_box' ) );
+						remove_action( 'save_post_doctors', array( __CLASS__, 'save_doctor_meta_box_data' ) );
 						wp_update_post( array( 'ID' => $post_id, 'post_status' => 'draft' ) );
-						add_action( 'save_post_doctors', array( __CLASS__, 'save_doctors_meta_box' ) );
+						add_action( 'save_post_doctors', array( __CLASS__, 'save_doctor_meta_box_data' ) );
 					}
 				}
 			}

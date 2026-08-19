@@ -220,10 +220,16 @@ class RestControllerDoctorDashboard extends WP_REST_Controller {
 		}
 
 		foreach ( $slots as $slot ) {
-			$day      = intval( $slot['day_of_week'] );
-			$start    = sanitize_text_field( $slot['start_time'] );
-			$end      = sanitize_text_field( $slot['end_time'] );
-			$duration = intval( $slot['slot_duration_min'] );
+			if ( ! is_array( $slot ) ) {
+				continue; // Not a slot object at all.
+			}
+
+			// Every field is optional on the wire; the validation below rejects
+			// whatever is missing, rather than raising a notice reading it.
+			$day      = isset( $slot['day_of_week'] ) ? intval( $slot['day_of_week'] ) : 0;
+			$start    = isset( $slot['start_time'] ) ? sanitize_text_field( $slot['start_time'] ) : '';
+			$end      = isset( $slot['end_time'] ) ? sanitize_text_field( $slot['end_time'] ) : '';
+			$duration = isset( $slot['slot_duration_min'] ) ? intval( $slot['slot_duration_min'] ) : 0;
 			$break    = isset( $slot['break_duration_min'] ) ? intval( $slot['break_duration_min'] ) : 0;
 			$active   = isset( $slot['is_active'] ) ? ( intval( $slot['is_active'] ) ? 1 : 0 ) : 1;
 
