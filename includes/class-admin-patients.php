@@ -52,7 +52,7 @@ class AdminPatientsTable extends \WP_List_Table {
 			case 'total_spent':
 				return sprintf( '<strong>%s BDT</strong>', number_format( $item->total_spent, 2 ) );
 			case 'last_appointment':
-				return $item->last_appointment ? esc_html( date( 'M d, Y', strtotime( $item->last_appointment ) ) ) : '-';
+				return $item->last_appointment ? esc_html( mysql2date( 'M d, Y', $item->last_appointment, false ) ) : '-';
 			case 'actions':
 				$url = admin_url( 'admin.php?page=eg-care-appointments&s=' . urlencode( $item->display_name ) );
 				return sprintf( '<a href="%s" class="button button-small eg-care-btn-primary" style="background:#0f766e !important; color:#fff !important; border-color:#0f766e !important;">%s</a>', esc_url( $url ), __( 'View Bookings', 'eg-care' ) );

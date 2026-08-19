@@ -102,8 +102,8 @@ class Notifications {
 			}
 		}
 
-		$time_formatted = date( 'g:i A', strtotime( $appointment->appointment_time ) );
-		$date_formatted = date( 'M d, Y', strtotime( $appointment->appointment_date ) );
+		$time_formatted = mysql2date( 'g:i A', $appointment->appointment_time, false );
+		$date_formatted = mysql2date( 'M d, Y', $appointment->appointment_date, false );
 		$type_display   = 'instant' === $appointment->appointment_type ? __( 'Instant Video Call', 'eg-care' ) : __( 'Scheduled Consultation', 'eg-care' );
 
 		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
@@ -186,7 +186,7 @@ class Notifications {
 			}
 		}
 
-		$time_formatted = date( 'g:i A', strtotime( $appointment->appointment_time ) );
+		$time_formatted = mysql2date( 'g:i A', $appointment->appointment_time, false );
 		$headers        = array( 'Content-Type: text/plain; charset=UTF-8' );
 
 		// Email to Patient

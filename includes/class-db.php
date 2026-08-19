@@ -500,7 +500,7 @@ class DB {
 			$anisur = get_page_by_title( 'Dr. Anisur Rahman', OBJECT, 'doctors' );
 			if ( $anisur ) {
 				// Seed an appointment for Dr. Anisur on next Monday at 09:30:00.
-				$next_monday = date( 'Y-m-d', strtotime( 'next monday' ) );
+				$next_monday = wp_date( 'Y-m-d', strtotime( 'next monday' ) );
 				$wpdb->insert(
 					$table_appointments,
 					array(

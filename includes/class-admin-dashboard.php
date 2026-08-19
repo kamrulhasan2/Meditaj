@@ -40,10 +40,13 @@ class AdminDashboard {
 		$platform_earnings = $total_revenue * $commission_rate;
 
 		// --- Previous Period Comparisons (Previous 30 Days vs Preceding 30 Days) ---
-		$current_30_start = date( 'Y-m-d', strtotime( '-30 days' ) );
-		$current_30_end   = date( 'Y-m-d' );
-		$prev_30_start    = date( 'Y-m-d', strtotime( '-60 days' ) );
-		$prev_30_end      = date( 'Y-m-d', strtotime( '-31 days' ) );
+		// wp_date() renders a real timestamp in the site's timezone. Plain date()
+		// rendered it in UTC, which on a UTC server put these windows a day early
+		// for the last six hours of every Bangladesh day.
+		$current_30_start = wp_date( 'Y-m-d', strtotime( '-30 days' ) );
+		$current_30_end   = current_time( 'Y-m-d' );
+		$prev_30_start    = wp_date( 'Y-m-d', strtotime( '-60 days' ) );
+		$prev_30_end      = wp_date( 'Y-m-d', strtotime( '-31 days' ) );
 
 		// Current 30 Days Metrics
 		$cur_app_count = intval( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(id) FROM $table_appointments WHERE status IN ('confirmed', 'completed', 'ongoing') AND appointment_date BETWEEN %s AND %s", $current_30_start, $current_30_end ) ) );
@@ -60,8 +63,9 @@ class AdminDashboard {
 		// --- 2. Chart.js Daily Trend (Last 30 Days) ---
 		$trend_data = array();
 		for ( $i = 29; $i >= 0; $i-- ) {
-			$d = date( 'Y-m-d', strtotime( "-$i days" ) );
-			$label = date( 'M d', strtotime( "-$i days" ) );
+			$day_ts = strtotime( "-$i days" );
+			$d      = wp_date( 'Y-m-d', $day_ts );
+			$label  = wp_date( 'M d', $day_ts );
 			$count = intval( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(id) FROM $table_appointments WHERE appointment_date = %s AND status IN ('confirmed', 'completed', 'ongoing')", $d ) ) );
 			$revenue = floatval( $wpdb->get_var( $wpdb->prepare( "SELECT SUM(amount) FROM $table_appointments WHERE appointment_date = %s AND status IN ('confirmed', 'completed', 'ongoing')", $d ) ) );
 
@@ -236,7 +240,7 @@ class AdminDashboard {
 											<?php echo esc_html( strtoupper( $app->appointment_type ) ); ?>
 										</span>
 									</td>
-									<td><?php echo esc_html( $app->appointment_date . ' @ ' . date( 'g:i A', strtotime( $app->appointment_time ) ) ); ?></td>
+									<td><?php echo esc_html( $app->appointment_date . ' @ ' . mysql2date( 'g:i A', $app->appointment_time, false ) ); ?></td>
 									<td><?php echo esc_html( $app->amount ); ?> BDT</td>
 									<td>
 										<span class="eg-care-status-badge <?php echo 'completed' === $app->status ? 'status-approved' : ( 'cancelled' === $app->status ? 'status-rejected' : 'status-pending' ); ?>" style="font-size: 10px; padding: 2px 6px;">

@@ -126,7 +126,7 @@ foreach ( $appointments as $appt ) {
 								}
 							}
 							
-							$time_val = date( 'g:i A', strtotime( $app->appointment_time ) );
+							$time_val = mysql2date( 'g:i A', $app->appointment_time, false );
 						?>
 							<tr style="border-bottom: 1px solid #f1f5f9;">
 								<td style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
@@ -171,8 +171,8 @@ foreach ( $appointments as $appt ) {
 					</thead>
 					<tbody>
 						<?php foreach ( $upcoming_bookings as $app ) : 
-							$time_val = date( 'g:i A', strtotime( $app->appointment_time ) );
-							$date_val = date( 'M d, Y', strtotime( $app->appointment_date ) );
+							$time_val = mysql2date( 'g:i A', $app->appointment_time, false );
+							$date_val = mysql2date( 'M d, Y', $app->appointment_date, false );
 						?>
 							<tr style="border-bottom: 1px solid #f1f5f9;">
 								<td style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
@@ -214,8 +214,8 @@ foreach ( $appointments as $appt ) {
 					</thead>
 					<tbody>
 						<?php foreach ( $past_history as $app ) : 
-							$time_val = date( 'g:i A', strtotime( $app->appointment_time ) );
-							$date_val = date( 'M d, Y', strtotime( $app->appointment_date ) );
+							$time_val = mysql2date( 'g:i A', $app->appointment_time, false );
+							$date_val = mysql2date( 'M d, Y', $app->appointment_date, false );
 							
 							// Check if reviewed already
 							$reviewed = $wpdb->get_var( $wpdb->prepare( "SELECT rating FROM {$wpdb->prefix}eg_care_reviews WHERE appointment_id = %d", $app->id ) );

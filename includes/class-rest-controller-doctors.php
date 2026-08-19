@@ -295,7 +295,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 		global $wpdb;
 
 		// 1. Get Day of Week (1 = Monday, ..., 7 = Sunday).
-		$day_of_week = intval( date( 'N', strtotime( $date ) ) );
+		$day_of_week = intval( mysql2date( 'N', $date, false ) );
 
 		// 2. Query Schedule Rules for this doctor on this day of week.
 		$table_schedules = \EGCare\DB::get_table( 'schedules' );
@@ -326,7 +326,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 			}
 
 			for ( $time = $start; $time + $duration_sec <= $end; $time += $total_step ) {
-				$slots[] = date( 'H:i:s', $time );
+				$slots[] = gmdate( 'H:i:s', $time );
 			}
 		}
 
@@ -346,7 +346,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 
 		$booked_times = array();
 		foreach ( $appointments as $app ) {
-			$booked_times[] = date( 'H:i:s', strtotime( $app->appointment_time ) );
+			$booked_times[] = mysql2date( 'H:i:s', $app->appointment_time, false );
 		}
 
 		// 5. Compare and build result.
@@ -358,7 +358,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 			$available = ! $is_booked;
 
 			// If the target date is today, check if slot is in the past.
-			if ( $available && date( 'Y-m-d', strtotime( $date ) ) === date( 'Y-m-d', $now_timestamp ) ) {
+			if ( $available && $date === current_time( 'Y-m-d' ) ) {
 				$slot_timestamp = strtotime( $date . ' ' . $slot_time );
 				if ( $slot_timestamp < $now_timestamp ) {
 					$available = false; // Slot has already passed today.

@@ -127,12 +127,12 @@ class AdminAppointmentsTable extends \WP_List_Table {
 	 */
 	protected function column_schedule( $item ) {
 		if ( 'instant' === $item->appointment_type ) {
-			return sprintf( '<em>%s</em><br/><span style="font-size:11px; color:#64748b;">%s</span>', __( 'Instant Call', 'eg-care' ), date( 'M d, Y', strtotime( $item->created_at ) ) );
+			return sprintf( '<em>%s</em><br/><span style="font-size:11px; color:#64748b;">%s</span>', __( 'Instant Call', 'eg-care' ), mysql2date( 'M d, Y', $item->created_at, false ) );
 		}
 		return sprintf(
 			'<strong>%s</strong><br/><span style="font-size:11px; color:#64748b;">%s</span>',
-			date( 'M d, Y', strtotime( $item->appointment_date ) ),
-			date( 'g:i A', strtotime( $item->appointment_time ) )
+			mysql2date( 'M d, Y', $item->appointment_date, false ),
+			mysql2date( 'g:i A', $item->appointment_time, false )
 		);
 	}
 

@@ -47,14 +47,17 @@ class Cron {
 
 		// Localized timestamps
 		$now_ts = current_time( 'timestamp' );
-		$today_str = date( 'Y-m-d', $now_ts );
+		$today_str = current_time( 'Y-m-d' );
 		
 		// Remind for appointments starting in the next 35 minutes
 		$max_time_ts = $now_ts + ( 35 * MINUTE_IN_SECONDS );
 		$min_time_ts = $now_ts - ( 5 * MINUTE_IN_SECONDS ); // buffer window
 		
-		$min_time_str = date( 'H:i:s', $min_time_ts );
-		$max_time_str = date( 'H:i:s', $max_time_ts );
+		// $now_ts is current_time('timestamp'), already shifted into site time, so
+		// gmdate() renders it as the site's wall clock without depending on PHP's
+		// ambient timezone the way date() did.
+		$min_time_str = gmdate( 'H:i:s', $min_time_ts );
+		$max_time_str = gmdate( 'H:i:s', $max_time_ts );
 
 		// Get all confirmed scheduled bookings within the time window.
 		$appointments = $wpdb->get_results(
