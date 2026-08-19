@@ -73,18 +73,9 @@ spl_autoload_register(
 	}
 );
 
-// Run dynamic database migrations on load if needed.
-add_action( 'plugins_loaded', function() {
-	global $wpdb;
-	$table_schedules = \EGCare\DB::get_table( 'schedules' );
-
-	if ( $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_schedules ) ) === $table_schedules ) {
-		$has_break_col = $wpdb->get_results( "SHOW COLUMNS FROM `$table_schedules` LIKE 'break_duration_min'" );
-		if ( empty( $has_break_col ) ) {
-			$wpdb->query( "ALTER TABLE `$table_schedules` ADD COLUMN `break_duration_min` int(11) DEFAULT 0 NOT NULL AFTER `slot_duration_min`" );
-		}
-	}
-} );
+// Schema changes are handled by DB::create_tables(), which the version check
+// further down runs only when DB_VERSION moves. There used to be a second
+// migration here that fired SHOW TABLES + SHOW COLUMNS on every request.
 
 // Register Activation and Deactivation Hooks.
 register_activation_hook( __FILE__, 'eg_care_activate_plugin' );

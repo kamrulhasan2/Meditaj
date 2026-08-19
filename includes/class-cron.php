@@ -66,7 +66,8 @@ class Cron {
 				 WHERE status = 'confirmed' 
 				   AND appointment_type = 'scheduled'
 				   AND appointment_date = %s
-				   AND appointment_time BETWEEN %s AND %s",
+				   AND appointment_time BETWEEN %s AND %s
+				   AND reminder_sent_at IS NULL",
 				$today_str,
 				$min_time_str,
 				$max_time_str
@@ -77,14 +78,22 @@ class Cron {
 			return;
 		}
 
-		// Dispatch reminder emails if not already sent
-		foreach ( $appointments as $appt ) {
-			$option_key = 'eg_care_reminder_sent_' . $appt->id;
-			$already_sent = get_option( $option_key );
+		// Claim each appointment before sending. The UPDATE only matches a row
+		// whose reminder is still unsent, so two overlapping cron runs cannot
+		// both mail the same patient.
+		$now = current_time( 'mysql' );
 
-			if ( ! $already_sent ) {
+		foreach ( $appointments as $appt ) {
+			$claimed = $wpdb->query(
+				$wpdb->prepare(
+					"UPDATE $table_appointments SET reminder_sent_at = %s WHERE id = %d AND reminder_sent_at IS NULL",
+					$now,
+					$appt->id
+				)
+			);
+
+			if ( $claimed ) {
 				Notifications::send_appointment_reminder_emails( $appt->id );
-				update_option( $option_key, 1 );
 			}
 		}
 	}

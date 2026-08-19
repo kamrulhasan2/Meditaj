@@ -17,7 +17,7 @@ class DB {
 	/**
 	 * Current database schema version.
 	 */
-	const DB_VERSION = '1.1.0';
+	const DB_VERSION = '1.2.0';
 
 	/**
 	 * Get custom table names.
@@ -131,6 +131,7 @@ class DB {
   video_token_doctor text DEFAULT NULL,
   uploaded_files text DEFAULT NULL,
   symptom_notes text DEFAULT NULL,
+  reminder_sent_at datetime DEFAULT NULL,
   created_at datetime NOT NULL,
   updated_at datetime NOT NULL,
   PRIMARY KEY  (id),
@@ -186,13 +187,61 @@ class DB {
 			$wpdb->query( "ALTER TABLE `$schedules_table` ADD COLUMN `break_duration_min` int(11) DEFAULT 0 NOT NULL AFTER `slot_duration_min`" );
 		}
 
-		// Run manual ALTER TABLE columns queries to ensure these columns allow NULL since dbDelta doesn't change NOT NULL to NULL easily.
-		$wpdb->query( "ALTER TABLE {$tables['doctors_meta']} MODIFY bank_account_name varchar(255) DEFAULT NULL" );
-		$wpdb->query( "ALTER TABLE {$tables['doctors_meta']} MODIFY bank_account_no varchar(100) DEFAULT NULL" );
-		$wpdb->query( "ALTER TABLE {$tables['doctors_meta']} MODIFY mobile_banking_type enum('bkash','nagad','rocket') DEFAULT NULL" );
-		$wpdb->query( "ALTER TABLE {$tables['doctors_meta']} MODIFY mobile_banking_no varchar(20) DEFAULT NULL" );
+		// dbDelta will not relax a NOT NULL column, so these four need a hand.
+		// Reading the layout once and altering only what is still NOT NULL beats
+		// four unconditional ALTERs, each of which locks the table.
+		$nullable_columns = array(
+			'bank_account_name'   => 'varchar(255) DEFAULT NULL',
+			'bank_account_no'     => 'varchar(100) DEFAULT NULL',
+			'mobile_banking_type' => "enum('bkash','nagad','rocket') DEFAULT NULL",
+			'mobile_banking_no'   => 'varchar(20) DEFAULT NULL',
+		);
+
+		$meta_table    = $tables['doctors_meta'];
+		$meta_columns  = $wpdb->get_results( "SHOW COLUMNS FROM `$meta_table`" );
+		$accepts_null  = array();
+
+		foreach ( (array) $meta_columns as $meta_column ) {
+			$accepts_null[ $meta_column->Field ] = ( 'YES' === $meta_column->Null );
+		}
+
+		foreach ( $nullable_columns as $column_name => $definition ) {
+			if ( isset( $accepts_null[ $column_name ] ) && ! $accepts_null[ $column_name ] ) {
+				$wpdb->query( "ALTER TABLE `$meta_table` MODIFY $column_name $definition" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			}
+		}
+
+		self::migrate_reminder_flags( $tables['appointments'] );
 
 		update_option( self::DB_VERSION_OPTION, self::DB_VERSION );
+	}
+
+	/**
+	 * Move reminder bookkeeping off wp_options and onto the appointment row.
+	 *
+	 * Each sent reminder used to leave an autoloaded eg_care_reminder_sent_{id}
+	 * option behind, so wp_options grew by one autoloaded row per appointment
+	 * and every page view carried the lot.
+	 *
+	 * @param string $appointments_table Prefixed appointments table name.
+	 */
+	private static function migrate_reminder_flags( $appointments_table ) {
+		global $wpdb;
+
+		// Carry the old flags over so nobody gets a reminder twice.
+		$wpdb->query(
+			"UPDATE `$appointments_table` a
+			 JOIN `{$wpdb->options}` o ON o.option_name = CONCAT( 'eg_care_reminder_sent_', a.id )
+			 SET a.reminder_sent_at = a.updated_at
+			 WHERE a.reminder_sent_at IS NULL"
+		); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE FROM `{$wpdb->options}` WHERE option_name LIKE %s",
+				$wpdb->esc_like( 'eg_care_reminder_sent_' ) . '%'
+			)
+		);
 	}
 
 	/**
