@@ -226,6 +226,8 @@ class AdminMenu {
 			return;
 		}
 
+		wp_enqueue_script( 'eg-care-admin-settings-js', EG_CARE_URL . 'assets/js/admin-settings.js', array(), eg_care_asset_version( 'assets/js/admin-settings.js' ), true );
+
 		// Handle Form Submission.
 		if ( isset( $_POST['eg_care_settings_submit'] ) && check_admin_referer( 'eg_care_save_settings', 'eg_care_settings_nonce' ) ) {
 			update_option( 'eg_care_ssl_store_id', sanitize_text_field( $_POST['eg_care_ssl_store_id'] ) );
@@ -334,41 +336,6 @@ class AdminMenu {
 				</p>
 			</form>
 		</div>
-		<script>
-		document.addEventListener('DOMContentLoaded', function() {
-			const toggleBtn = document.getElementById('toggle-password-visibility');
-			const pwdInput = document.getElementById('eg_care_ssl_store_passwd');
-			if (toggleBtn && pwdInput) {
-				toggleBtn.addEventListener('click', function() {
-					if (pwdInput.type === 'password') {
-						pwdInput.type = 'text';
-						toggleBtn.classList.remove('dashicons-visibility');
-						toggleBtn.classList.add('dashicons-hidden');
-					} else {
-						pwdInput.type = 'password';
-						toggleBtn.classList.remove('dashicons-hidden');
-						toggleBtn.classList.add('dashicons-visibility');
-					}
-				});
-			}
-
-			const toggleAgoraBtn = document.getElementById('toggle-agora-visibility');
-			const agoraInput = document.getElementById('eg_care_agora_app_certificate');
-			if (toggleAgoraBtn && agoraInput) {
-				toggleAgoraBtn.addEventListener('click', function() {
-					if (agoraInput.type === 'password') {
-						agoraInput.type = 'text';
-						toggleAgoraBtn.classList.remove('dashicons-visibility');
-						toggleAgoraBtn.classList.add('dashicons-hidden');
-					} else {
-						agoraInput.type = 'password';
-						toggleAgoraBtn.classList.remove('dashicons-hidden');
-						toggleAgoraBtn.classList.add('dashicons-visibility');
-					}
-				});
-			}
-		});
-		</script>
 		<?php
 	}
 

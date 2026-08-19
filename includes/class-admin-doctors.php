@@ -51,6 +51,8 @@ class AdminDoctors {
 	 * Render Add Doctor Form page in wp-admin.
 	 */
 	public static function render_add_doctor_page() {
+		wp_enqueue_script( 'eg-care-admin-add-doctor-js', EG_CARE_URL . 'assets/js/admin-add-doctor.js', array(), eg_care_asset_version( 'assets/js/admin-add-doctor.js' ), true );
+
 		// Handle submission.
 		$message = '';
 		$error   = '';
@@ -275,26 +277,6 @@ class AdminDoctors {
 				</form>
 			</div>
 		</div>
-		<script>
-		document.addEventListener('DOMContentLoaded', function() {
-			const payoutType = document.getElementById('payout_type');
-			const bankSec = document.getElementById('sec_bank_fields');
-			const mobileSec = document.getElementById('sec_mobile_fields');
-			
-			function togglePayoutFields() {
-				if (payoutType.value === 'bank') {
-					bankSec.style.display = 'grid';
-					mobileSec.style.display = 'none';
-				} else {
-					bankSec.style.display = 'none';
-					mobileSec.style.display = 'grid';
-				}
-			}
-			
-			payoutType.addEventListener('change', togglePayoutFields);
-			togglePayoutFields();
-		});
-		</script>
 		<?php
 	}
  

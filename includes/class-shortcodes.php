@@ -362,6 +362,29 @@ class Shortcodes {
 			)
 		);
 
+		// The form, and so the script that validates it, is only on the page
+		// before a successful submission.
+		if ( ! self::$success ) {
+			wp_enqueue_script( 'eg-care-registration-form-js', EG_CARE_URL . 'assets/js/registration-form.js', array(), eg_care_asset_version( 'assets/js/registration-form.js' ), true );
+
+			wp_localize_script(
+				'eg-care-registration-form-js',
+				'egCareRegistration',
+				array(
+					'i18n' => array(
+						'noFileChosen'          => __( 'No file chosen', 'eg-care' ),
+						'required'              => __( 'is required.', 'eg-care' ),
+						'requiredBank'          => __( 'is required for bank payout.', 'eg-care' ),
+						'requiredMobile'        => __( 'is required for mobile payout.', 'eg-care' ),
+						'photoTooLarge'         => __( 'Profile photo file size exceeds 2MB limit.', 'eg-care' ),
+						'certificateTooLarge'   => __( 'BMDC/Medical Certificate file size exceeds 2MB limit.', 'eg-care' ),
+						'certificateRequired'   => __( 'BMDC/Medical Certificate is required.', 'eg-care' ),
+						'validationHeading'     => __( 'Form Validation Errors:', 'eg-care' ),
+					),
+				)
+			);
+		}
+
 		// Include the template.
 		include EG_CARE_PATH . 'templates/registration-form.php';
 
@@ -489,6 +512,7 @@ class Shortcodes {
 		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
 		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk', self::SETTINGS_HANDLE ), eg_care_asset_version( 'assets/js/video-call.js' ), true );
 		wp_enqueue_script( 'eg-care-call-ring-js', EG_CARE_URL . 'assets/js/call-ring.js', array( 'eg-care-video-call-js', self::SETTINGS_HANDLE ), eg_care_asset_version( 'assets/js/call-ring.js' ), true );
+		wp_enqueue_script( 'eg-care-patient-dashboard-js', EG_CARE_URL . 'assets/js/patient-dashboard.js', array( self::SETTINGS_HANDLE ), eg_care_asset_version( 'assets/js/patient-dashboard.js' ), true );
 
 		ob_start();
 		include EG_CARE_PATH . 'templates/patient-dashboard.php';
