@@ -17,7 +17,7 @@ class DB {
 	/**
 	 * Current database schema version.
 	 */
-	const DB_VERSION = '1.2.0';
+	const DB_VERSION = '1.3.0';
 
 	/**
 	 * Get custom table names.
@@ -151,7 +151,7 @@ class DB {
   comment text NOT NULL,
   created_at datetime NOT NULL,
   PRIMARY KEY  (id),
-  KEY appointment_id (appointment_id),
+  UNIQUE KEY appointment_id (appointment_id),
   KEY doctor_id (doctor_id),
   KEY patient_user_id (patient_user_id)
 ) $charset_collate;";
@@ -171,10 +171,17 @@ class DB {
   PRIMARY KEY  (id),
   KEY appointment_id (appointment_id),
   KEY doctor_id (doctor_id),
-  KEY gateway_txn_id (gateway_txn_id)
+  KEY gateway_txn_id (gateway_txn_id),
+  KEY status (status),
+  KEY created_at (created_at)
 ) $charset_collate;";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		// Reshape indexes first. dbDelta only ever adds indexes, so if it met a
+		// name that already exists it would emit a duplicate-key error and leave
+		// the old definition in place.
+		self::upgrade_indexes( $tables );
 
 		foreach ( $sql as $query ) {
 			dbDelta( $query );
@@ -214,6 +221,108 @@ class DB {
 		self::migrate_reminder_flags( $tables['appointments'] );
 
 		update_option( self::DB_VERSION_OPTION, self::DB_VERSION );
+	}
+
+	/**
+	 * Whether a table is already present.
+	 *
+	 * @param string $table Prefixed table name.
+	 * @return bool
+	 */
+	private static function table_exists( $table ) {
+		global $wpdb;
+
+		return (bool) $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+	}
+
+	/**
+	 * Index names on a table mapped to whether each one is unique.
+	 *
+	 * @param string $table Prefixed table name.
+	 * @return array Map of index name to bool.
+	 */
+	private static function get_indexes( $table ) {
+		global $wpdb;
+
+		$indexes = array();
+
+		foreach ( (array) $wpdb->get_results( "SHOW INDEX FROM `$table`" ) as $index ) { // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$indexes[ $index->Key_name ] = ( '0' === (string) $index->Non_unique );
+		}
+
+		return $indexes;
+	}
+
+	/**
+	 * Bring existing installations' indexes up to the current definition.
+	 *
+	 * @param array $tables Map of table identifiers to prefixed names.
+	 */
+	private static function upgrade_indexes( $tables ) {
+		global $wpdb;
+
+		// One review per appointment. The application checked for an existing one
+		// before inserting, but two requests could pass that check together and
+		// both write, skewing the doctor's average.
+		$reviews = $tables['reviews'];
+
+		if ( self::table_exists( $reviews ) ) {
+			$indexes = self::get_indexes( $reviews );
+
+			if ( empty( $indexes['appointment_id'] ) ) {
+				// A unique index cannot be added while duplicates exist, so keep the
+				// earliest review for each appointment and drop the rest.
+				$removed = $wpdb->query(
+					"DELETE dupe FROM `$reviews` dupe
+					 JOIN `$reviews` keeper
+					   ON dupe.appointment_id = keeper.appointment_id
+					  AND dupe.id > keeper.id"
+				); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+				if ( isset( $indexes['appointment_id'] ) ) {
+					$wpdb->query( "ALTER TABLE `$reviews` DROP INDEX appointment_id" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				}
+
+				$wpdb->query( "ALTER TABLE `$reviews` ADD UNIQUE KEY appointment_id (appointment_id)" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+
+				if ( $removed ) {
+					self::recalculate_doctor_ratings( $tables['doctors_meta'], $reviews );
+				}
+			}
+		}
+
+		// Reporting filters on status and orders by created_at.
+		$transactions = $tables['transactions'];
+
+		if ( self::table_exists( $transactions ) ) {
+			$indexes = self::get_indexes( $transactions );
+
+			foreach ( array( 'status', 'created_at' ) as $column ) {
+				if ( ! isset( $indexes[ $column ] ) ) {
+					$wpdb->query( "ALTER TABLE `$transactions` ADD KEY $column ($column)" ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				}
+			}
+		}
+	}
+
+	/**
+	 * Recompute every doctor's rating from the reviews that remain.
+	 *
+	 * @param string $doctors_meta_table Prefixed doctors meta table name.
+	 * @param string $reviews_table      Prefixed reviews table name.
+	 */
+	private static function recalculate_doctor_ratings( $doctors_meta_table, $reviews_table ) {
+		global $wpdb;
+
+		$wpdb->query(
+			"UPDATE `$doctors_meta_table` m
+			 JOIN (
+			     SELECT doctor_id, COUNT(id) AS total, AVG(rating) AS avg_val
+			     FROM `$reviews_table`
+			     GROUP BY doctor_id
+			 ) r ON r.doctor_id = m.post_id
+			 SET m.avg_rating = r.avg_val, m.total_reviews = r.total"
+		); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}
 
 	/**

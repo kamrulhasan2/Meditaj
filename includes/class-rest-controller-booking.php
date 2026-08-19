@@ -602,7 +602,7 @@ class RestControllerBooking extends WP_REST_Controller {
 		}
 
 		// Insert Review
-		$wpdb->insert(
+		$inserted = $wpdb->insert(
 			$table_reviews,
 			array(
 				'appointment_id'  => $appointment_id,
@@ -614,6 +614,12 @@ class RestControllerBooking extends WP_REST_Controller {
 			),
 			array( '%d', '%d', '%d', '%d', '%s', '%s' )
 		);
+
+		if ( false === $inserted ) {
+			// The unique index caught a second review that slipped past the check
+			// above, which a double submit can do.
+			return new \WP_Error( 'review_exists', __( 'You have already reviewed this appointment.', 'eg-care' ), array( 'status' => 400 ) );
+		}
 
 		// Recalculate Average Rating and Total Reviews
 		$doctor_id = $appointment->doctor_id;
