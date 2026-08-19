@@ -9,6 +9,25 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Registers and processes frontend shortcodes.
  */
 class Shortcodes {
+
+	/**
+	 * Handle carrying the shared JavaScript settings object.
+	 *
+	 * Every EG Care script - and the inline handlers in the templates - read
+	 * egCareSettings. Hanging that off whichever file happened to be enqueued
+	 * on a given screen made the dependency invisible, so it now has a handle
+	 * of its own that the others can declare. The handle has no source; it
+	 * exists purely to carry the localised data.
+	 */
+	const SETTINGS_HANDLE = 'eg-care-settings';
+
+	/**
+	 * Values handed to the browser this request.
+	 *
+	 * @var array
+	 */
+	private static $settings = array();
+
 	/**
 	 * Errors collected during registration.
 	 *
@@ -368,26 +387,45 @@ class Shortcodes {
 	}
 
 	/**
+	 * Publish the shared settings object and let scripts depend on it.
+	 *
+	 * @param array $extra Values specific to the screen being rendered.
+	 */
+	private static function enqueue_settings( array $extra = array() ) {
+		if ( ! wp_script_is( self::SETTINGS_HANDLE, 'registered' ) ) {
+			wp_register_script( self::SETTINGS_HANDLE, false, array(), EG_CARE_VERSION, false );
+		}
+
+		wp_enqueue_script( self::SETTINGS_HANDLE );
+
+		$defaults = array(
+			'restUrl' => esc_url_raw( rest_url( 'eg-care/v1/' ) ),
+			'nonce'   => wp_create_nonce( 'wp_rest' ),
+		);
+
+		// One page can hold more than one EG Care shortcode. Whatever the first
+		// one declared stays put; later ones only fill in the gaps.
+		self::$settings = self::$settings + $extra + $defaults;
+
+		// wp_localize_script() appends to whatever is already on the handle, so
+		// clear it first and print a single definition.
+		wp_script_add_data( self::SETTINGS_HANDLE, 'data', '' );
+		wp_localize_script( self::SETTINGS_HANDLE, 'egCareSettings', self::$settings );
+	}
+
+	/**
 	 * Render the booking flow shortcode content.
 	 */
 	public static function render_booking_shortcode() {
+		self::enqueue_settings( array( 'userType' => 'patient' ) );
+
 		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
-		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), eg_care_asset_version( 'assets/js/video-call.js' ), true );
-		wp_enqueue_script( 'eg-care-booking-js', EG_CARE_URL . 'assets/js/booking.js', array(), eg_care_asset_version( 'assets/js/booking.js' ), true );
+		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk', self::SETTINGS_HANDLE ), eg_care_asset_version( 'assets/js/video-call.js' ), true );
+		wp_enqueue_script( 'eg-care-booking-js', EG_CARE_URL . 'assets/js/booking.js', array( self::SETTINGS_HANDLE ), eg_care_asset_version( 'assets/js/booking.js' ), true );
 
 		if ( is_user_logged_in() ) {
-			wp_enqueue_script( 'eg-care-call-ring-js', EG_CARE_URL . 'assets/js/call-ring.js', array( 'eg-care-video-call-js' ), eg_care_asset_version( 'assets/js/call-ring.js' ), true );
+			wp_enqueue_script( 'eg-care-call-ring-js', EG_CARE_URL . 'assets/js/call-ring.js', array( 'eg-care-video-call-js', self::SETTINGS_HANDLE ), eg_care_asset_version( 'assets/js/call-ring.js' ), true );
 		}
-
-		wp_localize_script(
-			'eg-care-booking-js',
-			'egCareSettings',
-			array(
-				'restUrl'  => esc_url_raw( rest_url( 'eg-care/v1/' ) ),
-				'nonce'    => wp_create_nonce( 'wp_rest' ),
-				'userType' => 'patient',
-			)
-		);
 
 		ob_start();
 		include EG_CARE_PATH . 'templates/booking-flow.php';
@@ -412,20 +450,10 @@ class Shortcodes {
 			return '<div class="eg-care-alert">' . esc_html__( 'You do not have a doctor profile registered on this platform.', 'eg-care' ) . '</div>';
 		}
 
-		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
-		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), eg_care_asset_version( 'assets/js/video-call.js' ), true );
-		wp_enqueue_script( 'eg-care-doctor-dashboard-js', EG_CARE_URL . 'assets/js/doctor-dashboard.js', array(), eg_care_asset_version( 'assets/js/doctor-dashboard.js' ), true );
-		wp_enqueue_script( 'eg-care-call-ring-js', EG_CARE_URL . 'assets/js/call-ring.js', array( 'eg-care-video-call-js' ), eg_care_asset_version( 'assets/js/call-ring.js' ), true );
-
-		// Localize parameters for AJAX requests.
-		wp_localize_script(
-			'eg-care-doctor-dashboard-js',
-			'egCareSettings',
+		self::enqueue_settings(
 			array(
-				'restUrl'  => esc_url_raw( rest_url( 'eg-care/v1/' ) ),
-				'nonce'    => wp_create_nonce( 'wp_rest' ),
 				'userType' => 'doctor',
-				'doctor'  => array(
+				'doctor'   => array(
 					'id'               => intval( $doctor->post_id ),
 					'consultation_fee' => floatval( $doctor->consultation_fee ),
 					'instant_call_fee' => floatval( $doctor->instant_call_fee ),
@@ -434,6 +462,11 @@ class Shortcodes {
 				),
 			)
 		);
+
+		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
+		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk', self::SETTINGS_HANDLE ), eg_care_asset_version( 'assets/js/video-call.js' ), true );
+		wp_enqueue_script( 'eg-care-doctor-dashboard-js', EG_CARE_URL . 'assets/js/doctor-dashboard.js', array( self::SETTINGS_HANDLE ), eg_care_asset_version( 'assets/js/doctor-dashboard.js' ), true );
+		wp_enqueue_script( 'eg-care-call-ring-js', EG_CARE_URL . 'assets/js/call-ring.js', array( 'eg-care-video-call-js', self::SETTINGS_HANDLE ), eg_care_asset_version( 'assets/js/call-ring.js' ), true );
 
 		ob_start();
 		include EG_CARE_PATH . 'templates/doctor-dashboard.php';
@@ -448,20 +481,14 @@ class Shortcodes {
 			return '<div class="eg-care-alert">' . esc_html__( 'You must be logged in to view your patient dashboard.', 'eg-care' ) . ' <a href="' . esc_url( wp_login_url() ) . '">' . esc_html__( 'Log In Here', 'eg-care' ) . '</a></div>';
 		}
 
-		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
-		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk' ), eg_care_asset_version( 'assets/js/video-call.js' ), true );
-		wp_enqueue_script( 'eg-care-call-ring-js', EG_CARE_URL . 'assets/js/call-ring.js', array( 'eg-care-video-call-js' ), eg_care_asset_version( 'assets/js/call-ring.js' ), true );
+		// The template below carries an inline handler that reads egCareSettings,
+		// so the settings handle is enqueued here in its own right rather than
+		// riding along on video-call.js.
+		self::enqueue_settings( array( 'userType' => 'patient' ) );
 
-		// Localize parameters for AJAX requests.
-		wp_localize_script(
-			'eg-care-video-call-js',
-			'egCareSettings',
-			array(
-				'restUrl'  => esc_url_raw( rest_url( 'eg-care/v1/' ) ),
-				'nonce'    => wp_create_nonce( 'wp_rest' ),
-				'userType' => 'patient',
-			)
-		);
+		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
+		wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk', self::SETTINGS_HANDLE ), eg_care_asset_version( 'assets/js/video-call.js' ), true );
+		wp_enqueue_script( 'eg-care-call-ring-js', EG_CARE_URL . 'assets/js/call-ring.js', array( 'eg-care-video-call-js', self::SETTINGS_HANDLE ), eg_care_asset_version( 'assets/js/call-ring.js' ), true );
 
 		ob_start();
 		include EG_CARE_PATH . 'templates/patient-dashboard.php';

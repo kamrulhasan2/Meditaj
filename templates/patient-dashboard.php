@@ -272,6 +272,14 @@ foreach ( $appointments as $appt ) {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+	// egCareSettings comes from the 'eg-care-settings' handle that
+	// Shortcodes::render_patient_dashboard_shortcode() enqueues. Say so out loud
+	// rather than failing silently if that ever stops happening.
+	if ( typeof egCareSettings === 'undefined' || ! egCareSettings.restUrl ) {
+		console.error('EG Care: egCareSettings is missing, so reviews cannot be submitted from this page.');
+		return;
+	}
+
 	// Rate Doctor click handler for historical completed items
 	const rateButtons = document.querySelectorAll('.eg-care-btn-rate-appt');
 	rateButtons.forEach(btn => {
