@@ -17,7 +17,7 @@ class DB {
 	/**
 	 * Current database schema version.
 	 */
-	const DB_VERSION = '1.3.0';
+	const DB_VERSION = '1.4.0';
 
 	/**
 	 * Get custom table names.
@@ -32,6 +32,7 @@ class DB {
 			'appointments' => $wpdb->prefix . 'eg_care_appointments',
 			'reviews'      => $wpdb->prefix . 'eg_care_reviews',
 			'transactions' => $wpdb->prefix . 'eg_care_transactions',
+			'family_members' => $wpdb->prefix . 'eg_care_family_members',
 		);
 	}
 
@@ -115,9 +116,11 @@ class DB {
   id bigint(20) NOT NULL AUTO_INCREMENT,
   doctor_id bigint(20) NOT NULL,
   patient_user_id bigint(20) DEFAULT NULL,
+  family_member_id bigint(20) DEFAULT NULL,
   family_member_name varchar(255) DEFAULT NULL,
   family_member_age int(11) DEFAULT NULL,
   family_member_relation varchar(100) DEFAULT NULL,
+  contact_number varchar(20) DEFAULT NULL,
   appointment_type enum('instant','scheduled') NOT NULL,
   appointment_date date DEFAULT NULL,
   appointment_time time DEFAULT NULL,
@@ -137,6 +140,7 @@ class DB {
   PRIMARY KEY  (id),
   KEY doctor_id (doctor_id),
   KEY patient_user_id (patient_user_id),
+  KEY family_member_id (family_member_id),
   KEY status (status),
   KEY doctor_slot (doctor_id, appointment_date, appointment_time)
 ) $charset_collate;";
@@ -174,6 +178,30 @@ class DB {
   KEY gateway_txn_id (gateway_txn_id),
   KEY status (status),
   KEY created_at (created_at)
+) $charset_collate;";
+
+		// 6. wp_eg_care_family_members
+		//
+		// The people a patient books for. Before this table the name, age and
+		// relation were typed again on every booking and only ever lived on the
+		// appointment row, so nothing could be reused or corrected.
+		//
+		// Date of birth rather than a stored age: these rows outlive the booking
+		// they were created for, and an age column would quietly go stale. The
+		// age at the time of a booking is snapshotted onto the appointment.
+		$sql[] = "CREATE TABLE {$tables['family_members']} (
+  id bigint(20) NOT NULL AUTO_INCREMENT,
+  user_id bigint(20) NOT NULL,
+  name varchar(255) NOT NULL,
+  relation varchar(50) NOT NULL,
+  date_of_birth date DEFAULT NULL,
+  gender enum('male','female','other') DEFAULT NULL,
+  phone varchar(20) DEFAULT NULL,
+  email varchar(190) DEFAULT NULL,
+  created_at datetime NOT NULL,
+  updated_at datetime NOT NULL,
+  PRIMARY KEY  (id),
+  KEY user_id (user_id)
 ) $charset_collate;";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';

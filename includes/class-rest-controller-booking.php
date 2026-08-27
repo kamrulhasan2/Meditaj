@@ -140,6 +140,91 @@ class RestControllerBooking extends WP_REST_Controller {
 	}
 
 	/**
+	 * Check a contact number and strip it down to what we store.
+	 *
+	 * Deliberately loose: the platform takes Bangladeshi mobiles, landlines and
+	 * the occasional international number, so this rejects what is obviously not
+	 * a phone number rather than trying to enforce one shape.
+	 *
+	 * @param string $raw Number as typed.
+	 * @return string|WP_Error Cleaned number.
+	 */
+	private static function normalize_contact_number( $raw ) {
+		$raw = trim( (string) $raw );
+
+		if ( '' === $raw ) {
+			return new WP_Error( 'eg_care_contact_required', __( 'A contact number is required so the doctor can reach you.', 'eg-care' ), array( 'status' => 400 ) );
+		}
+
+		// Keep digits and a leading +; drop the spaces, dashes and brackets
+		// people type.
+		$cleaned = preg_replace( '/(?!^\+)[^0-9]/', '', $raw );
+		$digits  = preg_replace( '/[^0-9]/', '', $cleaned );
+
+		if ( strlen( $digits ) < 6 || strlen( $digits ) > 15 ) {
+			return new WP_Error( 'eg_care_contact_invalid', __( 'That contact number does not look right.', 'eg-care' ), array( 'status' => 400 ) );
+		}
+
+		return $cleaned;
+	}
+
+	/**
+	 * Work out who the appointment is for.
+	 *
+	 * Three ways in, in order of preference: a saved family member, the patient
+	 * themselves, or a name and age typed straight into the booking form. The
+	 * last one is kept so bookings made before family members existed - and any
+	 * caller still posting the old fields - carry on working.
+	 *
+	 * @param int    $member_id Saved family member id, 0 when none chosen.
+	 * @param string $relation  Relation posted by the form.
+	 * @param string $pat_name  Name posted by the form.
+	 * @param mixed  $pat_age   Age posted by the form.
+	 * @param int    $user_id   Booking user.
+	 * @return array|WP_Error {id, name, age, relation}
+	 */
+	private function resolve_patient( $member_id, $relation, $pat_name, $pat_age, $user_id ) {
+		if ( $member_id > 0 ) {
+			$member = FamilyMembers::find_owned( $member_id, $user_id );
+
+			if ( ! $member ) {
+				return new WP_Error( 'eg_care_family_not_found', __( 'That person is not on your list.', 'eg-care' ), array( 'status' => 404 ) );
+			}
+
+			return array(
+				'id'       => intval( $member->id ),
+				'name'     => $member->name,
+				'age'      => FamilyMembers::age_from_dob( $member->date_of_birth ),
+				'relation' => $member->relation,
+			);
+		}
+
+		if ( 'self' === $relation ) {
+			return array(
+				'id'       => null,
+				'name'     => wp_get_current_user()->display_name,
+				'age'      => null,
+				'relation' => 'self',
+			);
+		}
+
+		$pat_name = trim( (string) $pat_name );
+
+		if ( '' === $pat_name ) {
+			return new WP_Error( 'rest_bad_request', __( 'Enter the name of the person this appointment is for.', 'eg-care' ), array( 'status' => 400 ) );
+		}
+
+		$age = intval( $pat_age );
+
+		return array(
+			'id'       => null,
+			'name'     => $pat_name,
+			'age'      => $age > 0 ? $age : null,
+			'relation' => $relation,
+		);
+	}
+
+	/**
 	 * Create a new appointment booking.
 	 *
 	 * @param \WP_REST_Request $request REST request object.
@@ -158,11 +243,32 @@ class RestControllerBooking extends WP_REST_Controller {
 		$relation     = sanitize_text_field( $request->get_param( 'patient_relation' ) ); // 'self', 'father', etc.
 		$pat_name     = sanitize_text_field( $request->get_param( 'patient_name' ) );
 		$pat_age      = $request->get_param( 'patient_age' );
+		$member_id    = intval( $request->get_param( 'family_member_id' ) );
+		$contact      = sanitize_text_field( $request->get_param( 'contact_number' ) );
 		$notes        = wp_kses_post( $request->get_param( 'notes' ) );
 
-		// 1. Validation.
-		if ( empty( $doctor_id ) || empty( $booking_type ) || empty( $date ) || empty( $time ) || empty( $relation ) ) {
+		// 1. Validation. A saved family member carries its own relation, so
+		// patient_relation is only required when one was not chosen.
+		if ( empty( $doctor_id ) || empty( $booking_type ) || empty( $date ) || empty( $time ) ) {
 			return new WP_Error( 'rest_bad_request', __( 'Required fields are missing.', 'eg-care' ), array( 'status' => 400 ) );
+		}
+
+		if ( empty( $member_id ) && empty( $relation ) ) {
+			return new WP_Error( 'rest_bad_request', __( 'Tell us who this appointment is for.', 'eg-care' ), array( 'status' => 400 ) );
+		}
+
+		$contact = self::normalize_contact_number( $contact );
+
+		if ( is_wp_error( $contact ) ) {
+			return $contact;
+		}
+
+		// Resolve who is being seen before touching the appointments table, so a
+		// bad family member id fails before a row is written.
+		$patient = $this->resolve_patient( $member_id, $relation, $pat_name, $pat_age, $user_id );
+
+		if ( is_wp_error( $patient ) ) {
+			return $patient;
 		}
 
 		if ( ! in_array( $booking_type, array( 'instant', 'scheduled' ), true ) ) {
@@ -222,9 +328,15 @@ class RestControllerBooking extends WP_REST_Controller {
 			array(
 				'doctor_id'              => $doctor_id,
 				'patient_user_id'        => $user_id,
-				'family_member_name'     => 'self' === $relation ? wp_get_current_user()->display_name : $pat_name,
-				'family_member_age'      => 'self' === $relation ? null : intval( $pat_age ),
-				'family_member_relation' => $relation,
+				// The name, age and relation are copied here rather than read back
+				// through family_member_id later: the member can be edited or
+				// removed afterwards, and a past appointment has to keep saying
+				// who was actually seen, and how old they were that day.
+				'family_member_id'       => $patient['id'],
+				'family_member_name'     => $patient['name'],
+				'family_member_age'      => $patient['age'],
+				'family_member_relation' => $patient['relation'],
+				'contact_number'         => $contact,
 				'appointment_type'       => $booking_type,
 				'appointment_date'       => $date,
 				'appointment_time'       => $time,
@@ -239,21 +351,23 @@ class RestControllerBooking extends WP_REST_Controller {
 				'updated_at'             => $now,
 			),
 			array(
-				'%d',
-				'%d',
-				'%s',
-				'%d',
-				'%s',
-				'%s',
-				'%s',
-				'%s',
-				'%s',
-				'%s',
-				'%f',
-				'%s',
-				'%s',
-				'%s',
-				'%s',
+				'%d', // doctor_id.
+				'%d', // patient_user_id.
+				'%d', // family_member_id.
+				'%s', // family_member_name.
+				'%d', // family_member_age.
+				'%s', // family_member_relation.
+				'%s', // contact_number.
+				'%s', // appointment_type.
+				'%s', // appointment_date.
+				'%s', // appointment_time.
+				'%s', // status.
+				'%s', // payment_status.
+				'%f', // amount.
+				'%s', // uploaded_files.
+				'%s', // symptom_notes.
+				'%s', // created_at.
+				'%s', // updated_at.
 			)
 		);
 

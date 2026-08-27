@@ -37,5 +37,8 @@ class RestApi {
 
 		$dashboard = new RestControllerDoctorDashboard();
 		$dashboard->register_routes();
+
+		$family = new RestControllerFamily();
+		$family->register_routes();
 	}
 }

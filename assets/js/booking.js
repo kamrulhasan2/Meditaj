@@ -64,6 +64,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		patientName: '',
 		patientAge: '',
 		patientRelation: '',
+		familyMembers: [],
+		familyLoaded: false,
+		familyMemberId: null, // null means the account holder themselves
+		contactNumber: '',
 		notes: '',
 		files: []
 	};
@@ -375,6 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// STEP 3: Doctor Details & Checkout Panel
 	function renderStep3() {
 		const doc = state.doctor;
+		const todayStr = new Date().toISOString().split('T')[0];
 		if ( ! doc ) {
 			state.step = 2;
 			render();
@@ -421,27 +426,64 @@ document.addEventListener('DOMContentLoaded', function() {
 					</div>
 
 					<div class="patient-details-block">
-						<h3>Patient Information</h3>
-						<div class="eg-care-field">
-							<label for="patient-relation">Consultation For</label>
-							<select id="patient-relation">
-								<option value="self" ${'self' === state.patientType ? 'selected' : ''}>Self</option>
-								<option value="father" ${'father' === state.patientType ? 'selected' : ''}>Father</option>
-								<option value="mother" ${'mother' === state.patientType ? 'selected' : ''}>Mother</option>
-								<option value="spouse" ${'spouse' === state.patientType ? 'selected' : ''}>Spouse</option>
-								<option value="child" ${'child' === state.patientType ? 'selected' : ''}>Child</option>
-								<option value="other" ${'other' === state.patientType ? 'selected' : ''}>Other</option>
-							</select>
+						<h3>Who is this appointment for?</h3>
+						<div class="eg-care-family-members" id="family-members-target">
+							<div class="eg-care-loading-spinner small"></div>
 						</div>
-						<div id="patient-family-fields" style="${'self' === state.patientType ? 'display:none;' : 'display:grid;'}" class="eg-care-fields-grid text-fields">
-							<div class="eg-care-field">
-								<label for="patient-name">Patient Name *</label>
-								<input type="text" id="patient-name" placeholder="Enter patient name" value="${state.patientName}">
+
+						<div class="eg-care-family-form" id="family-add-form" hidden>
+							<h4>Add someone</h4>
+							<div class="eg-care-fields-grid text-fields">
+								<div class="eg-care-field">
+									<label for="fm-name">Full name *</label>
+									<input type="text" id="fm-name" placeholder="Full name">
+								</div>
+								<div class="eg-care-field">
+									<label for="fm-relation">Relation *</label>
+									<select id="fm-relation">
+										<option value="father">Father</option>
+										<option value="mother">Mother</option>
+										<option value="spouse">Spouse</option>
+										<option value="son">Son</option>
+										<option value="daughter">Daughter</option>
+										<option value="brother">Brother</option>
+										<option value="sister">Sister</option>
+										<option value="other">Other</option>
+									</select>
+								</div>
+								<div class="eg-care-field">
+									<label for="fm-dob">Date of birth</label>
+									<input type="date" id="fm-dob" max="${todayStr}">
+								</div>
+								<div class="eg-care-field">
+									<label for="fm-gender">Gender</label>
+									<select id="fm-gender">
+										<option value="">Prefer not to say</option>
+										<option value="male">Male</option>
+										<option value="female">Female</option>
+										<option value="other">Other</option>
+									</select>
+								</div>
+								<div class="eg-care-field">
+									<label for="fm-phone">Phone</label>
+									<input type="tel" id="fm-phone" placeholder="Optional">
+								</div>
+								<div class="eg-care-field">
+									<label for="fm-email">Email</label>
+									<input type="email" id="fm-email" placeholder="Optional">
+								</div>
 							</div>
-							<div class="eg-care-field">
-								<label for="patient-age">Patient Age *</label>
-								<input type="number" id="patient-age" placeholder="Enter age" value="${state.patientAge}">
+							<p class="eg-care-family-form-error" id="fm-error" hidden></p>
+							<div class="eg-care-family-form-actions">
+								<button type="button" id="fm-save" class="eg-care-btn-register cyan-btn">Save person</button>
+								<button type="button" id="fm-cancel" class="eg-care-btn-secondary">Cancel</button>
 							</div>
+						</div>
+
+						<div class="eg-care-field span-full" style="margin-top: 14px;">
+							<label for="patient-contact">Contact Number *</label>
+							<input type="tel" id="patient-contact" placeholder="e.g. 01712345678" value="${escapeHtml(state.contactNumber)}">
+							<span class="eg-care-field-hint">The doctor's team uses this if the video call drops.</span>
 						</div>
 						<div class="eg-care-field span-full" style="margin-top: 10px;">
 							<label for="patient-notes">Symptom Notes / Reason for Visit</label>
@@ -516,7 +558,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		const slotsTarget = document.getElementById('grid-slots-target');
 
 		// Restrict Date picker to today or future dates
-		const todayStr = new Date().toISOString().split('T')[0];
 		dateInput.setAttribute('min', todayStr);
 
 		function loadSlots() {
@@ -574,37 +615,198 @@ document.addEventListener('DOMContentLoaded', function() {
 			loadSlots();
 		}
 
-		// Bind Patient Relation Selection
-		const relationSelect = document.getElementById('patient-relation');
-		const familyFields = document.getElementById('patient-family-fields');
-		const pNameInput = document.getElementById('patient-name');
-		const pAgeInput = document.getElementById('patient-age');
+		// Who the appointment is for. "Self" is always first and needs no saved
+		// record; everyone else comes from the patient's family list.
+		const familyTarget = document.getElementById('family-members-target');
+		const addForm = document.getElementById('family-add-form');
 
-		relationSelect.addEventListener('change', function() {
-			state.patientType = relationSelect.value;
-			if ( 'self' === relationSelect.value ) {
-				familyFields.style.display = 'none';
-				pNameInput.removeAttribute('required');
-				pAgeInput.removeAttribute('required');
-			} else {
-				familyFields.style.display = 'grid';
-				pNameInput.setAttribute('required', 'required');
-				pAgeInput.setAttribute('required', 'required');
+		function relationLabel(relation) {
+			if ( ! relation ) return '';
+			return relation.charAt(0).toUpperCase() + relation.slice(1);
+		}
+
+		function memberDetailLine(member) {
+			const bits = [];
+			if ( null !== member.age && undefined !== member.age ) bits.push(member.age + ' yrs');
+			if ( member.gender ) bits.push(relationLabel(member.gender));
+			if ( member.phone ) bits.push(member.phone);
+			return bits.join(' \u00b7 ');
+		}
+
+		function renderFamilyMembers() {
+			if ( ! state.familyLoaded ) {
+				familyTarget.innerHTML = '<div class="eg-care-loading-spinner small"></div>';
+				return;
 			}
-			saveState();
-			updateCheckoutSummary();
+
+			const cards = [];
+
+			const selfActive = null === state.familyMemberId ? ' active' : '';
+			cards.push(
+				'<button type="button" class="eg-care-family-card' + selfActive + '" data-member="self">' +
+					'<span class="eg-care-family-badge">Self</span>' +
+					'<span class="eg-care-family-name">' + escapeHtml(wp_get_current_user_name()) + '</span>' +
+					'<span class="eg-care-family-meta">Booking for yourself</span>' +
+				'</button>'
+			);
+
+			state.familyMembers.forEach(function(member) {
+				if ( 'self' === member.relation ) return; // the card above covers this
+				const active = member.id === state.familyMemberId ? ' active' : '';
+				cards.push(
+					'<button type="button" class="eg-care-family-card' + active + '" data-member="' + member.id + '">' +
+						'<span class="eg-care-family-badge alt">' + escapeHtml(relationLabel(member.relation)) + '</span>' +
+						'<span class="eg-care-family-name">' + escapeHtml(member.name) + '</span>' +
+						'<span class="eg-care-family-meta">' + escapeHtml(memberDetailLine(member)) + '</span>' +
+					'</button>'
+				);
+			});
+
+			cards.push(
+				'<button type="button" class="eg-care-family-card add" data-member="add">' +
+					'<span class="eg-care-family-add-icon">+</span>' +
+					'<span class="eg-care-family-name">Add someone</span>' +
+					'<span class="eg-care-family-meta">Parent, child, spouse\u2026</span>' +
+				'</button>'
+			);
+
+			familyTarget.innerHTML = cards.join('');
+
+			familyTarget.querySelectorAll('.eg-care-family-card').forEach(function(card) {
+				card.addEventListener('click', function() {
+					const value = card.getAttribute('data-member');
+
+					if ( 'add' === value ) {
+						addForm.hidden = false;
+						document.getElementById('fm-name').focus();
+						return;
+					}
+
+					if ( 'self' === value ) {
+						state.familyMemberId = null;
+						state.patientType = 'self';
+						state.patientName = '';
+						state.patientAge = '';
+					} else {
+						const picked = state.familyMembers.find(function(m) { return m.id === parseInt(value, 10); });
+						if ( ! picked ) return;
+						state.familyMemberId = picked.id;
+						state.patientType = picked.relation;
+						state.patientName = picked.name;
+						state.patientAge = (null === picked.age || undefined === picked.age) ? '' : picked.age;
+					}
+
+					addForm.hidden = true;
+					saveState();
+					renderFamilyMembers();
+					updateCheckoutSummary();
+				});
+			});
+		}
+
+		function loadFamilyMembers() {
+			fetch(egCareSettings.restUrl + 'patient/me/family', {
+				headers: { 'X-WP-Nonce': egCareSettings.nonce }
+			})
+			.then(function(res) { return res.ok ? res.json() : []; })
+			.then(function(members) {
+				state.familyMembers = Array.isArray(members) ? members : [];
+				state.familyLoaded = true;
+
+				// A member chosen earlier may have been deleted in another tab.
+				if ( null !== state.familyMemberId && ! state.familyMembers.some(function(m) { return m.id === state.familyMemberId; }) ) {
+					state.familyMemberId = null;
+					state.patientType = 'self';
+				}
+
+				saveState();
+				renderFamilyMembers();
+				updateCheckoutSummary();
+			})
+			.catch(function() {
+				state.familyLoaded = true;
+				renderFamilyMembers();
+			});
+		}
+
+		renderFamilyMembers();
+		loadFamilyMembers();
+
+		// Add-a-person form.
+		const fmError = document.getElementById('fm-error');
+
+		function showFamilyError(message) {
+			fmError.textContent = message;
+			fmError.hidden = ! message;
+		}
+
+		document.getElementById('fm-cancel').addEventListener('click', function() {
+			addForm.hidden = true;
+			showFamilyError('');
 		});
 
-		pNameInput.addEventListener('input', function() {
-			state.patientName = pNameInput.value;
-			saveState();
-			updateCheckoutSummary();
+		document.getElementById('fm-save').addEventListener('click', function() {
+			const saveBtn = this;
+			const payload = {
+				name: document.getElementById('fm-name').value,
+				relation: document.getElementById('fm-relation').value,
+				date_of_birth: document.getElementById('fm-dob').value,
+				gender: document.getElementById('fm-gender').value,
+				phone: document.getElementById('fm-phone').value,
+				email: document.getElementById('fm-email').value
+			};
+
+			if ( ! payload.name.trim() ) {
+				showFamilyError('Please enter a name.');
+				return;
+			}
+
+			showFamilyError('');
+			saveBtn.disabled = true;
+			saveBtn.textContent = 'Saving\u2026';
+
+			fetch(egCareSettings.restUrl + 'patient/me/family', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-WP-Nonce': egCareSettings.nonce
+				},
+				body: JSON.stringify(payload)
+			})
+			.then(function(res) {
+				return res.json().then(function(body) {
+					if ( ! res.ok ) throw new Error(body.message || 'Could not save this person.');
+					return body;
+				});
+			})
+			.then(function(member) {
+				state.familyMembers.push(member);
+				state.familyMemberId = member.id;
+				state.patientType = member.relation;
+				state.patientName = member.name;
+				state.patientAge = (null === member.age || undefined === member.age) ? '' : member.age;
+				addForm.hidden = true;
+				['fm-name', 'fm-dob', 'fm-phone', 'fm-email'].forEach(function(id) {
+					document.getElementById(id).value = '';
+				});
+				saveState();
+				renderFamilyMembers();
+				updateCheckoutSummary();
+			})
+			.catch(function(err) {
+				showFamilyError(err.message);
+			})
+			.finally(function() {
+				saveBtn.disabled = false;
+				saveBtn.textContent = 'Save person';
+			});
 		});
 
-		pAgeInput.addEventListener('input', function() {
-			state.patientAge = pAgeInput.value;
+		// Contact number.
+		const contactInput = document.getElementById('patient-contact');
+		contactInput.addEventListener('input', function() {
+			state.contactNumber = contactInput.value;
 			saveState();
-			updateCheckoutSummary();
 		});
 
 		document.getElementById('patient-notes').addEventListener('input', function(e) {
@@ -748,15 +950,13 @@ document.addEventListener('DOMContentLoaded', function() {
 				}
 			}
 
-			if ( 'self' !== state.patientType ) {
-				if ( ! state.patientName.trim() ) {
-					alert('Please enter the patient\'s full name.');
-					return;
-				}
-				if ( ! state.patientAge ) {
-					alert('Please specify the patient\'s age.');
-					return;
-				}
+			// A saved family member carries its own name and age, so the only
+			// thing still to check here is how to reach the patient.
+			const contactDigits = String(state.contactNumber || '').replace(/[^0-9]/g, '');
+			if ( contactDigits.length < 6 || contactDigits.length > 15 ) {
+				alert('Please enter a valid contact number.');
+				document.getElementById('patient-contact').focus();
+				return;
 			}
 
 			// Valid checkout payload compilation
@@ -765,6 +965,10 @@ document.addEventListener('DOMContentLoaded', function() {
 				booking_type: state.bookingType,
 				date: state.bookingType === 'scheduled' ? state.date : todayStr,
 				time: state.bookingType === 'scheduled' ? state.slotTime : new Date().toTimeString().split(' ')[0],
+				family_member_id: state.familyMemberId,
+				contact_number: state.contactNumber,
+				// Still sent so the server can fall back to them when no saved
+				// member was chosen.
 				patient_relation: state.patientType,
 				patient_name: state.patientType === 'self' ? wp_get_current_user_name() : state.patientName,
 				patient_age: state.patientType === 'self' ? null : parseInt(state.patientAge),

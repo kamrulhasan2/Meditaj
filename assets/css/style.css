@@ -1802,3 +1802,142 @@ a.eg-care-report-link:hover {
 	color: #1d4ed8;
 }
 
+
+
+/* ==========================================================================
+   Who the appointment is for: saved family members
+   ========================================================================== */
+
+.eg-care-family-members {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+	gap: 12px;
+	margin-bottom: 6px;
+}
+
+.eg-care-family-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 3px;
+	padding: 14px 14px 13px;
+	border: 1.5px solid #e2e8f0;
+	border-radius: 10px;
+	background: #fff;
+	cursor: pointer;
+	text-align: left;
+	font: inherit;
+	transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.eg-care-family-card:hover {
+	border-color: #99c9c4;
+}
+
+.eg-care-family-card:focus-visible {
+	outline: 2px solid #0f766e;
+	outline-offset: 2px;
+}
+
+.eg-care-family-card.active {
+	border-color: #0f766e;
+	box-shadow: 0 0 0 3px rgba(15, 118, 110, .12);
+}
+
+.eg-care-family-badge {
+	position: absolute;
+	top: 10px;
+	right: 10px;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: .04em;
+	text-transform: uppercase;
+	padding: 2px 7px;
+	border-radius: 4px;
+	background: #0f766e;
+	color: #fff;
+}
+
+.eg-care-family-badge.alt {
+	background: #eef4f3;
+	color: #0f766e;
+}
+
+.eg-care-family-name {
+	font-size: 15px;
+	font-weight: 600;
+	color: #0f172a;
+	padding-right: 62px;
+	line-height: 1.35;
+}
+
+.eg-care-family-meta {
+	font-size: 12.5px;
+	color: #64748b;
+	line-height: 1.45;
+}
+
+.eg-care-family-card.add {
+	border-style: dashed;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	color: #0f766e;
+}
+
+.eg-care-family-card.add .eg-care-family-name {
+	padding-right: 0;
+	color: #0f766e;
+}
+
+.eg-care-family-add-icon {
+	font-size: 22px;
+	line-height: 1;
+	color: #0f766e;
+}
+
+.eg-care-family-form {
+	margin-top: 14px;
+	padding: 16px 16px 14px;
+	border: 1px solid #e2e8f0;
+	border-radius: 10px;
+	background: #f8fafc;
+}
+
+.eg-care-family-form h4 {
+	margin: 0 0 12px;
+	font-size: 14px;
+	font-weight: 700;
+	color: #0f172a;
+}
+
+.eg-care-family-form-actions {
+	display: flex;
+	gap: 10px;
+	margin-top: 14px;
+}
+
+.eg-care-family-form-actions button {
+	width: auto;
+	padding: 9px 18px;
+}
+
+.eg-care-family-form-error {
+	margin: 10px 0 0;
+	font-size: 13px;
+	color: #b91c1c;
+}
+
+.eg-care-field-hint {
+	display: block;
+	margin-top: 5px;
+	font-size: 12px;
+	color: #64748b;
+}
+
+@media (max-width: 600px) {
+	.eg-care-family-members {
+		grid-template-columns: 1fr;
+	}
+}
