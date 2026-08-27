@@ -685,6 +685,17 @@
 	min-width: 180px !important;
 }
 
+/* On a doctor's own page the way back to the list is a link, not a button,
+   because it leads to another page. It should still look like the button it
+   replaces. */
+a.eg-care-back-link {
+	display: block;
+	width: 100%;
+	margin-top: 10px;
+	text-align: center;
+	text-decoration: none;
+}
+
 /* The optional specialty grid needs a way back to the list. */
 button.eg-care-back-to-list {
 	display: block !important;

@@ -61,6 +61,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		// Chosen specialty slugs, comma separated. A single slug written by an
 		// older session is a valid one-item list, so nothing has to migrate.
 		specialty: '',
+		// 'online', 'scheduled', both, or neither - comma separated like the
+		// specialties, and for the same reason: it travels in the URL.
+		availability: '',
+		search: '',
 		doctor: null,
 		bookingType: 'scheduled', // 'instant' or 'scheduled'
 		date: '',
@@ -175,6 +179,79 @@ document.addEventListener('DOMContentLoaded', function() {
 	const PER_PAGE = 12;
 
 	/**
+	 * Query string names for the list's filters.
+	 *
+	 * Every one is prefixed. 'specialty' on its own is the taxonomy's query
+	 * var, and putting it on an ordinary page's URL makes WordPress try to
+	 * resolve that page as a specialty archive - which answers 404. 'search'
+	 * and 'availability' are free today but would be a trap to leave unguarded
+	 * next to a prefixed one.
+	 */
+	const URL_PARAMS = {
+		specialty: 'eg_specialty',
+		availability: 'eg_availability',
+		search: 'eg_search'
+	};
+
+	/**
+	 * Read the list's filters out of the address bar.
+	 *
+	 * @return {Object|null} The filters found, or null if the URL carries none.
+	 */
+	function filtersFromUrl() {
+		const query = new URLSearchParams(window.location.search);
+		let found = false;
+		const filters = {};
+
+		Object.keys(URL_PARAMS).forEach(key => {
+			const value = query.get(URL_PARAMS[key]);
+			if ( null !== value ) {
+				filters[key] = value;
+				found = true;
+			}
+		});
+
+		return found ? filters : null;
+	}
+
+	/**
+	 * Write the list's filters into the address bar.
+	 *
+	 * replaceState rather than pushState: the search box filters on every
+	 * keystroke, and pushing each one would bury the page the visitor arrived
+	 * from under a stack of near-identical entries. The address bar still
+	 * carries a link worth copying, sharing or reloading.
+	 *
+	 * The page number is deliberately left out. Load more is not a place you
+	 * would send someone, and 'page' is a WordPress query var that would turn
+	 * the URL into something else entirely.
+	 */
+	function filtersToUrl() {
+		if ( ! window.history || ! window.history.replaceState ) {
+			return;
+		}
+
+		const query = new URLSearchParams(window.location.search);
+
+		Object.keys(URL_PARAMS).forEach(key => {
+			const value = String(state[key] || '').trim();
+			if ( value ) {
+				query.set(URL_PARAMS[key], value);
+			} else {
+				// An empty filter should leave no trace in the URL at all.
+				query.delete(URL_PARAMS[key]);
+			}
+		});
+
+		const search = query.toString();
+		window.history.replaceState(
+			null,
+			'',
+			window.location.pathname + ( search ? '?' + search : '' ) + window.location.hash
+		);
+	}
+
+	/**
 	 * The specialty slugs currently ticked in the filter.
 	 *
 	 * @return {string[]} Slugs, possibly empty.
@@ -184,6 +261,45 @@ document.addEventListener('DOMContentLoaded', function() {
 			.split(',')
 			.map(slug => slug.trim())
 			.filter(Boolean);
+	}
+
+	// Where the doctor list was when it was left, so the doctor's page can
+	// offer a way back to the same filtered list rather than to a bare one.
+	const LIST_URL_KEY = 'eg_care_list_url';
+
+	/**
+	 * Note the list's current address before leaving it.
+	 */
+	function rememberListUrl() {
+		try {
+			sessionStorage.setItem(LIST_URL_KEY, window.location.href);
+		} catch ( e ) {
+			// A browser refusing session storage is not a reason to stop
+			// someone booking; they simply lose the back link.
+		}
+	}
+
+	/**
+	 * The list address noted on the way out, if there is one.
+	 *
+	 * @return {string} A URL, or an empty string.
+	 */
+	function rememberedListUrl() {
+		try {
+			return sessionStorage.getItem(LIST_URL_KEY) || '';
+		} catch ( e ) {
+			return '';
+		}
+	}
+
+	/**
+	 * Whether an availability box should open ticked.
+	 *
+	 * @param {string} value Either 'online' or 'scheduled'.
+	 * @return {boolean} True when that one is part of the current filter.
+	 */
+	function wantsAvailability(value) {
+		return String(state.availability || '').split(',').indexOf(value) !== -1;
 	}
 
 	// SecureUploads::allowed_mimes() takes these three and nothing else, so the
@@ -338,7 +454,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				<h3>${translate('Filters')}</h3>
 				<div class="eg-care-filter-group">
 					<label for="filter-search">${translate('Search')}</label>
-					<input type="text" id="filter-search" placeholder="Doctor name or degree...">
+					<input type="text" id="filter-search" placeholder="Doctor name or degree..." value="${escapeHtml(state.search || '')}">
 				</div>
 				<div class="eg-care-filter-group">
 					<span class="eg-care-filter-legend">${translate('Specialty')}</span>
@@ -347,22 +463,14 @@ document.addEventListener('DOMContentLoaded', function() {
 					</div>
 				</div>
 				<div class="eg-care-filter-group">
-					<label>${translate('Consultation Fee')}</label>
-					<input type="range" id="filter-fee" min="0" max="5000" step="100" value="5000">
-					<div class="range-values">
-						<span>0 BDT</span>
-						<span id="fee-val-display">5000 BDT</span>
-					</div>
-				</div>
-				<div class="eg-care-filter-group">
 					<span class="eg-care-filter-legend">${translate('Availability')}</span>
 					<div class="eg-care-filter-checks" role="group" aria-label="Availability">
 						<label class="eg-care-filter-check" for="filter-online">
-							<input type="checkbox" id="filter-online" value="online">
+							<input type="checkbox" id="filter-online" value="online"${wantsAvailability('online') ? ' checked' : ''}>
 							<span>${translate('Online now')}</span>
 						</label>
 						<label class="eg-care-filter-check" for="filter-scheduled">
-							<input type="checkbox" id="filter-scheduled" value="scheduled">
+							<input type="checkbox" id="filter-scheduled" value="scheduled"${wantsAvailability('scheduled') ? ' checked' : ''}>
 							<span>${translate('Book later')}</span>
 						</label>
 					</div>
@@ -419,12 +527,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					box.type = 'checkbox';
 					box.value = spec.slug;
 					box.checked = chosen.indexOf(spec.slug) !== -1;
-					box.addEventListener('change', function() {
-						state.specialty = Array.from(specBox.querySelectorAll('input:checked'))
-							.map(el => el.value).join(',');
-						saveState();
-						fetchDoctors();
-					});
+					box.addEventListener('change', refilter);
 
 					const text = document.createElement('span');
 					text.textContent = spec.name;
@@ -438,13 +541,6 @@ document.addEventListener('DOMContentLoaded', function() {
 				specBox.innerHTML = '<p class="eg-care-filter-loading">Specialties could not be loaded.</p>';
 			});
 
-		// Range Input display updater
-		const feeSlider = document.getElementById('filter-fee');
-		const feeDisplay = document.getElementById('fee-val-display');
-		feeSlider.addEventListener('input', function() {
-			feeDisplay.textContent = feeSlider.value + ' BDT';
-		});
-
 		const totalLabel = document.getElementById('doctors-total');
 		const loadMoreBtn = document.getElementById('btn-load-more');
 
@@ -453,22 +549,32 @@ document.addEventListener('DOMContentLoaded', function() {
 		let listPage = 1;
 		let listTotal = 0;
 
-		function currentFilters() {
-			const params = ['fee_max=' + feeSlider.value, 'per_page=' + PER_PAGE];
-			const spec = selectedSpecialties().join(',');
-			const availability = Array.from(
+		// The controls write into state, state builds the request and the URL.
+		// Reading the DOM in three places instead would let the address bar and
+		// the request disagree about what is being asked for.
+		function readControlsIntoState() {
+			state.specialty = Array.from(specBox.querySelectorAll('input:checked'))
+				.map(el => el.value).join(',');
+			state.availability = Array.from(
 				document.querySelectorAll('#filter-online:checked, #filter-scheduled:checked')
 			).map(el => el.value).join(',');
-			const search = document.getElementById('filter-search').value;
+			state.search = document.getElementById('filter-search').value;
+			saveState();
+			filtersToUrl();
+		}
+
+		function currentFilters() {
+			const params = ['per_page=' + PER_PAGE];
+			const spec = selectedSpecialties().join(',');
 
 			if ( spec ) {
 				params.push('specialty=' + encodeURIComponent(spec));
 			}
-			if ( availability ) {
-				params.push('availability=' + encodeURIComponent(availability));
+			if ( state.availability ) {
+				params.push('availability=' + encodeURIComponent(state.availability));
 			}
-			if ( search ) {
-				params.push('search=' + encodeURIComponent(search));
+			if ( state.search ) {
+				params.push('search=' + encodeURIComponent(state.search));
 			}
 			return params;
 		}
@@ -592,6 +698,18 @@ document.addEventListener('DOMContentLoaded', function() {
 							: face + dot;
 
 						function openBookingFor() {
+							if ( doc.permalink ) {
+								// Booking happens on the doctor's own page, so
+								// the address bar names who is being booked and
+								// the browser's back button returns to this
+								// list, filters and all.
+								rememberListUrl();
+								window.location.href = doc.permalink;
+								return;
+							}
+
+							// No page to go to - fall back to opening the
+							// booking panel here rather than doing nothing.
 							state.doctor = doc;
 							state.step = 3;
 							saveState();
@@ -650,11 +768,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		// page one; keeping the old page number would show page three of a
 		// result set the visitor has just changed.
 		function refilter() {
+			readControlsIntoState();
 			fetchDoctors(false);
 		}
 
 		document.getElementById('filter-search').addEventListener('input', refilter);
-		feeSlider.addEventListener('change', refilter);
 		document.getElementById('filter-online').addEventListener('change', refilter);
 		document.getElementById('filter-scheduled').addEventListener('change', refilter);
 		loadMoreBtn.addEventListener('click', function() {
@@ -664,12 +782,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		document.getElementById('btn-reset-filters').addEventListener('click', function() {
 			document.getElementById('filter-search').value = '';
 			specBox.querySelectorAll('input:checked').forEach(el => { el.checked = false; });
-			feeSlider.value = 5000;
-			feeDisplay.textContent = '5000 BDT';
 			document.getElementById('filter-online').checked = false;
 			document.getElementById('filter-scheduled').checked = false;
-			state.specialty = '';
-			saveState();
 			refilter();
 		});
 
@@ -679,8 +793,11 @@ document.addEventListener('DOMContentLoaded', function() {
 			render();
 		});
 
-		// Trigger initial load
-		refilter();
+		// Trigger initial load. Not through refilter(): the specialty boxes are
+		// still on their way, so reading the controls here would blank whatever
+		// the URL or the saved session asked for.
+		filtersToUrl();
+		fetchDoctors(false);
 	}
 
 	// STEP 3: Doctor Details & Checkout Panel
@@ -877,6 +994,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				<div id="checkout-summary-target"></div>
 				<button type="button" id="btn-confirm-booking" class="eg-care-btn-register cyan-btn" style="width:100%; margin-top:20px;">Confirm Booking</button>
 				<button type="button" id="btn-back-to-step2" class="eg-care-btn-secondary" style="width:100%; margin-top: 10px;"${lockedDoctorId ? ' hidden' : ''}>Back to Doctors List</button>
+				${lockedDoctorId && rememberedListUrl() ? `<a href="${escapeHtml(rememberedListUrl())}" id="link-back-to-list" class="eg-care-btn-secondary eg-care-back-link">Back to Doctors List</a>` : ''}
 			</div>
 		</div>
 		`;
@@ -1514,8 +1632,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		updateCheckoutSummary();
 
-		// Back navigation. There is no step two behind a doctor's own page, so
-		// the button is hidden there and this listener never fires.
+		// Back navigation. A doctor's own page has no step two behind it, so the
+		// button is hidden there and this listener never fires; a link back to
+		// the list the visitor came from takes its place when there was one.
 		document.getElementById('btn-back-to-step2').addEventListener('click', function() {
 			state.step = 2;
 			state.doctor = null;
@@ -1742,6 +1861,19 @@ document.addEventListener('DOMContentLoaded', function() {
 	 */
 	function boot() {
 		if ( ! lockedDoctorId ) {
+			// A link that names its filters means them. Someone opening a
+			// shared URL should see what it describes, not what this browser
+			// happened to be looking at earlier in the session.
+			const fromUrl = filtersFromUrl();
+
+			if ( fromUrl ) {
+				state.specialty = fromUrl.specialty || '';
+				state.availability = fromUrl.availability || '';
+				state.search = fromUrl.search || '';
+				state.step = 2;
+				saveState();
+			}
+
 			render();
 			return;
 		}
