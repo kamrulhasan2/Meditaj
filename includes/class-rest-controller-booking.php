@@ -208,10 +208,12 @@ class RestControllerBooking extends WP_REST_Controller {
 			return new WP_Error( 'eg_care_slot_conflict', __( 'This consultation slot has already been booked or is pending payment.', 'eg-care' ), array( 'status' => 409 ) );
 		}
 
-		// Calculate Fees.
-		$fee = 'instant' === $booking_type ? floatval( $doctor->instant_call_fee ) : floatval( $doctor->consultation_fee );
-		$tax = $fee * 0.05;
-		$total_amount = $fee + $tax;
+		// Calculate Fees. Fees::consultation_fee() falls back to the scheduled
+		// fee when a doctor's instant fee is 0, so a live call is never booked
+		// for free, and breakdown() applies the configured service charge.
+		$fee          = \EGCare\Fees::consultation_fee( $doctor, $booking_type );
+		$breakdown    = \EGCare\Fees::breakdown( $fee );
+		$total_amount = $breakdown['total'];
 
 		// Insert new appointment.
 		$now      = current_time( 'mysql' );

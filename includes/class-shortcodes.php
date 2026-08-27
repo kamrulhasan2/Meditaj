@@ -422,8 +422,11 @@ class Shortcodes {
 		wp_enqueue_script( self::SETTINGS_HANDLE );
 
 		$defaults = array(
-			'restUrl' => esc_url_raw( rest_url( 'eg-care/v1/' ) ),
-			'nonce'   => wp_create_nonce( 'wp_rest' ),
+			'restUrl'          => esc_url_raw( rest_url( 'eg-care/v1/' ) ),
+			'nonce'            => wp_create_nonce( 'wp_rest' ),
+			// The checkout summary prints this before the booking request is
+			// sent; the server recalculates it and stays authoritative.
+			'serviceChargePct' => \EGCare\Fees::service_charge_percentage(),
 		);
 
 		// One page can hold more than one EG Care shortcode. Whatever the first

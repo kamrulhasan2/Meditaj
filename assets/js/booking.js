@@ -18,6 +18,26 @@ document.addEventListener('DOMContentLoaded', function() {
 		return text;
 	}
 
+	// The percentage the platform adds to the consultation fee. Set in
+	// EG Care -> Settings; Fees::service_charge_percentage() is the server side
+	// of the same number.
+	function serviceChargePct() {
+		const pct = parseFloat(egCareSettings && egCareSettings.serviceChargePct);
+		return isNaN(pct) ? 5 : pct;
+	}
+
+	// The fee actually charged for a booking. A doctor whose instant fee was
+	// left at 0 still costs the scheduled fee for a live call - the server
+	// applies the same rule in Fees::consultation_fee().
+	function serviceFee(doc, bookingType) {
+		const scheduled = parseFloat(doc.consultation_fee) || 0;
+		if ( 'instant' !== bookingType ) {
+			return scheduled;
+		}
+		const instant = parseFloat(doc.instant_call_fee) || 0;
+		return instant > 0 ? instant : scheduled;
+	}
+
 	// Helper to escape HTML tags and attributes for security
 	function escapeHtml(text) {
 		if (typeof text !== 'string') return text;
@@ -660,10 +680,17 @@ document.addEventListener('DOMContentLoaded', function() {
 				patientRelationDisplay.textContent = state.patientType.charAt(0).toUpperCase() + state.patientType.slice(1);
 			}
 
-			// Calculations
-			const fee = 'instant' === state.bookingType ? doc.instant_call_fee : doc.consultation_fee;
-			const tax = Math.round(fee * 0.05 * 100) / 100;
-			const total = fee + tax;
+			// Calculations. The server recomputes all of this in Fees::breakdown();
+			// what is printed here only has to agree with it.
+			const fee = serviceFee(doc, state.bookingType);
+			const pct = serviceChargePct();
+			const tax = Math.round(fee * pct) / 100;
+			const total = Math.round((fee + tax) * 100) / 100;
+
+			const taxLabel = clone.getElementById('summary-tax-label');
+			if ( taxLabel ) {
+				taxLabel.textContent = translate('Service Charge') + ' (' + pct + '%)';
+			}
 
 			clone.getElementById('summary-fee').textContent = fee.toFixed(2) + ' BDT';
 			clone.getElementById('summary-tax').textContent = tax.toFixed(2) + ' BDT';

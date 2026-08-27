@@ -239,6 +239,7 @@ class AdminMenu {
 			
 			update_option( 'eg_care_ssl_sandbox', isset( $_POST['eg_care_ssl_sandbox'] ) ? '1' : '0' );
 			update_option( 'eg_care_commission_percentage', floatval( $_POST['eg_care_commission_percentage'] ) );
+			update_option( \EGCare\Fees::SERVICE_CHARGE_OPTION, floatval( $_POST['eg_care_service_charge_percentage'] ) );
 			update_option( 'eg_care_agora_app_id', sanitize_text_field( $_POST['eg_care_agora_app_id'] ) );
 			
 			$new_agora_app_crt = sanitize_text_field( $_POST['eg_care_agora_app_certificate'] );
@@ -253,6 +254,7 @@ class AdminMenu {
 		$store_passwd  = get_option( 'eg_care_ssl_store_passwd', 'testbox@ssl' );
 		$sandbox       = get_option( 'eg_care_ssl_sandbox', '1' );
 		$commission    = get_option( 'eg_care_commission_percentage', '15' );
+		$service_charge = \EGCare\Fees::service_charge_percentage();
 		$agora_app_id  = get_option( 'eg_care_agora_app_id', '' );
 		$agora_app_crt = get_option( 'eg_care_agora_app_certificate', '' );
 
@@ -323,10 +325,17 @@ class AdminMenu {
 
 				<table class="form-table">
 					<tr>
+						<th scope="row"><label for="eg_care_service_charge_percentage"><?php esc_html_e( 'Patient Service Charge (%)', 'eg-care' ); ?></label></th>
+						<td>
+							<input name="eg_care_service_charge_percentage" type="number" id="eg_care_service_charge_percentage" value="<?php echo esc_attr( $service_charge ); ?>" min="0" max="100" step="0.5" class="small-text" required>
+							<p class="description"><?php esc_html_e( 'Added on top of the consultation fee at checkout. The patient pays fee + this percentage.', 'eg-care' ); ?></p>
+						</td>
+					</tr>
+					<tr>
 						<th scope="row"><label for="eg_care_commission_percentage"><?php esc_html_e( 'Platform Commission (%)', 'eg-care' ); ?></label></th>
 						<td>
 							<input name="eg_care_commission_percentage" type="number" id="eg_care_commission_percentage" value="<?php echo esc_attr( $commission ); ?>" min="0" max="100" step="0.5" class="small-text" required>
-							<p class="description"><?php esc_html_e( 'Platform service fee cut deducted from paid appointment totals.', 'eg-care' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Withheld from the doctor at payout. This is a different number from the service charge above: one is charged to the patient, the other is deducted from the doctor.', 'eg-care' ); ?></p>
 						</td>
 					</tr>
 				</table>

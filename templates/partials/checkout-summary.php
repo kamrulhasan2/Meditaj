@@ -51,7 +51,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<span class="value" id="summary-fee">0.00 BDT</span>
 		</div>
 		<div class="eg-care-checkout-item">
-			<span class="label"><?php esc_html_e( 'Service Charge (5%)', 'eg-care' ); ?></span>
+			<span class="label" id="summary-tax-label"><?php
+				/* translators: %s: service charge percentage, e.g. 5 */
+				printf( esc_html__( 'Service Charge (%s%%)', 'eg-care' ), esc_html( \EGCare\Fees::service_charge_percentage() ) );
+			?></span>
 			<span class="value" id="summary-tax">0.00 BDT</span>
 		</div>
 		<div class="eg-care-checkout-item total-row">
