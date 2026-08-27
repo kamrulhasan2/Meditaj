@@ -268,5 +268,74 @@ foreach ( $appointments as $appt ) {
 			</div>
 		<?php endif; ?>
 	</div>
+
+	<!-- Family members: the people this account books consultations for. -->
+	<div class="eg-care-dashboard-section" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 25px; margin-bottom: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+		<div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 8px;">
+			<h3 style="margin: 0; font-size: 18px; color: #1e293b; font-weight: 700; border-left: 4px solid #0f766e; padding-left: 10px;">
+				<?php esc_html_e( 'My Family Members', 'eg-care' ); ?>
+			</h3>
+			<button type="button" id="eg-care-family-add-trigger" class="eg-care-btn-register cyan-btn" style="width: auto; padding: 9px 18px; font-size: 14px;">
+				<?php esc_html_e( 'Add someone', 'eg-care' ); ?>
+			</button>
+		</div>
+		<p style="color: #64748b; font-size: 14px; margin: 0 0 18px;">
+			<?php esc_html_e( 'Save the people you book for and you will not have to type their details again. Past appointments keep the details they were booked with.', 'eg-care' ); ?>
+		</p>
+
+		<div id="eg-care-family-list">
+			<div class="eg-care-loading-spinner small"></div>
+		</div>
+
+		<div class="eg-care-family-form" id="eg-care-family-editor" hidden>
+			<h4 id="eg-care-family-editor-title"><?php esc_html_e( 'Add someone', 'eg-care' ); ?></h4>
+			<input type="hidden" id="egfm-id" value="">
+			<div class="eg-care-fields-grid text-fields">
+				<div class="eg-care-field">
+					<label for="egfm-name"><?php esc_html_e( 'Full name *', 'eg-care' ); ?></label>
+					<input type="text" id="egfm-name" placeholder="<?php esc_attr_e( 'Full name', 'eg-care' ); ?>">
+				</div>
+				<div class="eg-care-field">
+					<label for="egfm-relation"><?php esc_html_e( 'Relation *', 'eg-care' ); ?></label>
+					<select id="egfm-relation">
+						<option value="father"><?php esc_html_e( 'Father', 'eg-care' ); ?></option>
+						<option value="mother"><?php esc_html_e( 'Mother', 'eg-care' ); ?></option>
+						<option value="spouse"><?php esc_html_e( 'Spouse', 'eg-care' ); ?></option>
+						<option value="son"><?php esc_html_e( 'Son', 'eg-care' ); ?></option>
+						<option value="daughter"><?php esc_html_e( 'Daughter', 'eg-care' ); ?></option>
+						<option value="brother"><?php esc_html_e( 'Brother', 'eg-care' ); ?></option>
+						<option value="sister"><?php esc_html_e( 'Sister', 'eg-care' ); ?></option>
+						<option value="other"><?php esc_html_e( 'Other', 'eg-care' ); ?></option>
+					</select>
+				</div>
+				<div class="eg-care-field">
+					<label for="egfm-dob"><?php esc_html_e( 'Date of birth', 'eg-care' ); ?></label>
+					<input type="date" id="egfm-dob" max="<?php echo esc_attr( current_time( 'Y-m-d' ) ); ?>">
+				</div>
+				<div class="eg-care-field">
+					<label for="egfm-gender"><?php esc_html_e( 'Gender', 'eg-care' ); ?></label>
+					<select id="egfm-gender">
+						<option value=""><?php esc_html_e( 'Prefer not to say', 'eg-care' ); ?></option>
+						<option value="male"><?php esc_html_e( 'Male', 'eg-care' ); ?></option>
+						<option value="female"><?php esc_html_e( 'Female', 'eg-care' ); ?></option>
+						<option value="other"><?php esc_html_e( 'Other', 'eg-care' ); ?></option>
+					</select>
+				</div>
+				<div class="eg-care-field">
+					<label for="egfm-phone"><?php esc_html_e( 'Phone', 'eg-care' ); ?></label>
+					<input type="tel" id="egfm-phone" placeholder="<?php esc_attr_e( 'Optional', 'eg-care' ); ?>">
+				</div>
+				<div class="eg-care-field">
+					<label for="egfm-email"><?php esc_html_e( 'Email', 'eg-care' ); ?></label>
+					<input type="email" id="egfm-email" placeholder="<?php esc_attr_e( 'Optional', 'eg-care' ); ?>">
+				</div>
+			</div>
+			<p class="eg-care-family-form-error" id="egfm-error" hidden></p>
+			<div class="eg-care-family-form-actions">
+				<button type="button" id="egfm-save" class="eg-care-btn-register cyan-btn"><?php esc_html_e( 'Save', 'eg-care' ); ?></button>
+				<button type="button" id="egfm-cancel" class="eg-care-btn-secondary"><?php esc_html_e( 'Cancel', 'eg-care' ); ?></button>
+			</div>
+		</div>
+	</div>
 </div>
 

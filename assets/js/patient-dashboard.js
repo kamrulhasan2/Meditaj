@@ -126,4 +126,211 @@ document.addEventListener('DOMContentLoaded', function() {
 			});
 		});
 	});
+
+	// ------------------------------------------------------------------
+	// Family members
+	//
+	// The booking flow can add people, but only here can they be corrected or
+	// removed. Deleting someone never touches past appointments: the name, age
+	// and relation were copied onto the appointment when it was booked.
+	// ------------------------------------------------------------------
+
+	const familyList = document.getElementById('eg-care-family-list');
+
+	if ( familyList ) {
+		const editor = document.getElementById('eg-care-family-editor');
+		const editorTitle = document.getElementById('eg-care-family-editor-title');
+		const errorBox = document.getElementById('egfm-error');
+		const fields = {
+			id: document.getElementById('egfm-id'),
+			name: document.getElementById('egfm-name'),
+			relation: document.getElementById('egfm-relation'),
+			dob: document.getElementById('egfm-dob'),
+			gender: document.getElementById('egfm-gender'),
+			phone: document.getElementById('egfm-phone'),
+			email: document.getElementById('egfm-email')
+		};
+
+		let members = [];
+
+		function esc(text) {
+			return String(text === null || text === undefined ? '' : text).replace(/[&<>"']/g, function(m) {
+				return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+			});
+		}
+
+		function titleCase(value) {
+			if ( ! value ) return '';
+			return value.charAt(0).toUpperCase() + value.slice(1);
+		}
+
+		function detailLine(member) {
+			const bits = [];
+			if ( member.age !== null && member.age !== undefined ) bits.push(member.age + ' yrs');
+			if ( member.gender ) bits.push(titleCase(member.gender));
+			if ( member.phone ) bits.push(member.phone);
+			if ( member.email ) bits.push(member.email);
+			return bits.join(' \u00b7 ');
+		}
+
+		function showError(message) {
+			errorBox.textContent = message || '';
+			errorBox.hidden = ! message;
+		}
+
+		function closeEditor() {
+			editor.hidden = true;
+			showError('');
+		}
+
+		function openEditor(member) {
+			showError('');
+			fields.id.value = member ? member.id : '';
+			fields.name.value = member ? member.name : '';
+			fields.relation.value = member ? member.relation : 'father';
+			fields.dob.value = member && member.date_of_birth ? member.date_of_birth : '';
+			fields.gender.value = member && member.gender ? member.gender : '';
+			fields.phone.value = member && member.phone ? member.phone : '';
+			fields.email.value = member && member.email ? member.email : '';
+			editorTitle.textContent = member ? 'Edit ' + member.name : 'Add someone';
+			editor.hidden = false;
+			fields.name.focus();
+		}
+
+		function render() {
+			if ( ! members.length ) {
+				familyList.innerHTML = '<p style="color:#64748b;font-size:14px;margin:0;">No one saved yet. Add the people you book consultations for.</p>';
+				return;
+			}
+
+			familyList.innerHTML = '<div class="eg-care-family-members">' + members.map(function(member) {
+				return '<div class="eg-care-family-card" style="cursor:default;">' +
+					'<span class="eg-care-family-badge alt">' + esc(titleCase(member.relation)) + '</span>' +
+					'<span class="eg-care-family-name">' + esc(member.name) + '</span>' +
+					'<span class="eg-care-family-meta">' + esc(detailLine(member)) + '</span>' +
+					'<span class="eg-care-family-actions">' +
+						'<button type="button" class="eg-care-family-edit" data-id="' + member.id + '">Edit</button>' +
+						'<button type="button" class="eg-care-family-delete" data-id="' + member.id + '">Remove</button>' +
+					'</span>' +
+				'</div>';
+			}).join('') + '</div>';
+
+			familyList.querySelectorAll('.eg-care-family-edit').forEach(function(btn) {
+				btn.addEventListener('click', function() {
+					const id = parseInt(btn.getAttribute('data-id'), 10);
+					const member = members.find(function(m) { return m.id === id; });
+					if ( member ) openEditor(member);
+				});
+			});
+
+			familyList.querySelectorAll('.eg-care-family-delete').forEach(function(btn) {
+				btn.addEventListener('click', function() {
+					const id = parseInt(btn.getAttribute('data-id'), 10);
+					const member = members.find(function(m) { return m.id === id; });
+					if ( ! member ) return;
+
+					// Deliberately a confirm(): removing someone is not undoable
+					// from this screen.
+					if ( ! window.confirm('Remove ' + member.name + ' from your list? Past appointments are not affected.') ) {
+						return;
+					}
+
+					btn.disabled = true;
+
+					fetch(egCareSettings.restUrl + 'patient/me/family/' + id, {
+						method: 'DELETE',
+						headers: { 'X-WP-Nonce': egCareSettings.nonce }
+					})
+					.then(function(res) {
+						if ( ! res.ok ) {
+							return res.json().then(function(body) { throw new Error(body.message || 'Could not remove this person.'); });
+						}
+						members = members.filter(function(m) { return m.id !== id; });
+						render();
+					})
+					.catch(function(err) {
+						btn.disabled = false;
+						window.alert(err.message);
+					});
+				});
+			});
+		}
+
+		function load() {
+			fetch(egCareSettings.restUrl + 'patient/me/family', {
+				headers: { 'X-WP-Nonce': egCareSettings.nonce }
+			})
+			.then(function(res) { return res.ok ? res.json() : []; })
+			.then(function(list) {
+				members = Array.isArray(list) ? list : [];
+				render();
+			})
+			.catch(function() {
+				familyList.innerHTML = '<p style="color:#b91c1c;font-size:14px;margin:0;">Could not load your family members. Please refresh the page.</p>';
+			});
+		}
+
+		document.getElementById('eg-care-family-add-trigger').addEventListener('click', function() {
+			openEditor(null);
+		});
+
+		document.getElementById('egfm-cancel').addEventListener('click', closeEditor);
+
+		document.getElementById('egfm-save').addEventListener('click', function() {
+			const saveBtn = this;
+			const id = fields.id.value ? parseInt(fields.id.value, 10) : 0;
+
+			if ( ! fields.name.value.trim() ) {
+				showError('Please enter a name.');
+				fields.name.focus();
+				return;
+			}
+
+			const payload = {
+				name: fields.name.value,
+				relation: fields.relation.value,
+				date_of_birth: fields.dob.value,
+				gender: fields.gender.value,
+				phone: fields.phone.value,
+				email: fields.email.value
+			};
+
+			showError('');
+			saveBtn.disabled = true;
+			saveBtn.textContent = 'Saving\u2026';
+
+			fetch(egCareSettings.restUrl + 'patient/me/family' + ( id ? '/' + id : '' ), {
+				method: id ? 'PUT' : 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-WP-Nonce': egCareSettings.nonce
+				},
+				body: JSON.stringify(payload)
+			})
+			.then(function(res) {
+				return res.json().then(function(body) {
+					if ( ! res.ok ) throw new Error(body.message || 'Could not save this person.');
+					return body;
+				});
+			})
+			.then(function(saved) {
+				if ( id ) {
+					members = members.map(function(m) { return m.id === saved.id ? saved : m; });
+				} else {
+					members.push(saved);
+				}
+				closeEditor();
+				render();
+			})
+			.catch(function(err) {
+				showError(err.message);
+			})
+			.finally(function() {
+				saveBtn.disabled = false;
+				saveBtn.textContent = 'Save';
+			});
+		});
+
+		load();
+	}
 });

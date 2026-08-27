@@ -1941,3 +1941,38 @@ a.eg-care-report-link:hover {
 		grid-template-columns: 1fr;
 	}
 }
+
+
+/* Edit / Remove buttons on the dashboard's family cards */
+.eg-care-family-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 10px;
+}
+
+.eg-care-family-actions button {
+	padding: 4px 10px;
+	border-radius: 4px;
+	border: 1px solid #cbd5e1;
+	background: #fff;
+	color: #475569;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: border-color .15s ease, color .15s ease;
+}
+
+.eg-care-family-actions button:hover {
+	border-color: #0f766e;
+	color: #0f766e;
+}
+
+.eg-care-family-actions .eg-care-family-delete:hover {
+	border-color: #b91c1c;
+	color: #b91c1c;
+}
+
+.eg-care-family-actions button:disabled {
+	opacity: .5;
+	cursor: default;
+}
