@@ -182,18 +182,13 @@ $eg_care_doctor_id = isset( $eg_care_doctor_id ) ? intval( $eg_care_doctor_id ) 
 	<!-- Step Progress Indicator. Hidden when the flow is opened on one
 	     doctor: there are no earlier steps left to walk back through. -->
 	<div class="eg-care-booking-steps-bar"<?php echo $eg_care_doctor_id ? ' hidden' : ''; ?>>
-		<div class="eg-care-step-indicator active" data-step="1">
+		<div class="eg-care-step-indicator active" data-step="2">
 			<span class="step-num">1</span>
-			<span class="step-label"><?php esc_html_e( 'Select Specialty', 'eg-care' ); ?></span>
-		</div>
-		<div class="eg-care-step-line"></div>
-		<div class="eg-care-step-indicator" data-step="2">
-			<span class="step-num">2</span>
 			<span class="step-label"><?php esc_html_e( 'Choose Doctor', 'eg-care' ); ?></span>
 		</div>
 		<div class="eg-care-step-line"></div>
 		<div class="eg-care-step-indicator" data-step="3">
-			<span class="step-num">3</span>
+			<span class="step-num">2</span>
 			<span class="step-label"><?php esc_html_e( 'Details & Payout', 'eg-care' ); ?></span>
 		</div>
 	</div>

@@ -22,6 +22,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 class RestControllerDoctors extends WP_REST_Controller {
 
 	/**
+	 * Doctors returned per page when the request does not say.
+	 */
+	const DEFAULT_PER_PAGE = 12;
+
+	/**
+	 * The most doctors one request may ask for.
+	 */
+	const MAX_PER_PAGE = 50;
+
+	/**
 	 * Transient name prefix for a doctor's cached patient count.
 	 */
 	const PATIENTS_COUNT_PREFIX = 'eg_care_patients_count_';
@@ -180,11 +190,13 @@ class RestControllerDoctors extends WP_REST_Controller {
 		$fee_min        = $request->get_param( 'fee_min' );
 		$fee_max        = $request->get_param( 'fee_max' );
 		$instant_only   = $request->get_param( 'instant_only' );
+		$availability   = $request->get_param( 'availability' );
 		$search         = $request->get_param( 'search' );
 
-		// Base SQL structure.
-		$query = "SELECT m.*, p.ID as post_id 
-			FROM $table_meta m 
+		// Base SQL structure. The FROM and WHERE are built once and used for
+		// both the count and the page itself, so the total can never disagree
+		// with what the rows say.
+		$from = "FROM $table_meta m 
 			JOIN {$wpdb->posts} p ON m.post_id = p.ID 
 			WHERE p.post_type = 'doctors' 
 				AND p.post_status = 'publish' 
@@ -192,55 +204,102 @@ class RestControllerDoctors extends WP_REST_Controller {
 
 		$params = array();
 
-		// 1. Specialty taxonomy slug filtering.
-		if ( ! empty( $specialty_slug ) ) {
-			$term = get_term_by( 'slug', $specialty_slug, 'specialty' );
-			if ( $term ) {
-				$post_ids = get_objects_in_term( $term->term_id, 'specialty' );
-				if ( ! empty( $post_ids ) ) {
-					$placeholders = implode( ',', array_map( 'intval', $post_ids ) );
-					$query       .= " AND p.ID IN ($placeholders)";
-				} else {
-					$query .= " AND 1=0"; // Force zero result.
+		// 1. Specialty taxonomy filtering. Several slugs may be given, comma
+		// separated: the list page offers specialty as a filter you can tick
+		// more than one of rather than as a step you must pass through.
+		$slugs = array_filter( array_map( 'trim', explode( ',', (string) $specialty_slug ) ) );
+
+		if ( ! empty( $slugs ) ) {
+			$post_ids = array();
+
+			foreach ( $slugs as $slug ) {
+				$term = get_term_by( 'slug', $slug, 'specialty' );
+				if ( ! $term ) {
+					continue;
 				}
+				$post_ids = array_merge( $post_ids, (array) get_objects_in_term( $term->term_id, 'specialty' ) );
+			}
+
+			$post_ids = array_values( array_unique( array_map( 'intval', $post_ids ) ) );
+
+			if ( ! empty( $post_ids ) ) {
+				$placeholders = implode( ',', $post_ids );
+				$from        .= " AND p.ID IN ($placeholders)";
 			} else {
-				$query .= " AND 1=0"; // Force zero result.
+				$from .= ' AND 1=0'; // Force zero result.
 			}
 		}
 
 		// 2. Minimum consultation fee filter.
 		if ( null !== $fee_min && '' !== $fee_min ) {
-			$query   .= ' AND m.consultation_fee >= %f';
+			$from    .= ' AND m.consultation_fee >= %f';
 			$params[] = floatval( $fee_min );
 		}
 
 		// 3. Maximum consultation fee filter.
 		if ( null !== $fee_max && '' !== $fee_max ) {
-			$query   .= ' AND m.consultation_fee <= %f';
+			$from    .= ' AND m.consultation_fee <= %f';
 			$params[] = floatval( $fee_max );
 		}
 
-		// 4. Instant call active (online only).
-		if ( filter_var( $instant_only, FILTER_VALIDATE_BOOLEAN ) ) {
-			$query .= ' AND m.is_online = 1';
+		// 4. Availability. 'online' is a doctor who can take a call right now;
+		// 'scheduled' is one who has sitting hours to book ahead in. Ticking
+		// both means either will do, which is why this is one OR rather than
+		// two conditions. instant_only is the older spelling of 'online' and
+		// still works.
+		$wants = array_filter( array_map( 'trim', explode( ',', (string) $availability ) ) );
+
+		if ( filter_var( $instant_only, FILTER_VALIDATE_BOOLEAN ) && ! in_array( 'online', $wants, true ) ) {
+			$wants[] = 'online';
+		}
+
+		$wants = array_intersect( $wants, array( 'online', 'scheduled' ) );
+
+		if ( ! empty( $wants ) ) {
+			$table_schedules = \EGCare\DB::get_table( 'schedules' );
+			$clauses         = array();
+
+			if ( in_array( 'online', $wants, true ) ) {
+				$clauses[] = 'm.is_online = 1';
+			}
+
+			if ( in_array( 'scheduled', $wants, true ) ) {
+				// A doctor with no active schedule row cannot be booked ahead
+				// at all, so "book later" means having one.
+				$clauses[] = "EXISTS (SELECT 1 FROM $table_schedules s WHERE s.doctor_id = p.ID AND s.is_active = 1)";
+			}
+
+			$from .= ' AND (' . implode( ' OR ', $clauses ) . ')';
 		}
 
 		// 5. Keyword search.
 		if ( ! empty( $search ) ) {
 			$like_search = '%' . $wpdb->esc_like( $search ) . '%';
-			$query      .= ' AND (p.post_title LIKE %s OR p.post_content LIKE %s OR m.degree LIKE %s)';
+			$from       .= ' AND (p.post_title LIKE %s OR p.post_content LIKE %s OR m.degree LIKE %s)';
 			$params[]    = $like_search;
 			$params[]    = $like_search;
 			$params[]    = $like_search;
 		}
 
-		$query .= ' ORDER BY m.id DESC';
+		// 6. Paging. A site with a few doctors never notices; one with three
+		// hundred would otherwise send the lot on every keystroke in the
+		// search box.
+		$per_page = intval( $request->get_param( 'per_page' ) );
+		$per_page = $per_page > 0 ? min( $per_page, self::MAX_PER_PAGE ) : self::DEFAULT_PER_PAGE;
+		$page     = max( 1, intval( $request->get_param( 'page' ) ) );
+		$offset   = ( $page - 1 ) * $per_page;
 
-		if ( ! empty( $params ) ) {
-			$results = $wpdb->get_results( $wpdb->prepare( $query, ...$params ) );
-		} else {
-			$results = $wpdb->get_results( $query );
-		}
+		$count_sql = "SELECT COUNT(*) $from";
+		$total     = empty( $params )
+			? (int) $wpdb->get_var( $count_sql )
+			: (int) $wpdb->get_var( $wpdb->prepare( $count_sql, ...$params ) );
+
+		$query        = "SELECT m.*, p.ID as post_id $from ORDER BY m.id DESC LIMIT %d OFFSET %d";
+		$page_params  = $params;
+		$page_params[] = $per_page;
+		$page_params[] = $offset;
+
+		$results = $wpdb->get_results( $wpdb->prepare( $query, ...$page_params ) );
 
 		// One grouped query for the whole page rather than one per card.
 		$patients = $this->patients_counts( wp_list_pluck( $results, 'post_id' ) );
@@ -258,7 +317,14 @@ class RestControllerDoctors extends WP_REST_Controller {
 			}
 		}
 
-		return new WP_REST_Response( $response_data, 200 );
+		$response = new WP_REST_Response( $response_data, 200 );
+
+		// The WordPress convention for a paged collection, so the body stays a
+		// plain array and anything already reading it keeps working.
+		$response->header( 'X-WP-Total', $total );
+		$response->header( 'X-WP-TotalPages', $per_page > 0 ? (int) ceil( $total / $per_page ) : 0 );
+
+		return $response;
 	}
 
 	/**

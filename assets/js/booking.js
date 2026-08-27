@@ -54,7 +54,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// 1. STATE MANAGEMENT
 	let state = {
-		step: 1,
+		// The list, not the specialty grid. Choosing a specialty is a filter
+		// now, so making it a gate only stood between a visitor and the
+		// doctors they came to see.
+		step: 2,
+		// Chosen specialty slugs, comma separated. A single slug written by an
+		// older session is a valid one-item list, so nothing has to migrate.
 		specialty: '',
 		doctor: null,
 		bookingType: 'scheduled', // 'instant' or 'scheduled'
@@ -165,6 +170,22 @@ document.addEventListener('DOMContentLoaded', function() {
 		return days > 0 ? 'Follow-up \u00b7 ' + days + ' days' : 'Follow-up';
 	}
 
+	// Doctors fetched per page. The endpoint's own default, repeated here only
+	// so the Load more button asks for a consistent page size.
+	const PER_PAGE = 12;
+
+	/**
+	 * The specialty slugs currently ticked in the filter.
+	 *
+	 * @return {string[]} Slugs, possibly empty.
+	 */
+	function selectedSpecialties() {
+		return String(state.specialty || '')
+			.split(',')
+			.map(slug => slug.trim())
+			.filter(Boolean);
+	}
+
 	// SecureUploads::allowed_mimes() takes these three and nothing else, so the
 	// picker turns anything else away before the appointment is even created.
 	const REPORT_MIMES = ['application/pdf', 'image/jpeg', 'image/png'];
@@ -214,10 +235,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// 2. RENDERING STEPS
 	function render() {
-		// Update Steps Indicator Bar
+		// Update Steps Indicator Bar. The specialty grid is an optional way of
+		// narrowing the list rather than a step of its own, so it lights the
+		// same lamp the list does.
+		const shownStep = state.step < 2 ? 2 : state.step;
+
 		document.querySelectorAll('.eg-care-step-indicator').forEach(el => {
 			const s = parseInt(el.getAttribute('data-step'));
-			if ( s <= state.step ) {
+			if ( s <= shownStep ) {
 				el.classList.add('active');
 			} else {
 				el.classList.remove('active');
@@ -244,6 +269,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		const clone = tmpl.content.cloneNode(true);
 		app.appendChild(clone);
+
+		// Nobody has to come through here any more, so there has to be a way
+		// out that is not the browser's back button.
+		const backToList = document.createElement('button');
+		backToList.type = 'button';
+		backToList.className = 'eg-care-btn-secondary eg-care-back-to-list';
+		backToList.textContent = 'Show all doctors';
+		backToList.addEventListener('click', function() {
+			state.step = 2;
+			saveState();
+			render();
+		});
+		app.appendChild(backToList);
 
 		const gridTarget = document.getElementById('eg-care-specialties-target');
 		const cardTmpl = document.getElementById('eg-care-tmpl-specialty-card-item');
@@ -274,6 +312,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 					// Click handler
 					card.addEventListener('click', function() {
+						// Arriving from here ticks exactly this one, replacing
+						// whatever was ticked before: the visitor just said
+						// which specialty they want.
 						state.specialty = spec.slug;
 						state.step = 2;
 						saveState();
@@ -300,10 +341,10 @@ document.addEventListener('DOMContentLoaded', function() {
 					<input type="text" id="filter-search" placeholder="Doctor name or degree...">
 				</div>
 				<div class="eg-care-filter-group">
-					<label for="filter-specialty">${translate('Specialty')}</label>
-					<select id="filter-specialty">
-						<option value="">All Specialties</option>
-					</select>
+					<span class="eg-care-filter-legend">${translate('Specialty')}</span>
+					<div class="eg-care-filter-checks" id="filter-specialty" role="group" aria-label="Specialty">
+						<p class="eg-care-filter-loading">Loading specialties...</p>
+					</div>
 				</div>
 				<div class="eg-care-filter-group">
 					<label>${translate('Consultation Fee')}</label>
@@ -313,15 +354,22 @@ document.addEventListener('DOMContentLoaded', function() {
 						<span id="fee-val-display">5000 BDT</span>
 					</div>
 				</div>
-				<div class="eg-care-filter-group checkbox">
-					<label for="filter-instant">
-						<input type="checkbox" id="filter-instant">
-						${translate('Instant Call Only')}
-					</label>
+				<div class="eg-care-filter-group">
+					<span class="eg-care-filter-legend">${translate('Availability')}</span>
+					<div class="eg-care-filter-checks" role="group" aria-label="Availability">
+						<label class="eg-care-filter-check" for="filter-online">
+							<input type="checkbox" id="filter-online" value="online">
+							<span>${translate('Online now')}</span>
+						</label>
+						<label class="eg-care-filter-check" for="filter-scheduled">
+							<input type="checkbox" id="filter-scheduled" value="scheduled">
+							<span>${translate('Book later')}</span>
+						</label>
+					</div>
 				</div>
 				<div class="eg-care-filter-actions">
 					<button type="button" id="btn-reset-filters" class="eg-care-btn-secondary">Reset Filters</button>
-					<button type="button" id="btn-back-to-step1" class="eg-care-btn-secondary" style="margin-top:10px;">Back to Specialties</button>
+					<button type="button" id="btn-back-to-step1" class="eg-care-btn-secondary" style="margin-top:10px;">Browse by Specialty</button>
 				</div>
 			</div>
 			<div class="eg-care-doctors-list-content">
@@ -330,8 +378,14 @@ document.addEventListener('DOMContentLoaded', function() {
 					<div class="eg-care-doctors-grid" id="grid-instant-doctors"></div>
 				</div>
 				<div class="eg-care-doctors-section">
-					<h3 class="section-title">All Specialists</h3>
+					<h3 class="section-title">
+						All Specialists
+						<span class="eg-care-result-count" id="doctors-total" hidden></span>
+					</h3>
 					<div class="eg-care-doctors-grid" id="grid-all-doctors"></div>
+					<div class="eg-care-load-more-wrap">
+						<button type="button" id="btn-load-more" class="eg-care-btn-secondary" hidden>Load more</button>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -339,20 +393,49 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		app.innerHTML = step2Html;
 
-		// Bind Sidebar Specialty Dropdown Options
-		const specSelect = document.getElementById('filter-specialty');
+		// Specialty is a filter you can tick more than one of, not a gate you
+		// have to pass through first. state.specialty holds the chosen slugs as
+		// a comma separated list, which a single slug saved by an older session
+		// still reads as correctly.
+		const specBox = document.getElementById('filter-specialty');
+
 		fetch(egCareSettings.restUrl + 'specialties')
 			.then(res => res.json())
 			.then(data => {
+				specBox.innerHTML = '';
+
+				if ( ! data || ! data.length ) {
+					specBox.innerHTML = '<p class="eg-care-filter-loading">No specialties yet.</p>';
+					return;
+				}
+
+				const chosen = selectedSpecialties();
+
 				data.forEach(spec => {
-					const opt = document.createElement('option');
-					opt.value = spec.slug;
-					opt.textContent = spec.name;
-					if ( spec.slug === state.specialty ) {
-						opt.selected = true;
-					}
-					specSelect.appendChild(opt);
+					const label = document.createElement('label');
+					label.className = 'eg-care-filter-check';
+
+					const box = document.createElement('input');
+					box.type = 'checkbox';
+					box.value = spec.slug;
+					box.checked = chosen.indexOf(spec.slug) !== -1;
+					box.addEventListener('change', function() {
+						state.specialty = Array.from(specBox.querySelectorAll('input:checked'))
+							.map(el => el.value).join(',');
+						saveState();
+						fetchDoctors();
+					});
+
+					const text = document.createElement('span');
+					text.textContent = spec.name;
+
+					label.appendChild(box);
+					label.appendChild(text);
+					specBox.appendChild(label);
 				});
+			})
+			.catch(() => {
+				specBox.innerHTML = '<p class="eg-care-filter-loading">Specialties could not be loaded.</p>';
 			});
 
 		// Range Input display updater
@@ -362,46 +445,91 @@ document.addEventListener('DOMContentLoaded', function() {
 			feeDisplay.textContent = feeSlider.value + ' BDT';
 		});
 
-		// Fetch and filter doctors logic
-		function fetchDoctors() {
-			const search = document.getElementById('filter-search').value;
-			const spec = specSelect.value;
-			const fee = feeSlider.value;
-			const instant = document.getElementById('filter-instant').checked;
+		const totalLabel = document.getElementById('doctors-total');
+		const loadMoreBtn = document.getElementById('btn-load-more');
 
-			let url = egCareSettings.restUrl + 'doctors?fee_max=' + fee;
+		// How far through the list we are. Page one replaces what is on screen;
+		// every page after it is appended by Load more.
+		let listPage = 1;
+		let listTotal = 0;
+
+		function currentFilters() {
+			const params = ['fee_max=' + feeSlider.value, 'per_page=' + PER_PAGE];
+			const spec = selectedSpecialties().join(',');
+			const availability = Array.from(
+				document.querySelectorAll('#filter-online:checked, #filter-scheduled:checked')
+			).map(el => el.value).join(',');
+			const search = document.getElementById('filter-search').value;
+
 			if ( spec ) {
-				url += '&specialty=' + spec;
+				params.push('specialty=' + encodeURIComponent(spec));
 			}
-			if ( instant ) {
-				url += '&instant_only=true';
+			if ( availability ) {
+				params.push('availability=' + encodeURIComponent(availability));
 			}
 			if ( search ) {
-				url += '&search=' + encodeURIComponent(search);
+				params.push('search=' + encodeURIComponent(search));
 			}
+			return params;
+		}
+
+		// Fetch and filter doctors logic
+		function fetchDoctors( append ) {
+			listPage = append ? listPage + 1 : 1;
+
+			const url = egCareSettings.restUrl + 'doctors?'
+				+ currentFilters().concat('page=' + listPage).join('&');
 
 			const gridInstant = document.getElementById('grid-instant-doctors');
 			const gridAll = document.getElementById('grid-all-doctors');
 
-			gridInstant.innerHTML = '<div class="eg-care-loading-pills"></div>';
-			gridAll.innerHTML = '<div class="eg-care-loading-pills"></div>';
+			loadMoreBtn.disabled = true;
+
+			if ( ! append ) {
+				gridInstant.innerHTML = '<div class="eg-care-loading-pills"></div>';
+				gridAll.innerHTML = '<div class="eg-care-loading-pills"></div>';
+				totalLabel.hidden = true;
+				loadMoreBtn.hidden = true;
+			} else {
+				loadMoreBtn.textContent = 'Loading...';
+			}
 
 			fetch(url)
-				.then(res => res.json())
+				.then(res => {
+					// The endpoint reports the size of the whole result set in a
+					// header, so the body stays a plain array of doctors.
+					listTotal = parseInt(res.headers.get('X-WP-Total'), 10);
+					return res.json();
+				})
 				.then(data => {
-					gridInstant.innerHTML = '';
-					gridAll.innerHTML = '';
+					const rows = Array.isArray(data) ? data : [];
 
-					if ( ! data || 0 === data.length ) {
+					if ( ! append ) {
+						gridInstant.innerHTML = '';
+						gridAll.innerHTML = '';
+					}
+
+					if ( isNaN(listTotal) ) {
+						// An older server, or a proxy that dropped the header.
+						listTotal = rows.length;
+					}
+
+					totalLabel.textContent = listTotal === 1
+						? '1 consultant available'
+						: listTotal + ' consultants available';
+					totalLabel.hidden = false;
+
+					if ( ! append && 0 === rows.length ) {
 						gridAll.innerHTML = '<p class="eg-care-no-data">No doctors found matching filters.</p>';
 						document.getElementById('sec-instant-doctors').style.display = 'none';
+						loadMoreBtn.hidden = true;
 						return;
 					}
 
 					const cardTmpl = document.getElementById('eg-care-tmpl-doctor-card').content;
 
-					let instantCount = 0;
-					let allCount = 0;
+					let instantCount = gridInstant.querySelectorAll('.eg-care-doctor-card').length;
+					let allCount = gridAll.querySelectorAll('.eg-care-doctor-card').length;
 
 					data.forEach(doc => {
 						const cardClone = cardTmpl.cloneNode(true);
@@ -431,7 +559,7 @@ document.addEventListener('DOMContentLoaded', function() {
 						const patientsTag = card.querySelector('.patients-tag');
 						const seen = parseInt(doc.patients_count, 10) || 0;
 						if ( seen > 0 ) {
-							patientsTag.textContent = seen + ' patients';
+							patientsTag.textContent = 1 === seen ? '1 patient' : seen + ' patients';
 							patientsTag.hidden = false;
 						}
 
@@ -497,39 +625,62 @@ document.addEventListener('DOMContentLoaded', function() {
 					} else {
 						document.getElementById('sec-instant-doctors').style.display = 'block';
 					}
+
+					// Count what is on screen rather than multiplying pages: a
+					// short last page would otherwise leave the button offering
+					// doctors that are not there.
+					loadMoreBtn.hidden = allCount >= listTotal;
+					loadMoreBtn.disabled = false;
+					loadMoreBtn.textContent = 'Load more';
+				})
+				.catch(err => {
+					console.error('Doctor list failed to load:', err);
+					loadMoreBtn.disabled = false;
+					loadMoreBtn.textContent = 'Load more';
+					if ( ! append ) {
+						gridInstant.innerHTML = '';
+						gridAll.innerHTML = '<p class="eg-care-no-data">'
+							+ 'The doctor list could not be loaded. Please try again.</p>';
+						document.getElementById('sec-instant-doctors').style.display = 'none';
+					}
 				});
 		}
 
-		// Bind events to filters
-		document.getElementById('filter-search').addEventListener('input', fetchDoctors);
-		specSelect.addEventListener('change', function() {
-			state.specialty = specSelect.value;
-			saveState();
-			fetchDoctors();
+		// Bind events to filters. Every one of them starts the list again from
+		// page one; keeping the old page number would show page three of a
+		// result set the visitor has just changed.
+		function refilter() {
+			fetchDoctors(false);
+		}
+
+		document.getElementById('filter-search').addEventListener('input', refilter);
+		feeSlider.addEventListener('change', refilter);
+		document.getElementById('filter-online').addEventListener('change', refilter);
+		document.getElementById('filter-scheduled').addEventListener('change', refilter);
+		loadMoreBtn.addEventListener('click', function() {
+			fetchDoctors(true);
 		});
-		feeSlider.addEventListener('change', fetchDoctors);
-		document.getElementById('filter-instant').addEventListener('change', fetchDoctors);
 
 		document.getElementById('btn-reset-filters').addEventListener('click', function() {
 			document.getElementById('filter-search').value = '';
-			specSelect.value = '';
+			specBox.querySelectorAll('input:checked').forEach(el => { el.checked = false; });
 			feeSlider.value = 5000;
 			feeDisplay.textContent = '5000 BDT';
-			document.getElementById('filter-instant').checked = false;
+			document.getElementById('filter-online').checked = false;
+			document.getElementById('filter-scheduled').checked = false;
 			state.specialty = '';
 			saveState();
-			fetchDoctors();
+			refilter();
 		});
 
 		document.getElementById('btn-back-to-step1').addEventListener('click', function() {
 			state.step = 1;
-			state.specialty = '';
 			saveState();
 			render();
 		});
 
 		// Trigger initial load
-		fetchDoctors();
+		refilter();
 	}
 
 	// STEP 3: Doctor Details & Checkout Panel

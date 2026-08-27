@@ -616,6 +616,82 @@
 	accent-color: #0f766e;
 }
 
+/* A group heading that is not a <label>, because these groups hold several
+   checkboxes rather than one field. */
+.eg-care-filter-legend {
+	display: block;
+	font-size: 13px;
+	font-weight: 700;
+	color: #475569;
+	margin-bottom: 8px;
+}
+
+.eg-care-filter-checks {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+	max-height: 210px;
+	overflow-y: auto;
+}
+
+.eg-care-filter-group label.eg-care-filter-check {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 0;
+	font-size: 13px;
+	font-weight: 500;
+	color: #334155;
+	cursor: pointer;
+}
+
+.eg-care-filter-check input[type="checkbox"] {
+	flex: 0 0 auto;
+	accent-color: #0f766e;
+	margin: 0;
+}
+
+.eg-care-filter-loading {
+	font-size: 12px;
+	color: #94a3b8;
+	margin: 0;
+}
+
+/* "311 consultants available", beside the list heading. */
+.eg-care-result-count {
+	font-size: 12.5px;
+	font-weight: 600;
+	color: #64748b;
+	background-color: #f1f5f9;
+	border-radius: 999px;
+	padding: 3px 10px;
+}
+
+.eg-care-result-count[hidden] {
+	display: none;
+}
+
+.eg-care-load-more-wrap {
+	display: flex;
+	justify-content: center;
+	margin-top: 20px;
+}
+
+.eg-care-load-more-wrap button[hidden] {
+	display: none !important;
+}
+
+.eg-care-doctors-section button#btn-load-more {
+	min-width: 180px !important;
+}
+
+/* The optional specialty grid needs a way back to the list. */
+button.eg-care-back-to-list {
+	display: block !important;
+	margin: 20px auto 0 !important;
+	min-width: 180px !important;
+}
+
 /* Doctors Grids */
 .eg-care-doctors-list-content {
 	display: flex;
