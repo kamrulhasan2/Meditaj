@@ -124,6 +124,8 @@
 .eg-care-field input[type="email"],
 .eg-care-field input[type="password"],
 .eg-care-field input[type="number"],
+.eg-care-field input[type="date"],
+.eg-care-field input[type="tel"],
 .eg-care-field select,
 .eg-care-field textarea {
 	padding: 10px 14px;
@@ -755,6 +757,14 @@
 	animation: fadeIn 0.4s ease-out;
 }
 
+/* A grid column is at least as wide as its widest child unless it is told
+   otherwise, so one wide thing inside the panel (the date strip, a long
+   unbroken word) drags the whole column past the screen edge on a phone.
+   This lets the column shrink and the wide child scroll on its own. */
+.eg-care-step3-wrapper > * {
+	min-width: 0;
+}
+
 @media (max-width: 768px) {
 	.eg-care-step3-wrapper {
 		grid-template-columns: 1fr;
@@ -855,60 +865,250 @@
 	margin-bottom: 24px;
 }
 
-.booking-type-toggles {
-	display: flex;
-	gap: 10px;
+/* Appointment type: two cards, each a radio the whole card belongs to. */
+.eg-care-type-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 12px;
 	margin-bottom: 20px;
 }
 
-/* Type Toggle Buttons */
-.booking-type-toggles button.type-toggle-btn {
-	flex-grow: 1 !important;
-	padding: 12px !important;
-	border: 1px solid #cbd5e1 !important;
-	background-color: #f8fafc !important;
-	color: #475569 !important;
-	font-weight: 700 !important;
-	border-radius: 8px !important;
-	cursor: pointer !important;
-	transition: all 0.2s !important;
-	box-shadow: none !important;
-	line-height: 1.5 !important;
-}
-
-.booking-type-toggles button.type-toggle-btn:hover {
-	background-color: #f1f5f9 !important;
-	color: #1e293b !important;
-	border-color: #94a3b8 !important;
-}
-
-.booking-type-toggles button.type-toggle-btn.active {
-	background-color: #0f766e !important;
-	color: #ffffff !important;
-	border-color: #0f766e !important;
-}
-
-.booking-type-toggles button.type-toggle-btn.active:hover {
-	background-color: #0d9488 !important;
-	color: #ffffff !important;
-	border-color: #0d9488 !important;
-}
-
-.booking-type-toggles button.type-toggle-btn.disabled {
-	opacity: 0.5 !important;
-	cursor: not-allowed !important;
-	background-color: #e2e8f0 !important;
-	color: #94a3b8 !important;
-}
-
-.booking-calendar-wrapper input[type="date"] {
-	width: 100%;
-	padding: 10px 14px;
+.eg-care-type-cards label.eg-care-type-card {
+	display: block;
+	position: relative;
+	padding: 16px 16px 16px 44px;
 	border: 1px solid #cbd5e1;
-	border-radius: 8px;
-	font-size: 14px;
-	color: #334155;
+	border-radius: 10px;
+	background-color: #ffffff;
+	cursor: pointer;
+	transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s;
+	margin: 0;
+}
+
+.eg-care-type-cards label.eg-care-type-card:hover {
+	border-color: #94a3b8;
+	background-color: #f8fafc;
+}
+
+.eg-care-type-cards label.eg-care-type-card.active {
+	border-color: #0f766e;
+	background-color: #f0fdfa;
+	box-shadow: 0 0 0 1px #0f766e inset;
+}
+
+/* The radio itself sits where the card's left padding leaves room for it. */
+.eg-care-type-cards label.eg-care-type-card input[type="radio"] {
+	position: absolute;
+	top: 19px;
+	left: 16px;
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	accent-color: #0f766e;
+}
+
+.eg-care-type-card-body {
+	display: block;
+}
+
+.eg-care-type-card-title {
+	display: block;
+	font-size: 15px;
+	font-weight: 700;
+	color: #0f172a;
+	line-height: 1.4;
+}
+
+.eg-care-type-card-desc {
+	display: block;
+	font-size: 13px;
+	color: #64748b;
+	margin-top: 2px;
+	line-height: 1.5;
+}
+
+.eg-care-type-card-note {
+	display: block;
+	font-size: 11.5px;
+	font-weight: 600;
+	color: #0f766e;
 	margin-top: 6px;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+.eg-care-type-cards label.eg-care-type-card.disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+	background-color: #f1f5f9;
+	border-color: #e2e8f0;
+}
+
+.eg-care-type-cards label.eg-care-type-card.disabled:hover {
+	border-color: #e2e8f0;
+	background-color: #f1f5f9;
+}
+
+.eg-care-type-cards label.eg-care-type-card.disabled .eg-care-type-card-note {
+	color: #94a3b8;
+}
+
+/* Date strip: arrows either side of a row of day cells. */
+.eg-care-date-strip-label {
+	margin: 0 0 8px;
+	font-size: 14px;
+	font-weight: 700;
+	color: #334155;
+}
+
+.eg-care-date-strip {
+	display: flex;
+	align-items: stretch;
+	gap: 8px;
+}
+
+.eg-care-date-strip-track {
+	display: grid;
+	grid-template-columns: repeat(7, minmax(0, 1fr));
+	gap: 8px;
+	flex: 1;
+	min-width: 0;
+}
+
+.eg-care-date-strip button.eg-care-date-strip-nav {
+	flex: 0 0 auto !important;
+	width: 34px !important;
+	padding: 0 !important;
+	border: 1px solid #cbd5e1 !important;
+	border-radius: 8px !important;
+	background-color: #ffffff !important;
+	color: #475569 !important;
+	font-size: 20px !important;
+	line-height: 1 !important;
+	cursor: pointer !important;
+	box-shadow: none !important;
+	transition: all 0.15s !important;
+}
+
+.eg-care-date-strip button.eg-care-date-strip-nav:hover:not(:disabled) {
+	border-color: #0f766e !important;
+	color: #0f766e !important;
+	background-color: #f0fdfa !important;
+}
+
+.eg-care-date-strip button.eg-care-date-strip-nav:disabled {
+	opacity: 0.4 !important;
+	cursor: not-allowed !important;
+}
+
+.eg-care-date-strip-track button.eg-care-date-cell {
+	display: block !important;
+	width: 100% !important;
+	padding: 10px 4px !important;
+	border: 1px solid #cbd5e1 !important;
+	border-radius: 8px !important;
+	background-color: #ffffff !important;
+	color: #475569 !important;
+	text-align: center !important;
+	cursor: pointer !important;
+	box-shadow: none !important;
+	line-height: 1.3 !important;
+	transition: all 0.15s !important;
+}
+
+.eg-care-date-strip-track button.eg-care-date-cell:hover:not(:disabled) {
+	border-color: #0f766e !important;
+	color: #0f766e !important;
+	background-color: #f0fdfa !important;
+}
+
+.eg-care-date-cell-day {
+	display: block;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	opacity: 0.75;
+}
+
+.eg-care-date-cell-num {
+	display: block;
+	font-size: 17px;
+	font-weight: 700;
+	margin: 1px 0;
+}
+
+.eg-care-date-cell-mon {
+	display: block;
+	font-size: 11px;
+	opacity: 0.75;
+}
+
+/* Today gets a marker even when it is not the chosen day. */
+.eg-care-date-strip-track button.eg-care-date-cell.today:not(.active) {
+	border-color: #99f6e4 !important;
+	background-color: #f0fdfa !important;
+}
+
+.eg-care-date-strip-track button.eg-care-date-cell.active {
+	background-color: #0f766e !important;
+	border-color: #0f766e !important;
+	color: #ffffff !important;
+}
+
+/* A day the provider does not sit on. */
+.eg-care-date-strip-track button.eg-care-date-cell.closed,
+.eg-care-date-strip-track button.eg-care-date-cell:disabled {
+	background-color: #f1f5f9 !important;
+	border-color: #e2e8f0 !important;
+	color: #cbd5e1 !important;
+	cursor: not-allowed !important;
+}
+
+@media (max-width: 640px) {
+	/* Seven cells will not fit, so the row scrolls sideways instead of
+	   hiding cells. Hiding them would put days inside the window that the
+	   arrows had already paged past, which is how a date goes missing. */
+	.eg-care-date-strip-track {
+		display: flex;
+		overflow-x: auto;
+		scroll-snap-type: x proximity;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.eg-care-date-strip-track button.eg-care-date-cell {
+		flex: 0 0 62px !important;
+		scroll-snap-align: start;
+	}
+}
+
+/* "Available Time: 6:00 AM - 11:55 PM", above the slot grid. */
+.eg-care-slots-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 6px;
+	margin-top: 16px;
+}
+
+.eg-care-slots-head h4 {
+	margin: 0;
+}
+
+.eg-care-available-time {
+	margin: 0;
+	font-size: 12.5px;
+	font-weight: 600;
+	color: #0f766e;
+	background-color: #f0fdfa;
+	border: 1px solid #ccfbf1;
+	border-radius: 999px;
+	padding: 3px 10px;
+}
+
+.eg-care-available-time[hidden] {
+	display: none;
 }
 
 /* Hourly Slots Grid */
@@ -917,6 +1117,13 @@
 	grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
 	gap: 10px;
 	margin-top: 10px;
+}
+
+/* "No consultation hours available" is a message, not a slot: it needs the
+   whole row, otherwise it wraps inside one 80px column. */
+.eg-care-slots-grid .eg-care-no-data {
+	grid-column: 1 / -1;
+	margin: 0;
 }
 
 /* Hourly Slots Grid */

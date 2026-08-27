@@ -379,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	// STEP 3: Doctor Details & Checkout Panel
 	function renderStep3() {
 		const doc = state.doctor;
-		const todayStr = new Date().toISOString().split('T')[0];
+		const todayStr = ymd();
 		if ( ! doc ) {
 			state.step = 2;
 			render();
@@ -409,17 +409,39 @@ document.addEventListener('DOMContentLoaded', function() {
 					
 					<div class="booking-options-block">
 						<h3>Select Appointment Type</h3>
-						<div class="booking-type-toggles">
-							<button type="button" class="type-toggle-btn ${'scheduled' === state.bookingType ? 'active' : ''}" data-type="scheduled" id="btn-type-scheduled">Book Later</button>
-							<button type="button" class="type-toggle-btn ${'instant' === state.bookingType ? 'active' : ''}" data-type="instant" id="btn-type-instant">Instant Call</button>
+						<div class="eg-care-type-cards" role="radiogroup" aria-label="Appointment type">
+							<label class="eg-care-type-card ${'instant' === state.bookingType ? 'active' : ''}${doc.is_online ? '' : ' disabled'}" for="btn-type-instant" id="card-type-instant">
+								<input type="radio" name="eg-care-booking-type" id="btn-type-instant" value="instant" ${'instant' === state.bookingType ? 'checked' : ''}${doc.is_online ? '' : ' disabled'}>
+								<span class="eg-care-type-card-body">
+									<span class="eg-care-type-card-title">Book Now</span>
+									<span class="eg-care-type-card-desc">Instant live consultation, starting right away</span>
+									<span class="eg-care-type-card-note" id="type-instant-note">${doc.is_online ? 'Provider is online now' : 'Provider is currently offline'}</span>
+								</span>
+							</label>
+							<label class="eg-care-type-card ${'scheduled' === state.bookingType ? 'active' : ''}" for="btn-type-scheduled" id="card-type-scheduled">
+								<input type="radio" name="eg-care-booking-type" id="btn-type-scheduled" value="scheduled" ${'scheduled' === state.bookingType ? 'checked' : ''}>
+								<span class="eg-care-type-card-body">
+									<span class="eg-care-type-card-title">Book for Later</span>
+									<span class="eg-care-type-card-desc">Schedule a time that suits you</span>
+									<span class="eg-care-type-card-note">Pick a date and a slot below</span>
+								</span>
+							</label>
 						</div>
-						
+
 						<div id="booking-calendar-section" class="booking-calendar-wrapper" style="${'scheduled' === state.bookingType ? 'display:block;' : 'display:none;'}">
-							<label for="booking-date">Choose Date</label>
-							<input type="date" id="booking-date" value="${state.date}">
-							
+							<h4 class="eg-care-date-strip-label" id="booking-date-label">Choose Date</h4>
+							<div class="eg-care-date-strip">
+								<button type="button" class="eg-care-date-strip-nav" id="date-strip-prev" aria-label="Show earlier dates">&#8249;</button>
+								<div class="eg-care-date-strip-track" id="date-strip-track" role="group" aria-labelledby="booking-date-label"></div>
+								<button type="button" class="eg-care-date-strip-nav" id="date-strip-next" aria-label="Show later dates">&#8250;</button>
+							</div>
+							<input type="hidden" id="booking-date" value="${state.date}">
+
 							<div id="booking-slots-section" style="display:none; margin-top: 15px;">
-								<h4>Available Slots</h4>
+								<div class="eg-care-slots-head">
+									<h4>Available Slots</h4>
+									<p class="eg-care-available-time" id="available-time-range" hidden></p>
+								</div>
 								<div class="eg-care-slots-grid" id="grid-slots-target"></div>
 							</div>
 						</div>
@@ -519,46 +541,163 @@ document.addEventListener('DOMContentLoaded', function() {
 			avatarWrap.innerHTML = `<div class="eg-care-detail-avatar-placeholder">${escapeHtml(initials)}</div>`;
 		}
 
-		// Disable Instant toggle if doctor is offline
+		// Booking type cards. The Book Now card is a disabled radio when the
+		// provider is offline, so neither a click nor the keyboard can pick it.
 		const btnInstant = document.getElementById('btn-type-instant');
 		const btnScheduled = document.getElementById('btn-type-scheduled');
+		const cardInstant = document.getElementById('card-type-instant');
+		const cardScheduled = document.getElementById('card-type-scheduled');
 		if ( ! doc.is_online ) {
 			btnInstant.disabled = true;
-			btnInstant.title = 'Provider is currently offline';
-			btnInstant.classList.add('disabled');
+			cardInstant.title = 'Provider is currently offline';
 		}
 
-		// Bind Booking Type Toggles
-		btnInstant.addEventListener('click', function() {
+		function syncTypeCards() {
+			const instant = 'instant' === state.bookingType;
+			cardInstant.classList.toggle('active', instant);
+			cardScheduled.classList.toggle('active', ! instant);
+			btnInstant.checked = instant;
+			btnScheduled.checked = ! instant;
+			document.getElementById('booking-calendar-section').style.display = instant ? 'none' : 'block';
+		}
+
+		btnInstant.addEventListener('change', function() {
 			if ( ! doc.is_online ) {
 				return;
 			}
-			btnInstant.classList.add('active');
-			btnScheduled.classList.remove('active');
 			state.bookingType = 'instant';
 			state.date = '';
 			state.slotTime = '';
 			saveState();
-			document.getElementById('booking-calendar-section').style.display = 'none';
+			syncTypeCards();
 			updateCheckoutSummary();
 		});
 
-		btnScheduled.addEventListener('click', function() {
-			btnScheduled.classList.add('active');
-			btnInstant.classList.remove('active');
+		btnScheduled.addEventListener('change', function() {
 			state.bookingType = 'scheduled';
 			saveState();
-			document.getElementById('booking-calendar-section').style.display = 'block';
+			syncTypeCards();
 			updateCheckoutSummary();
 		});
 
-		// Date picker selection logic
+		// Date selection. The visible control is the strip; the hidden input
+		// stays because the confirm handler reads the chosen date from it.
 		const dateInput = document.getElementById('booking-date');
 		const slotsSection = document.getElementById('booking-slots-section');
 		const slotsTarget = document.getElementById('grid-slots-target');
+		const rangeLine = document.getElementById('available-time-range');
+		const stripTrack = document.getElementById('date-strip-track');
+		const stripPrev = document.getElementById('date-strip-prev');
+		const stripNext = document.getElementById('date-strip-next');
 
-		// Restrict Date picker to today or future dates
-		dateInput.setAttribute('min', todayStr);
+		const STRIP_DAYS = 7;      // cells shown at once
+		const STRIP_MAX_AHEAD = 56; // how far forward the arrows go
+		const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+		const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+		// Days the doctor actually sits on, as ISO weekdays (1 = Monday).
+		// Null means "not known yet" — every day stays clickable until the
+		// answer arrives, so a slow or failed request never hides real slots.
+		let scheduleDays = null;
+		let stripOffset = 0;
+
+		const today = startOfDay(new Date());
+
+		function startOfDay(d) {
+			return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+		}
+
+		function addDays(base, n) {
+			const d = startOfDay(base);
+			d.setDate(d.getDate() + n);
+			return d;
+		}
+
+		function isoWeekday(d) {
+			return 0 === d.getDay() ? 7 : d.getDay();
+		}
+
+		function dayIsOpen(d) {
+			return null === scheduleDays || scheduleDays.indexOf(isoWeekday(d)) !== -1;
+		}
+
+		// Line the window up with an already-chosen date, so coming back to
+		// this step does not show a strip that leaves the selection off-screen.
+		if ( state.date ) {
+			const chosen = startOfDay(new Date(state.date + 'T00:00:00'));
+			const away = Math.round((chosen - today) / 86400000);
+			if ( away >= 0 && away < STRIP_MAX_AHEAD + STRIP_DAYS ) {
+				stripOffset = Math.floor(away / STRIP_DAYS) * STRIP_DAYS;
+			}
+		}
+
+		function renderStrip() {
+			stripTrack.innerHTML = '';
+			for ( let i = 0; i < STRIP_DAYS; i++ ) {
+				const d = addDays(today, stripOffset + i);
+				const iso = ymd(d);
+				const cell = document.createElement('button');
+				cell.type = 'button';
+				cell.className = 'eg-care-date-cell';
+				cell.setAttribute('data-date', iso);
+				cell.innerHTML = `<span class="eg-care-date-cell-day">${DAY_NAMES[d.getDay()]}</span>`
+					+ `<span class="eg-care-date-cell-num">${d.getDate()}</span>`
+					+ `<span class="eg-care-date-cell-mon">${MONTH_NAMES[d.getMonth()]}</span>`;
+
+				if ( iso === ymd(today) ) {
+					cell.classList.add('today');
+				}
+
+				if ( ! dayIsOpen(d) ) {
+					cell.classList.add('closed');
+					cell.disabled = true;
+					cell.title = 'The provider does not sit on this day';
+				} else {
+					if ( iso === state.date ) {
+						cell.classList.add('active');
+						cell.setAttribute('aria-pressed', 'true');
+					}
+					cell.addEventListener('click', function() {
+						dateInput.value = iso;
+						state.date = iso;
+						state.slotTime = '';
+						saveState();
+						renderStrip();
+						loadSlots();
+						updateCheckoutSummary();
+					});
+				}
+
+				stripTrack.appendChild(cell);
+			}
+
+			stripPrev.disabled = 0 === stripOffset;
+			stripNext.disabled = stripOffset + STRIP_DAYS > STRIP_MAX_AHEAD;
+		}
+
+		stripPrev.addEventListener('click', function() {
+			stripOffset = Math.max(0, stripOffset - STRIP_DAYS);
+			renderStrip();
+		});
+
+		stripNext.addEventListener('click', function() {
+			stripOffset = Math.min(STRIP_MAX_AHEAD, stripOffset + STRIP_DAYS);
+			renderStrip();
+		});
+
+		renderStrip();
+
+		fetch(egCareSettings.restUrl + 'doctors/' + doc.id + '/schedule-days')
+			.then(res => res.ok ? res.json() : null)
+			.then(data => {
+				if ( data && Array.isArray(data.days) ) {
+					scheduleDays = data.days;
+					renderStrip();
+				}
+			})
+			.catch(() => {
+				// Leave every day clickable; the slots request is the real gate.
+			});
 
 		function loadSlots() {
 			const d = dateInput.value;
@@ -570,13 +709,26 @@ document.addEventListener('DOMContentLoaded', function() {
 			state.date = d;
 			saveState();
 			slotsSection.style.display = 'block';
+			rangeLine.hidden = true;
 			slotsTarget.innerHTML = '<div class="eg-care-loading-spinner small"></div>';
 
 			fetch(egCareSettings.restUrl + 'doctors/' + doc.id + '/slots?date=' + d)
 				.then(res => res.json())
-				.then(slots => {
+				.then(payload => {
+					// The endpoint used to answer with a bare array of slots and
+					// now wraps them alongside the day's opening hours. Accept
+					// both, so a cached script never breaks against a new server.
+					const data = Array.isArray(payload) ? { slots: payload } : (payload || {});
+					const slots = Array.isArray(data.slots) ? data.slots : [];
+
+					if ( data.start_time && data.end_time ) {
+						rangeLine.textContent = 'Available Time: '
+							+ formatTime24To12(data.start_time) + ' - ' + formatTime24To12(data.end_time);
+						rangeLine.hidden = false;
+					}
+
 					slotsTarget.innerHTML = '';
-					if ( ! slots || 0 === slots.length ) {
+					if ( 0 === slots.length ) {
 						slotsTarget.innerHTML = '<p class="eg-care-no-data">No consultation hours available on this date.</p>';
 						return;
 					}
@@ -610,7 +762,6 @@ document.addEventListener('DOMContentLoaded', function() {
 				});
 		}
 
-		dateInput.addEventListener('change', loadSlots);
 		if ( state.date ) {
 			loadSlots();
 		}
@@ -1070,6 +1221,23 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	// Formats 24-hour time "16:30:00" or "16:30" to 12-hour "4:30 PM"
+	/**
+	 * The calendar date in the visitor's own timezone, as YYYY-MM-DD.
+	 *
+	 * toISOString() converts to UTC first, so east of Greenwich it names
+	 * yesterday for the first hours of every day. The booking strip and the
+	 * "is this slot in the past" checks both need the local date instead.
+	 *
+	 * @param {Date} d Date object, defaults to now.
+	 * @return {string} YYYY-MM-DD.
+	 */
+	function ymd(d) {
+		d = d || new Date();
+		const mm = String(d.getMonth() + 1).padStart(2, '0');
+		const dd = String(d.getDate()).padStart(2, '0');
+		return `${d.getFullYear()}-${mm}-${dd}`;
+	}
+
 	function formatTime24To12(time24) {
 		if (!time24) return '';
 		const parts = time24.split(':');

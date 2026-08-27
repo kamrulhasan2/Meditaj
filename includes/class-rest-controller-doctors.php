@@ -94,6 +94,25 @@ class RestControllerDoctors extends WP_REST_Controller {
 				),
 			)
 		);
+
+		register_rest_route(
+			$namespace,
+			'/doctors/(?P<id>\d+)/schedule-days',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_doctor_schedule_days' ),
+					'permission_callback' => '__return_true',
+					'args'                => array(
+						'id' => array(
+							'validate_callback' => function( $param, $request, $key ) {
+								return is_numeric( $param );
+							},
+						),
+					),
+				),
+			)
+		);
 	}
 
 	/**
@@ -279,9 +298,59 @@ class RestControllerDoctors extends WP_REST_Controller {
 		}
 
 		// 2. Perform slot calculation algorithm.
-		$slots = $this->calculate_slots( $id, $date );
+		$day = $this->calculate_slots( $id, $date );
 
-		return new WP_REST_Response( $slots, 200 );
+		// The response carries the doctor's sitting hours for the day next to
+		// the slots themselves, so the booking screen can print "Available
+		// Time: 6:00 AM - 11:55 PM" without a second request.
+		return new WP_REST_Response(
+			array(
+				'date'       => $date,
+				'start_time' => $day['start_time'],
+				'end_time'   => $day['end_time'],
+				'slots'      => $day['slots'],
+			),
+			200
+		);
+	}
+
+	/**
+	 * Get the weekdays a doctor sits on, so the date strip can grey out the rest.
+	 *
+	 * @param \WP_REST_Request $request REST request object.
+	 * @return \WP_REST_Response|\WP_Error Response object or WP_Error.
+	 */
+	public function get_doctor_schedule_days( $request ) {
+		global $wpdb;
+		$id         = intval( $request->get_param( 'id' ) );
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
+
+		$exists = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT m.id FROM $table_meta m 
+				JOIN {$wpdb->posts} p ON m.post_id = p.ID 
+				WHERE p.ID = %d AND p.post_type = 'doctors' AND m.verification_status = 'approved'",
+				$id
+			)
+		);
+
+		if ( ! $exists ) {
+			return new WP_Error( 'eg_care_doctor_not_found', __( 'Approved doctor profile not found.', 'eg-care' ), array( 'status' => 404 ) );
+		}
+
+		$table_schedules = \EGCare\DB::get_table( 'schedules' );
+		$rows            = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT day_of_week FROM $table_schedules WHERE doctor_id = %d AND is_active = 1",
+				$id
+			)
+		);
+
+		$days = array_map( 'intval', (array) $rows );
+		sort( $days );
+
+		// ISO weekdays: 1 = Monday ... 7 = Sunday, matching mysql2date( 'N' ).
+		return new WP_REST_Response( array( 'days' => array_values( $days ) ), 200 );
 	}
 
 	/**
@@ -289,7 +358,11 @@ class RestControllerDoctors extends WP_REST_Controller {
 	 *
 	 * @param int    $doctor_id Doctor Post ID.
 	 * @param string $date Date string in YYYY-MM-DD format.
-	 * @return array List of slots.
+	 * @return array {
+	 *     @type string|null $start_time Earliest sitting time that day, H:i:s.
+	 *     @type string|null $end_time   Latest sitting time that day, H:i:s.
+	 *     @type array       $slots      List of slots, each with time and available.
+	 * }
 	 */
 	private function calculate_slots( $doctor_id, $date ) {
 		global $wpdb;
@@ -307,12 +380,20 @@ class RestControllerDoctors extends WP_REST_Controller {
 			)
 		);
 
+		$empty = array(
+			'start_time' => null,
+			'end_time'   => null,
+			'slots'      => array(),
+		);
+
 		if ( empty( $schedules ) ) {
-			return array();
+			return $empty;
 		}
 
-		// 3. Generate candidate slots.
-		$slots = array();
+		// 3. Generate candidate slots, and note the outer bounds of the day.
+		$slots      = array();
+		$day_start  = null;
+		$day_end    = null;
 		foreach ( $schedules as $rule ) {
 			$start = strtotime( $date . ' ' . $rule->start_time );
 			$end   = strtotime( $date . ' ' . $rule->end_time );
@@ -323,6 +404,18 @@ class RestControllerDoctors extends WP_REST_Controller {
 
 			if ( $duration_sec <= 0 ) {
 				continue;
+			}
+
+			// A doctor can have several rules for one day (a morning and an
+			// evening sitting, say). The range shown to the patient spans them
+			// all, so take the earliest start and the latest end.
+			$rule_start = gmdate( 'H:i:s', $start );
+			$rule_end   = gmdate( 'H:i:s', $end );
+			if ( null === $day_start || $rule_start < $day_start ) {
+				$day_start = $rule_start;
+			}
+			if ( null === $day_end || $rule_end > $day_end ) {
+				$day_end = $rule_end;
 			}
 
 			for ( $time = $start; $time + $duration_sec <= $end; $time += $total_step ) {
@@ -371,7 +464,11 @@ class RestControllerDoctors extends WP_REST_Controller {
 			);
 		}
 
-		return $result;
+		return array(
+			'start_time' => $day_start,
+			'end_time'   => $day_end,
+			'slots'      => $result,
+		);
 	}
 
 	/**
