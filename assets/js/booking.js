@@ -72,9 +72,67 @@ document.addEventListener('DOMContentLoaded', function() {
 		files: []
 	};
 
-	// The File itself cannot live in sessionStorage, so it is held here and is
-	// deliberately lost on reload; state.files only carries what the label shows.
-	let pendingReport = null;
+	// The File objects themselves cannot live in sessionStorage, so they are
+	// held here and deliberately lost on reload; state.files only carries what
+	// the list shows.
+	let pendingReports = [];
+
+	/**
+	 * How many reports one appointment accepts.
+	 *
+	 * Published by Shortcodes::enqueue_settings() from the endpoint's own
+	 * constant. The fallback matches RestControllerBooking::MAX_REPORTS so a
+	 * page served without the setting still stops at the same number.
+	 *
+	 * @return {number} Maximum number of files.
+	 */
+	function maxReports() {
+		const n = parseInt(egCareSettings.maxReports, 10);
+		return ( isNaN(n) || n < 1 ) ? 3 : n;
+	}
+
+	/**
+	 * The largest report the endpoint will take, in bytes.
+	 *
+	 * @return {number} Maximum size in bytes.
+	 */
+	function maxReportBytes() {
+		const n = parseInt(egCareSettings.maxReportBytes, 10);
+		return ( isNaN(n) || n < 1 ) ? 2 * 1024 * 1024 : n;
+	}
+
+	/**
+	 * A file size a patient can read, e.g. "1.4 MB".
+	 *
+	 * @param {number} bytes Size in bytes.
+	 * @return {string} Formatted size.
+	 */
+	function formatBytes(bytes) {
+		if ( bytes >= 1024 * 1024 ) {
+			return (Math.round(bytes / (1024 * 1024) * 10) / 10) + ' MB';
+		}
+		return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+	}
+
+	// SecureUploads::allowed_mimes() takes these three and nothing else, so the
+	// picker turns anything else away before the appointment is even created.
+	const REPORT_MIMES = ['application/pdf', 'image/jpeg', 'image/png'];
+
+	/**
+	 * Whether a chosen file is a type the server will accept.
+	 *
+	 * Some browsers hand back an empty type for a file dragged in or picked on
+	 * a phone, so the extension is the fallback rather than an outright no.
+	 *
+	 * @param {File} f Chosen file.
+	 * @return {boolean} True when the type looks acceptable.
+	 */
+	function reportTypeAllowed(f) {
+		if ( f.type && REPORT_MIMES.indexOf(f.type) !== -1 ) {
+			return true;
+		}
+		return ! f.type && /\.(pdf|jpe?g|png)$/i.test(f.name);
+	}
 
 	// Load existing state from sessionStorage if available
 	const savedState = sessionStorage.getItem('eg_care_booking_state');
@@ -514,10 +572,11 @@ document.addEventListener('DOMContentLoaded', function() {
 						<div class="eg-care-field span-full" style="margin-top: 10px;">
 							<label>Medical Reports (Optional)</label>
 							<div class="eg-care-modern-upload-wrapper">
-								<label for="patient-files" class="eg-care-modern-upload-label">Upload File</label>
-								<input type="file" id="patient-files" accept="image/*,.pdf" class="eg-care-hidden-file-input">
-								<span class="eg-care-file-name" id="patient-files-name">No file chosen</span>
+								<label for="patient-files" class="eg-care-modern-upload-label" id="patient-files-label">Add Files</label>
+								<input type="file" id="patient-files" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" multiple class="eg-care-hidden-file-input">
+								<span class="eg-care-file-name" id="patient-files-hint"></span>
 							</div>
+							<ul class="eg-care-file-list" id="patient-files-list"></ul>
 						</div>
 					</div>
 				</div>
@@ -965,38 +1024,115 @@ document.addEventListener('DOMContentLoaded', function() {
 			saveState();
 		});
 
-		// File Uploader metadata capturing
+		// Medical reports: several files, each checked before it joins the list.
 		const fileInput = document.getElementById('patient-files');
-		const fileNameDisplay = document.getElementById('patient-files-name');
-		// A restored session remembers the name but not the file, so start clean.
-		if ( state.files.length && ! pendingReport ) {
+		const fileListEl = document.getElementById('patient-files-list');
+		const fileHint = document.getElementById('patient-files-hint');
+		const fileLabel = document.getElementById('patient-files-label');
+
+		// A restored session remembers the names but not the files themselves,
+		// so start clean rather than promise an upload that cannot happen.
+		if ( state.files.length && ! pendingReports.length ) {
 			state.files = [];
 			saveState();
 		}
 
+		function renderFileList() {
+			const cap = maxReports();
+			fileListEl.innerHTML = '';
+
+			pendingReports.forEach(function(f, index) {
+				const row = document.createElement('li');
+				row.className = 'eg-care-file-row';
+
+				const name = document.createElement('span');
+				name.className = 'eg-care-file-row-name';
+				name.textContent = f.name;
+
+				const size = document.createElement('span');
+				size.className = 'eg-care-file-row-size';
+				size.textContent = formatBytes(f.size);
+
+				const remove = document.createElement('button');
+				remove.type = 'button';
+				remove.className = 'eg-care-file-row-remove';
+				remove.setAttribute('aria-label', 'Remove ' + f.name);
+				remove.textContent = '\u00d7';
+				remove.addEventListener('click', function() {
+					pendingReports.splice(index, 1);
+					syncFiles();
+				});
+
+				row.appendChild(name);
+				row.appendChild(size);
+				row.appendChild(remove);
+				fileListEl.appendChild(row);
+			});
+
+			const left = cap - pendingReports.length;
+			if ( ! pendingReports.length ) {
+				fileHint.textContent = 'Up to ' + cap + ' files \u00b7 PDF, JPG or PNG \u00b7 '
+					+ formatBytes(maxReportBytes()) + ' each';
+			} else if ( left > 0 ) {
+				fileHint.textContent = left + ' more can be added';
+			} else {
+				fileHint.textContent = 'Maximum of ' + cap + ' files reached';
+			}
+
+			// Stop at the cap rather than let a fourth file be picked and then
+			// refused. The input is stretched invisibly across the whole
+			// wrapper, so hiding the label alone would still leave it clickable.
+			fileLabel.hidden = left <= 0;
+			fileInput.disabled = left <= 0;
+		}
+
+		function syncFiles() {
+			state.files = pendingReports.map(function(f) {
+				return { name: f.name, size: f.size };
+			});
+			saveState();
+			renderFileList();
+		}
+
 		fileInput.addEventListener('change', function(e) {
-			if ( e.target.files.length > 0 ) {
-				const f = e.target.files[0];
-				const maxFileSize = 2 * 1024 * 1024; // 2MB
-				if ( f.size > maxFileSize ) {
-					alert('File size exceeds the 2MB limit. Please upload a smaller document.');
-					fileInput.value = ''; // clear input
-					fileNameDisplay.textContent = 'No file chosen';
-					pendingReport = null;
-					state.files = [];
-					saveState();
+			const picked = Array.prototype.slice.call(e.target.files || []);
+			const refused = [];
+
+			picked.forEach(function(f) {
+				if ( pendingReports.length >= maxReports() ) {
+					refused.push(f.name + ' \u2014 only ' + maxReports() + ' files can be attached');
 					return;
 				}
-				fileNameDisplay.textContent = f.name;
-				pendingReport = f;
-				state.files = [ { name: f.name, size: f.size } ];
-			} else {
-				fileNameDisplay.textContent = 'No file chosen';
-				pendingReport = null;
-				state.files = [];
+				if ( ! reportTypeAllowed(f) ) {
+					refused.push(f.name + ' \u2014 only PDF, JPG and PNG are accepted');
+					return;
+				}
+				if ( f.size > maxReportBytes() ) {
+					refused.push(f.name + ' \u2014 larger than ' + formatBytes(maxReportBytes()));
+					return;
+				}
+				const already = pendingReports.some(function(p) {
+					return p.name === f.name && p.size === f.size;
+				});
+				if ( already ) {
+					refused.push(f.name + ' \u2014 already added');
+					return;
+				}
+				pendingReports.push(f);
+			});
+
+			// Clearing the input is what lets a file be picked again after it
+			// has been removed from the list; the browser fires no change event
+			// for a value it considers unchanged.
+			fileInput.value = '';
+			syncFiles();
+
+			if ( refused.length ) {
+				alert('These files were not added:\n\n' + refused.join('\n'));
 			}
-			saveState();
 		});
+
+		renderFileList();
 
 		// Checkout summary cloning & population
 		const summaryTarget = document.getElementById('checkout-summary-target');
@@ -1148,9 +1284,9 @@ document.addEventListener('DOMContentLoaded', function() {
 			.then(data => {
 				const appointmentId = data.appointment_id;
 
-				// The report is attached to the appointment that now exists, so the
-				// server only has to check who owns it.
-				return uploadReport(appointmentId, btnConfirm).then(() => {
+				// The reports are attached to the appointment that now exists, so
+				// the server only has to check who owns it.
+				return uploadReports(appointmentId, btnConfirm).then(() => {
 					btnConfirm.textContent = 'Redirecting to Payment...';
 
 					return fetch(egCareSettings.restUrl + 'payment/init', {
@@ -1186,37 +1322,71 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	}
 
-	// Sends the chosen report to the appointment that has just been created.
-	// A failure here must not cost the patient their booking, so it warns and
-	// lets the payment step carry on.
-	function uploadReport(appointmentId, btnConfirm) {
-		if ( ! pendingReport ) {
+	// Sends the chosen reports to the appointment that has just been created.
+	// The endpoint takes one file per request, so they go up one after another
+	// rather than at once: it appends to the appointment's list, and parallel
+	// requests would each read the same list and overwrite one another.
+	//
+	// A failure here must not cost the patient their booking, so a file that
+	// will not go up is reported and the payment step carries on.
+	function uploadReports(appointmentId, btnConfirm) {
+		if ( ! pendingReports.length ) {
 			return Promise.resolve();
 		}
 
-		if ( btnConfirm ) {
-			btnConfirm.textContent = 'Uploading Report...';
+		const queue = pendingReports.slice();
+		const failed = [];
+
+		function sendOne(index) {
+			if ( index >= queue.length ) {
+				return Promise.resolve();
+			}
+
+			const file = queue[index];
+
+			if ( btnConfirm ) {
+				btnConfirm.textContent = queue.length > 1
+					? 'Uploading Report ' + (index + 1) + ' of ' + queue.length + '...'
+					: 'Uploading Report...';
+			}
+
+			const form = new FormData();
+			form.append('report', file, file.name);
+
+			// No Content-Type header: the browser has to set the multipart boundary.
+			return fetch(egCareSettings.restUrl + 'appointments/' + appointmentId + '/reports', {
+				method: 'POST',
+				headers: { 'X-WP-Nonce': egCareSettings.nonce },
+				body: form
+			})
+			.then(res => {
+				if ( res.ok ) {
+					return res.json();
+				}
+				return res.json().then(err => { throw new Error(err.message || 'The report could not be uploaded.'); });
+			})
+			.catch(err => {
+				console.error('Report upload failed:', err);
+				failed.push({ file: file, message: err.message });
+			})
+			.then(() => sendOne(index + 1));
 		}
 
-		const form = new FormData();
-		form.append('report', pendingReport, pendingReport.name);
+		return sendOne(0).then(() => {
+			// Keep only what did not make it, so nothing is silently forgotten.
+			pendingReports = failed.map(f => f.file);
 
-		// No Content-Type header: the browser has to set the multipart boundary.
-		return fetch(egCareSettings.restUrl + 'appointments/' + appointmentId + '/reports', {
-			method: 'POST',
-			headers: { 'X-WP-Nonce': egCareSettings.nonce },
-			body: form
-		})
-		.then(res => {
-			if ( res.ok ) {
-				pendingReport = null;
-				return res.json();
+			if ( failed.length ) {
+				alert(
+					'Your appointment was created, but '
+					+ (failed.length > 1 ? 'these reports were' : 'this report was')
+					+ ' not attached:\n\n'
+					+ failed.map(f => f.file.name + ' \u2014 ' + f.message).join('\n')
+					+ '\n\nYou can still share '
+					+ (failed.length > 1 ? 'them' : 'it')
+					+ ' with the doctor during the call.'
+				);
 			}
-			return res.json().then(err => { throw new Error(err.message || 'The report could not be uploaded.'); });
-		})
-		.catch(err => {
-			console.error('Report upload failed:', err);
-			alert('Your appointment was created, but the report could not be attached: ' + err.message + '\nYou can still share it with the doctor during the call.');
 		});
 	}
 

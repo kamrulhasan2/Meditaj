@@ -33,8 +33,12 @@ class RestControllerBooking extends WP_REST_Controller {
 
 	/**
 	 * How many reports one appointment may carry.
+	 *
+	 * The booking screen shows this number and stops the patient at it, so
+	 * the two must not drift apart: Shortcodes::enqueue_settings() publishes
+	 * this same constant to the script rather than repeating the figure.
 	 */
-	const MAX_REPORTS = 5;
+	const MAX_REPORTS = 3;
 
 	/**
 	 * Register routes.

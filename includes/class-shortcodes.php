@@ -427,6 +427,11 @@ class Shortcodes {
 			// The checkout summary prints this before the booking request is
 			// sent; the server recalculates it and stays authoritative.
 			'serviceChargePct' => \EGCare\Fees::service_charge_percentage(),
+			// The booking screen turns a file away before uploading it. These
+			// come from the endpoint's own constants so the message a patient
+			// reads is the rule the server will actually apply.
+			'maxReports'       => \EGCare\RestControllerBooking::MAX_REPORTS,
+			'maxReportBytes'   => \EGCare\RestControllerBooking::MAX_REPORT_BYTES,
 		);
 
 		// One page can hold more than one EG Care shortcode. Whatever the first
