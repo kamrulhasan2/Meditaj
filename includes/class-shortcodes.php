@@ -447,7 +447,13 @@ class Shortcodes {
 	/**
 	 * Render the booking flow shortcode content.
 	 */
-	public static function render_booking_shortcode() {
+	public static function render_booking_shortcode( $atts = array() ) {
+		$atts = shortcode_atts( array( 'doctor' => 0 ), (array) $atts, 'eg_care_booking_flow' );
+
+		// A doctor's own page renders this same flow opened on that doctor,
+		// which is why the id is an attribute rather than a second shortcode.
+		$eg_care_doctor_id = self::approved_doctor_id( $atts['doctor'] );
+
 		self::enqueue_settings( array( 'userType' => 'patient' ) );
 
 		wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
@@ -459,8 +465,43 @@ class Shortcodes {
 		}
 
 		ob_start();
+		// booking-flow.php reads $eg_care_doctor_id.
 		include EG_CARE_PATH . 'templates/booking-flow.php';
 		return ob_get_clean();
+	}
+
+	/**
+	 * The post ID of an approved, published doctor, or 0.
+	 *
+	 * Anything else - a draft, a doctor still awaiting verification, a post of
+	 * another type, a made-up number - reads as 0, so the flow opens on its
+	 * first step instead of on a profile that should not be bookable.
+	 *
+	 * @param mixed $candidate Doctor post ID from the shortcode attribute.
+	 * @return int Doctor post ID, or 0.
+	 */
+	private static function approved_doctor_id( $candidate ) {
+		global $wpdb;
+
+		$id = intval( $candidate );
+
+		if ( $id <= 0 ) {
+			return 0;
+		}
+
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
+
+		$found = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT m.post_id FROM $table_meta m
+				JOIN {$wpdb->posts} p ON m.post_id = p.ID
+				WHERE p.ID = %d AND p.post_type = 'doctors' AND p.post_status = 'publish'
+					AND m.verification_status = 'approved'",
+				$id
+			)
+		);
+
+		return $found ? (int) $found : 0;
 	}
 
 	/**

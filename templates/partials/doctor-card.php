@@ -17,15 +17,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<span class="eg-care-status-indicator {{status_class}}"></span>
 		</div>
 		<div class="eg-care-doctor-card-meta-summary">
-			<h4 class="eg-care-doctor-card-name">{{name}}</h4>
+			<h4 class="eg-care-doctor-card-name">
+				<a class="eg-care-doctor-card-link" href="{{permalink}}">{{name}}</a>
+			</h4>
 			<p class="eg-care-doctor-card-designation">{{designation}}</p>
 			<p class="eg-care-doctor-card-degree">{{degree}}</p>
+			<p class="eg-care-doctor-card-organization" hidden>{{organization}}</p>
 		</div>
 	</div>
 	
 	<div class="eg-care-doctor-card-body">
 		<div class="eg-care-doctor-card-meta-row">
 			<span class="meta-item spec-tag">{{specialties}}</span>
+			<span class="meta-item patients-tag" hidden></span>
 			<span class="meta-item rating-tag">
 				<svg viewBox="0 0 24 24" fill="currentColor" style="width: 14px; height: 14px; color: #eab308; vertical-align: middle; margin-right: 2px;">
 					<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>

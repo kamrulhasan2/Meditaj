@@ -22,6 +22,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 class RestControllerDoctors extends WP_REST_Controller {
 
 	/**
+	 * Transient name prefix for a doctor's cached patient count.
+	 */
+	const PATIENTS_COUNT_PREFIX = 'eg_care_patients_count_';
+
+	/**
+	 * How long a cached patient count stays good, in seconds.
+	 */
+	const PATIENTS_COUNT_TTL = 900;
+
+	/**
 	 * Register the routes for the objects of the controller.
 	 */
 	public function register_routes() {
@@ -232,15 +242,92 @@ class RestControllerDoctors extends WP_REST_Controller {
 			$results = $wpdb->get_results( $query );
 		}
 
+		// One grouped query for the whole page rather than one per card.
+		$patients = $this->patients_counts( wp_list_pluck( $results, 'post_id' ) );
+
 		$response_data = array();
 		foreach ( $results as $row ) {
 			$post = get_post( $row->post_id );
 			if ( $post ) {
-				$response_data[] = $this->format_doctor( $row, $post );
+				$id                = (int) $row->post_id;
+				$response_data[]   = $this->format_doctor(
+					$row,
+					$post,
+					isset( $patients[ $id ] ) ? $patients[ $id ] : 0
+				);
 			}
 		}
 
 		return new WP_REST_Response( $response_data, 200 );
+	}
+
+	/**
+	 * How many different patients each of these doctors has seen.
+	 *
+	 * Counted from completed appointments only: a booking that was cancelled or
+	 * never paid for is not a patient the doctor has treated. Guests booking
+	 * without an account share patient_user_id 0, so they are left out rather
+	 * than counted as one person.
+	 *
+	 * The figure changes slowly and is read on every card, so it is cached per
+	 * doctor and only the misses reach the database, in a single grouped query.
+	 *
+	 * @param int[] $doctor_ids Doctor post IDs.
+	 * @return array Map of doctor ID to patient count.
+	 */
+	private function patients_counts( array $doctor_ids ) {
+		global $wpdb;
+
+		$doctor_ids = array_values( array_unique( array_map( 'intval', $doctor_ids ) ) );
+		$counts     = array();
+		$missing    = array();
+
+		foreach ( $doctor_ids as $id ) {
+			if ( $id <= 0 ) {
+				continue;
+			}
+
+			$cached = get_transient( self::PATIENTS_COUNT_PREFIX . $id );
+
+			if ( false === $cached ) {
+				$missing[] = $id;
+			} else {
+				$counts[ $id ] = (int) $cached;
+			}
+		}
+
+		if ( empty( $missing ) ) {
+			return $counts;
+		}
+
+		$table_appointments = \EGCare\DB::get_table( 'appointments' );
+		$placeholders       = implode( ',', array_fill( 0, count( $missing ), '%d' ) );
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT doctor_id, COUNT(DISTINCT patient_user_id) AS total
+				FROM $table_appointments
+				WHERE doctor_id IN ($placeholders)
+					AND status = 'completed'
+					AND patient_user_id > 0
+				GROUP BY doctor_id",
+				...$missing
+			)
+		);
+
+		$fresh = array();
+		foreach ( (array) $rows as $row ) {
+			$fresh[ (int) $row->doctor_id ] = (int) $row->total;
+		}
+
+		// A doctor with no completed appointments returns no row at all, and
+		// that zero deserves caching too or it is queried again every time.
+		foreach ( $missing as $id ) {
+			$counts[ $id ] = isset( $fresh[ $id ] ) ? $fresh[ $id ] : 0;
+			set_transient( self::PATIENTS_COUNT_PREFIX . $id, $counts[ $id ], self::PATIENTS_COUNT_TTL );
+		}
+
+		return $counts;
 	}
 
 	/**
@@ -267,8 +354,13 @@ class RestControllerDoctors extends WP_REST_Controller {
 			return new WP_Error( 'eg_care_doctor_not_found', __( 'Approved doctor profile not found.', 'eg-care' ), array( 'status' => 404 ) );
 		}
 
-		$post = get_post( $id );
-		return new WP_REST_Response( $this->format_doctor( $row, $post ), 200 );
+		$post     = get_post( $id );
+		$patients = $this->patients_counts( array( $id ) );
+
+		return new WP_REST_Response(
+			$this->format_doctor( $row, $post, isset( $patients[ $id ] ) ? $patients[ $id ] : 0 ),
+			200
+		);
 	}
 
 	/**
@@ -476,9 +568,10 @@ class RestControllerDoctors extends WP_REST_Controller {
 	 *
 	 * @param object   $row Database meta row.
 	 * @param \WP_Post $post Post object.
+	 * @param int      $patients_count How many different patients this doctor has seen.
 	 * @return array Formatted response data.
 	 */
-	private function format_doctor( $row, $post ) {
+	private function format_doctor( $row, $post, $patients_count = 0 ) {
 		$specialties = array();
 		$terms       = wp_get_post_terms( $post->ID, 'specialty' );
 		if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
@@ -495,6 +588,10 @@ class RestControllerDoctors extends WP_REST_Controller {
 		return array(
 			'id'                  => intval( $post->ID ),
 			'name'                => $post->post_title,
+			// The doctor's own page, so a card can link to it and the profile
+			// can be shared or opened in a new tab.
+			'permalink'           => get_permalink( $post ),
+			'patients_count'      => intval( $patients_count ),
 			'bio'                 => $post->post_content,
 			'specialties'         => $specialties,
 			'provider_type'       => $row->provider_type,

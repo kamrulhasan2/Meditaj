@@ -88,6 +88,12 @@ class Cache {
 			return false;
 		}
 
+		// A doctor's own page renders the booking flow, nonce and all, without
+		// any shortcode in the post body to give it away.
+		if ( is_singular( 'doctors' ) ) {
+			return true;
+		}
+
 		$post = get_post();
 		if ( ! $post instanceof \WP_Post ) {
 			return false;

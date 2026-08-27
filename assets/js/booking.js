@@ -114,6 +114,57 @@ document.addEventListener('DOMContentLoaded', function() {
 		return Math.max(1, Math.round(bytes / 1024)) + ' KB';
 	}
 
+	/**
+	 * Years of experience for the stat tile.
+	 *
+	 * @param {Object} doc Doctor.
+	 * @return {string} Tile value.
+	 */
+	function statExperience(doc) {
+		const years = parseInt(doc.experience_years, 10) || 0;
+		return years > 0 ? years + ' Yrs' : '\u2014';
+	}
+
+	/**
+	 * Patients seen, for the stat tile.
+	 *
+	 * Counted from completed appointments, so a doctor who has not finished one
+	 * yet reads as new rather than as a bare zero.
+	 *
+	 * @param {Object} doc Doctor.
+	 * @return {string} Tile value.
+	 */
+	function statPatients(doc) {
+		const seen = parseInt(doc.patients_count, 10) || 0;
+		return seen > 0 ? String(seen) : 'New';
+	}
+
+	/**
+	 * What a follow-up costs, for the stat tile.
+	 *
+	 * @param {Object} doc Doctor.
+	 * @return {string} Tile value.
+	 */
+	function statFollowUpValue(doc) {
+		const days = parseInt(doc.follow_up_days, 10) || 0;
+		if ( days <= 0 ) {
+			return '\u2014';
+		}
+		const cost = parseFloat(doc.follow_up_cost) || 0;
+		return cost > 0 ? Math.round(cost) + ' BDT' : 'Free';
+	}
+
+	/**
+	 * The follow-up tile's label, which carries the window when there is one.
+	 *
+	 * @param {Object} doc Doctor.
+	 * @return {string} Tile label.
+	 */
+	function statFollowUpLabel(doc) {
+		const days = parseInt(doc.follow_up_days, 10) || 0;
+		return days > 0 ? 'Follow-up \u00b7 ' + days + ' days' : 'Follow-up';
+	}
+
 	// SecureUploads::allowed_mimes() takes these three and nothing else, so the
 	// picker turns anything else away before the appointment is even created.
 	const REPORT_MIMES = ['application/pdf', 'image/jpeg', 'image/png'];
@@ -134,8 +185,20 @@ document.addEventListener('DOMContentLoaded', function() {
 		return ! f.type && /\.(pdf|jpe?g|png)$/i.test(f.name);
 	}
 
+	// A doctor's own page renders this flow opened on that doctor. The id comes
+	// from the markup rather than the URL, because the page is served by a
+	// template, not by a route this script knows about.
+	const lockedDoctorId = parseInt(app.getAttribute('data-doctor-id'), 10) || 0;
+
+	// Each doctor page keeps its own state. Sharing one key would mean opening
+	// a profile quietly discards a booking half-filled on the main flow - and
+	// walking back to that flow would find someone else's doctor in it.
+	const STATE_KEY = lockedDoctorId
+		? 'eg_care_booking_state_doctor_' + lockedDoctorId
+		: 'eg_care_booking_state';
+
 	// Load existing state from sessionStorage if available
-	const savedState = sessionStorage.getItem('eg_care_booking_state');
+	const savedState = sessionStorage.getItem(STATE_KEY);
 	if ( savedState ) {
 		try {
 			state = JSON.parse(savedState);
@@ -146,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// Save state to sessionStorage
 	function saveState() {
-		sessionStorage.setItem('eg_care_booking_state', JSON.stringify(state));
+		sessionStorage.setItem(STATE_KEY, JSON.stringify(state));
 	}
 
 	// 2. RENDERING STEPS
@@ -344,9 +407,34 @@ document.addEventListener('DOMContentLoaded', function() {
 						const cardClone = cardTmpl.cloneNode(true);
 						const card = cardClone.querySelector('.eg-care-doctor-card');
 						card.setAttribute('data-id', doc.id);
-						card.querySelector('.eg-care-doctor-card-name').textContent = doc.name;
+
+						// The name is a real link, so a profile can be opened in
+						// a new tab, bookmarked or sent to someone. Select & Book
+						// below still goes straight to the booking step.
+						const nameLink = card.querySelector('.eg-care-doctor-card-link');
+						nameLink.textContent = doc.name;
+						if ( doc.permalink ) {
+							nameLink.href = doc.permalink;
+						} else {
+							nameLink.removeAttribute('href');
+						}
+
 						card.querySelector('.eg-care-doctor-card-designation').textContent = doc.designation;
 						card.querySelector('.eg-care-doctor-card-degree').textContent = doc.degree;
+
+						const orgLine = card.querySelector('.eg-care-doctor-card-organization');
+						if ( doc.organization ) {
+							orgLine.textContent = doc.organization;
+							orgLine.hidden = false;
+						}
+
+						const patientsTag = card.querySelector('.patients-tag');
+						const seen = parseInt(doc.patients_count, 10) || 0;
+						if ( seen > 0 ) {
+							patientsTag.textContent = seen + ' patients';
+							patientsTag.hidden = false;
+						}
+
 						card.querySelector('.spec-tag').textContent = doc.specialties.join(', ');
 						card.querySelector('.fee-val').textContent = doc.consultation_fee + ' BDT';
 						card.querySelector('.exp-val').textContent = doc.experience_years + ' Yrs';
@@ -360,36 +448,46 @@ document.addEventListener('DOMContentLoaded', function() {
 						}
 
 						const avatarContainer = card.querySelector('.eg-care-doctor-card-avatar-wrap');
+						const dot = `<span class="eg-care-status-indicator ${doc.is_online ? 'online' : 'offline'}"></span>`;
+						let face;
 						if ( doc.photo_url ) {
-							avatarContainer.innerHTML = `<img src="${doc.photo_url}" class="eg-care-doc-avatar" alt="${escapeHtml(doc.name)}"><span class="eg-care-status-indicator ${doc.is_online ? 'online' : 'offline'}"></span>`;
+							face = `<img src="${escapeHtml(doc.photo_url)}" class="eg-care-doc-avatar" alt="${escapeHtml(doc.name)}">`;
 						} else {
 							// Initials placeholder
 							const initials = doc.name.split(' ').filter(n => n !== 'Dr.').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-							avatarContainer.innerHTML = `<div class="eg-care-doc-initials">${escapeHtml(initials)}</div><span class="eg-care-status-indicator ${doc.is_online ? 'online' : 'offline'}"></span>`;
+							face = `<div class="eg-care-doc-initials">${escapeHtml(initials)}</div>`;
 						}
+						// The photo leads to the profile as well, which is where
+						// most people click first.
+						avatarContainer.innerHTML = doc.permalink
+							? `<a class="eg-care-doctor-card-photo-link" href="${escapeHtml(doc.permalink)}" tabindex="-1" aria-hidden="true">${face}</a>${dot}`
+							: face + dot;
 
-						// Click selector
-						card.querySelector('.select-doctor-trigger').addEventListener('click', function() {
+						function openBookingFor() {
 							state.doctor = doc;
 							state.step = 3;
 							saveState();
 							render();
-						});
+						}
 
-						// Distribute to grids
+						// An online doctor is shown twice: once under Available
+						// Now and once in the full list. Take the copy before
+						// anything is inserted - appending a DocumentFragment
+						// empties it, so cloning afterwards would yield nothing
+						// and the whole list would come out blank.
 						if ( doc.is_online ) {
-							gridInstant.appendChild(cardClone);
+							const instantClone = cardClone.cloneNode(true);
+							instantClone.querySelector('.select-doctor-trigger')
+								.addEventListener('click', openBookingFor);
+							gridInstant.appendChild(instantClone);
 							instantCount++;
 						}
-						// Append clone copy to all grid list
-						const allClone = cardClone.cloneNode(true);
-						allClone.querySelector('.select-doctor-trigger').addEventListener('click', function() {
-							state.doctor = doc;
-							state.step = 3;
-							saveState();
-							render();
-						});
-						gridAll.appendChild(allClone);
+
+						// Listeners are not carried over by cloneNode, so each
+						// copy binds its own.
+						cardClone.querySelector('.select-doctor-trigger')
+							.addEventListener('click', openBookingFor);
+						gridAll.appendChild(cardClone);
 						allCount++;
 					});
 
@@ -452,13 +550,32 @@ document.addEventListener('DOMContentLoaded', function() {
 						<!-- Injected via JS -->
 					</div>
 					<div class="detail-summary">
-						<h2 id="detail-name">${doc.name}</h2>
-						<p id="detail-designation" class="detail-subtitle">${doc.designation}</p>
-						<p id="detail-degree" class="detail-subtitle">${doc.degree}</p>
+						<h2 id="detail-name">${escapeHtml(doc.name)}</h2>
+						<p id="detail-designation" class="detail-subtitle">${escapeHtml(doc.designation || '')}</p>
+						<p id="detail-degree" class="detail-subtitle">${escapeHtml(doc.degree || '')}</p>
+						${doc.organization ? `<p id="detail-organization" class="detail-organization">${escapeHtml(doc.organization)}</p>` : ''}
 						<div class="detail-rating-row">
 							<span class="rating-badge">⭐ ${doc.avg_rating} (${doc.total_reviews} reviews)</span>
-							<span class="experience-badge">💼 ${doc.experience_years} Yrs Exp</span>
 						</div>
+					</div>
+				</div>
+
+				<div class="eg-care-stat-tiles">
+					<div class="eg-care-stat-tile">
+						<span class="eg-care-stat-value">${statExperience(doc)}</span>
+						<span class="eg-care-stat-label">Experience</span>
+					</div>
+					<div class="eg-care-stat-tile">
+						<span class="eg-care-stat-value" id="stat-patients">${statPatients(doc)}</span>
+						<span class="eg-care-stat-label">Patients</span>
+					</div>
+					<div class="eg-care-stat-tile">
+						<span class="eg-care-stat-value">${Math.round(parseFloat(doc.consultation_fee) || 0)} BDT</span>
+						<span class="eg-care-stat-label">Fee</span>
+					</div>
+					<div class="eg-care-stat-tile">
+						<span class="eg-care-stat-value">${statFollowUpValue(doc)}</span>
+						<span class="eg-care-stat-label">${statFollowUpLabel(doc)}</span>
 					</div>
 				</div>
 				<div class="eg-care-detail-body">
@@ -466,6 +583,30 @@ document.addEventListener('DOMContentLoaded', function() {
 					<p id="detail-bio">${doc.bio || 'No biography text available for this provider.'}</p>
 					
 					<div class="booking-options-block">
+						<h3>Fee Information</h3>
+						<div class="eg-care-fee-card">
+							<div class="eg-care-fee-card-main">
+								<span class="eg-care-fee-card-icon" aria-hidden="true">
+									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<polygon points="23 7 16 12 23 17 23 7"></polygon>
+										<rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+									</svg>
+								</span>
+								<span class="eg-care-fee-card-text">
+									<span class="eg-care-fee-card-title">
+										Video Call
+										${doc.is_online ? '<span class="eg-care-live-badge">LIVE</span>' : ''}
+									</span>
+									<span class="eg-care-fee-card-status ${doc.is_online ? 'online' : 'offline'}" id="fee-card-status"></span>
+								</span>
+							</div>
+							<span class="eg-care-fee-card-price">
+								<span class="eg-care-fee-card-amount" id="fee-card-amount"></span>
+								<span class="eg-care-fee-card-note">+ ${serviceChargePct()}% service charge</span>
+							</span>
+						</div>
+						<p class="eg-care-fee-card-help" id="fee-card-help"></p>
+
 						<h3>Select Appointment Type</h3>
 						<div class="eg-care-type-cards" role="radiogroup" aria-label="Appointment type">
 							<label class="eg-care-type-card ${'instant' === state.bookingType ? 'active' : ''}${doc.is_online ? '' : ' disabled'}" for="btn-type-instant" id="card-type-instant">
@@ -584,7 +725,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			<div class="eg-care-checkout-panel-wrapper">
 				<div id="checkout-summary-target"></div>
 				<button type="button" id="btn-confirm-booking" class="eg-care-btn-register cyan-btn" style="width:100%; margin-top:20px;">Confirm Booking</button>
-				<button type="button" id="btn-back-to-step2" class="eg-care-btn-secondary" style="width:100%; margin-top: 10px;">Back to Doctors List</button>
+				<button type="button" id="btn-back-to-step2" class="eg-care-btn-secondary" style="width:100%; margin-top: 10px;"${lockedDoctorId ? ' hidden' : ''}>Back to Doctors List</button>
 			</div>
 		</div>
 		`;
@@ -611,6 +752,10 @@ document.addEventListener('DOMContentLoaded', function() {
 			cardInstant.title = 'Provider is currently offline';
 		}
 
+		const feeAmount = document.getElementById('fee-card-amount');
+		const feeStatus = document.getElementById('fee-card-status');
+		const feeHelp = document.getElementById('fee-card-help');
+
 		function syncTypeCards() {
 			const instant = 'instant' === state.bookingType;
 			cardInstant.classList.toggle('active', instant);
@@ -618,6 +763,19 @@ document.addEventListener('DOMContentLoaded', function() {
 			btnInstant.checked = instant;
 			btnScheduled.checked = ! instant;
 			document.getElementById('booking-calendar-section').style.display = instant ? 'none' : 'block';
+
+			// The fee card shows what this booking will actually cost, which is
+			// not the same figure for both types when a doctor charges more for
+			// an instant call.
+			feeAmount.textContent = Math.round(serviceFee(doc, state.bookingType)) + ' BDT';
+
+			if ( instant ) {
+				feeStatus.textContent = doc.is_online ? 'Available now' : 'Currently offline';
+				feeHelp.textContent = 'The doctor joins a video call as soon as the payment goes through.';
+			} else {
+				feeStatus.textContent = doc.is_online ? 'Online now' : 'Books ahead';
+				feeHelp.textContent = 'Pick a date and a time below; the call opens at the slot you choose.';
+			}
 		}
 
 		btnInstant.addEventListener('change', function() {
@@ -638,6 +796,9 @@ document.addEventListener('DOMContentLoaded', function() {
 			syncTypeCards();
 			updateCheckoutSummary();
 		});
+
+		// Fill the fee card for whichever type the flow opens on.
+		syncTypeCards();
 
 		// Date selection. The visible control is the strip; the hidden input
 		// stays because the confirm handler reads the chosen date from it.
@@ -1202,7 +1363,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		updateCheckoutSummary();
 
-		// Back navigation
+		// Back navigation. There is no step two behind a doctor's own page, so
+		// the button is hidden there and this listener never fires.
 		document.getElementById('btn-back-to-step2').addEventListener('click', function() {
 			state.step = 2;
 			state.doctor = null;
@@ -1310,7 +1472,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			})
 			.then(paymentData => {
 				// Success: redirect to gateway page
-				sessionStorage.removeItem('eg_care_booking_state');
+				sessionStorage.removeItem(STATE_KEY);
 				window.location.href = paymentData.payment_url;
 			})
 			.catch(err => {
@@ -1419,6 +1581,58 @@ document.addEventListener('DOMContentLoaded', function() {
 		return `${hh}:${mm} ${ampm}`;
 	}
 
-	// Bootstrap Render
-	render();
+	/**
+	 * Open the flow.
+	 *
+	 * On a doctor's own page there is nothing to choose: the profile and the
+	 * booking panel are step three for that one doctor. The saved state is
+	 * only reused when it is about the same doctor, so a stale copy cannot put
+	 * someone else's name above the booking form.
+	 */
+	function boot() {
+		if ( ! lockedDoctorId ) {
+			render();
+			return;
+		}
+
+		const sameDoctor = state.doctor && parseInt(state.doctor.id, 10) === lockedDoctorId;
+
+		state.step = 3;
+		if ( ! sameDoctor ) {
+			state.doctor = null;
+			state.date = '';
+			state.slotTime = '';
+			state.bookingType = 'scheduled';
+		}
+
+		if ( sameDoctor ) {
+			// Draw at once from what is saved, then refresh underneath: the fee
+			// or the online light may have changed since the page was last open.
+			render();
+		} else {
+			app.innerHTML = '<div class="eg-care-spinner-wrapper"><div class="eg-care-loading-spinner"></div></div>';
+		}
+
+		fetch(egCareSettings.restUrl + 'doctors/' + lockedDoctorId)
+			.then(res => {
+				if ( ! res.ok ) {
+					throw new Error('This profile could not be loaded.');
+				}
+				return res.json();
+			})
+			.then(doc => {
+				state.doctor = doc;
+				saveState();
+				render();
+			})
+			.catch(err => {
+				console.error('Doctor profile failed to load:', err);
+				if ( ! state.doctor ) {
+					app.innerHTML = '<p class="eg-care-no-data">'
+						+ 'This profile could not be loaded. Please refresh the page and try again.</p>';
+				}
+			});
+	}
+
+	boot();
 });
