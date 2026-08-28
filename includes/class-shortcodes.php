@@ -506,11 +506,174 @@ class Shortcodes {
 	}
 
 	/**
+	 * The page carrying a given EG Care shortcode, if the site has one.
+	 *
+	 * Used to point someone at the right next screen instead of telling them a
+	 * page exists and leaving them to find it. Cached, because this runs on a
+	 * screen nobody is signed in to and the answer changes about once a year.
+	 *
+	 * @param string $shortcode Shortcode tag, without brackets.
+	 * @return string Permalink, or an empty string when no page has it.
+	 */
+	private static function page_with_shortcode( $shortcode ) {
+		global $wpdb;
+
+		$key    = 'eg_care_page_' . $shortcode;
+		$cached = get_transient( $key );
+
+		if ( false !== $cached ) {
+			return (string) $cached;
+		}
+
+		$found = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT ID FROM {$wpdb->posts}
+				WHERE post_status = 'publish' AND post_type IN ('page', 'post')
+					AND post_content LIKE %s
+				ORDER BY ID ASC LIMIT 1",
+				'%[' . $wpdb->esc_like( $shortcode ) . '%'
+			)
+		);
+
+		$url = $found ? (string) get_permalink( (int) $found ) : '';
+
+		set_transient( $key, $url, HOUR_IN_SECONDS );
+
+		return $url;
+	}
+
+	/**
+	 * The screen shown instead of a portal somebody cannot see yet.
+	 *
+	 * One card rather than a line of red text: whoever lands here needs to know
+	 * what is behind the page, how to get in, and what to do if signing in is
+	 * not the answer for them.
+	 *
+	 * @param array $args {
+	 *     @type string $icon      One of 'provider', 'patient', 'instant'.
+	 *     @type string $title     Heading.
+	 *     @type string $message   One sentence under it.
+	 *     @type array  $points    What lives behind this page.
+	 *     @type array  $primary   {label, url}, or empty for none.
+	 *     @type array  $secondary {label, url}, or empty for none.
+	 *     @type string $footnote  Small print under the buttons.
+	 * }
+	 * @return string Markup.
+	 */
+	private static function access_gate( array $args ) {
+		$args = array_merge(
+			array(
+				'icon'      => 'patient',
+				'title'     => '',
+				'message'   => '',
+				'points'    => array(),
+				'primary'   => array(),
+				'secondary' => array(),
+				'footnote'  => '',
+			),
+			$args
+		);
+
+		$icons = array(
+			// A stethoscope, a person, and a lightning bolt: the three doors
+			// this gate stands in front of.
+			'provider' => '<path d="M6 3v5a6 6 0 0 0 12 0V3"/><path d="M4 3h4M16 3h4"/><circle cx="18" cy="17" r="3"/><path d="M12 14v0a5 5 0 0 0 3 4.6"/>',
+			'patient'  => '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>',
+			'instant'  => '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+		);
+
+		$icon = isset( $icons[ $args['icon'] ] ) ? $icons[ $args['icon'] ] : $icons['patient'];
+
+		ob_start();
+		?>
+		<div class="eg-care-gate">
+			<div class="eg-care-gate-card">
+				<span class="eg-care-gate-icon" aria-hidden="true">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><?php echo $icon; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- hardcoded above. ?></svg>
+				</span>
+
+				<h2 class="eg-care-gate-title"><?php echo esc_html( $args['title'] ); ?></h2>
+
+				<?php if ( $args['message'] ) : ?>
+					<p class="eg-care-gate-message"><?php echo esc_html( $args['message'] ); ?></p>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $args['points'] ) ) : ?>
+					<ul class="eg-care-gate-points">
+						<?php foreach ( $args['points'] as $point ) : ?>
+							<li><?php echo esc_html( $point ); ?></li>
+						<?php endforeach; ?>
+					</ul>
+				<?php endif; ?>
+
+				<div class="eg-care-gate-actions">
+					<?php if ( ! empty( $args['primary']['url'] ) ) : ?>
+						<a class="eg-care-gate-btn primary" href="<?php echo esc_url( $args['primary']['url'] ); ?>">
+							<?php echo esc_html( $args['primary']['label'] ); ?>
+						</a>
+					<?php endif; ?>
+					<?php if ( ! empty( $args['secondary']['url'] ) ) : ?>
+						<a class="eg-care-gate-btn" href="<?php echo esc_url( $args['secondary']['url'] ); ?>">
+							<?php echo esc_html( $args['secondary']['label'] ); ?>
+						</a>
+					<?php endif; ?>
+				</div>
+
+				<?php if ( $args['footnote'] ) : ?>
+					<p class="eg-care-gate-footnote"><?php echo esc_html( $args['footnote'] ); ?></p>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+		return ob_get_clean();
+	}
+
+	/**
+	 * Where to send someone back to after they sign in.
+	 *
+	 * @return string Current permalink, or the site's front page.
+	 */
+	private static function return_here() {
+		$here = get_permalink();
+
+		return $here ? $here : home_url( '/' );
+	}
+
+	/**
 	 * Render the doctor dashboard shortcode content.
 	 */
 	public static function render_doctor_dashboard_shortcode() {
 		if ( ! is_user_logged_in() ) {
-			return '<div class="eg-care-alert">' . esc_html__( 'You must be logged in to view the doctor dashboard.', 'eg-care' ) . ' <a href="' . esc_url( wp_login_url() ) . '">' . esc_html__( 'Log In Here', 'eg-care' ) . '</a></div>';
+			$apply = self::page_with_shortcode( 'eg_care_doctor_registration' );
+
+			return self::access_gate(
+				array(
+					'icon'      => 'provider',
+					'title'     => __( 'Sign in to your provider dashboard', 'eg-care' ),
+					'message'   => __( 'Everything you need to run your consultations lives behind this page.', 'eg-care' ),
+					'points'    => array(
+						__( 'Today\'s consultations, and the button that starts each video call', 'eg-care' ),
+						__( 'Patients waiting on an instant request right now', 'eg-care' ),
+						__( 'Your weekly availability, and the slots patients can book', 'eg-care' ),
+						__( 'What you have earned, and what is due to be paid out', 'eg-care' ),
+					),
+					'primary'   => array(
+						'label' => __( 'Log in', 'eg-care' ),
+						// Back to this page afterwards, rather than dropping the
+						// doctor on the WordPress admin screen.
+						'url'   => wp_login_url( self::return_here() ),
+					),
+					'secondary' => $apply
+						? array(
+							'label' => __( 'Apply as a provider', 'eg-care' ),
+							'url'   => $apply,
+						)
+						: array(),
+					'footnote'  => $apply
+						? __( 'New here? Applications are reviewed before your profile goes live.', 'eg-care' )
+						: '',
+				)
+			);
 		}
 
 		// Verify this user maps to a registered doctor profile
@@ -520,7 +683,30 @@ class Shortcodes {
 		$doctor = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_meta WHERE user_id = %d", $user_id ) );
 
 		if ( ! $doctor ) {
-			return '<div class="eg-care-alert">' . esc_html__( 'You do not have a doctor profile registered on this platform.', 'eg-care' ) . '</div>';
+			$apply = self::page_with_shortcode( 'eg_care_doctor_registration' );
+
+			return self::access_gate(
+				array(
+					'icon'      => 'provider',
+					'title'     => __( 'This account has no provider profile', 'eg-care' ),
+					// Naming the account matters here: the usual cause is being
+					// signed in as a patient, or as the wrong one of two logins.
+					/* translators: %s: display name of the logged-in user. */
+					'message'   => sprintf( __( 'You are signed in as %s, and that account is not registered as a provider.', 'eg-care' ), wp_get_current_user()->display_name ),
+					'points'    => array(),
+					'primary'   => $apply
+						? array(
+							'label' => __( 'Apply as a provider', 'eg-care' ),
+							'url'   => $apply,
+						)
+						: array(),
+					'secondary' => array(
+						'label' => __( 'Sign in as someone else', 'eg-care' ),
+						'url'   => wp_logout_url( self::return_here() ),
+					),
+					'footnote'  => __( 'Already applied? A profile appears here once an administrator approves it.', 'eg-care' ),
+				)
+			);
 		}
 
 		self::enqueue_settings(
@@ -551,7 +737,35 @@ class Shortcodes {
 	 */
 	public static function render_patient_dashboard_shortcode() {
 		if ( ! is_user_logged_in() ) {
-			return '<div class="eg-care-alert">' . esc_html__( 'You must be logged in to view your patient dashboard.', 'eg-care' ) . ' <a href="' . esc_url( wp_login_url() ) . '">' . esc_html__( 'Log In Here', 'eg-care' ) . '</a></div>';
+			$book = self::page_with_shortcode( 'eg_care_booking_flow' );
+
+			return self::access_gate(
+				array(
+					'icon'      => 'patient',
+					'title'     => __( 'Sign in to see your consultations', 'eg-care' ),
+					'message'   => __( 'Your appointments and payments are tied to your account, so they are only visible once you are signed in.', 'eg-care' ),
+					'points'    => array(
+						__( 'Upcoming consultations, and the link that joins the call', 'eg-care' ),
+						__( 'Past consultations, prescriptions and receipts', 'eg-care' ),
+						__( 'The people you book for - parent, child, spouse', 'eg-care' ),
+					),
+					'primary'   => array(
+						'label' => __( 'Log in', 'eg-care' ),
+						'url'   => wp_login_url( self::return_here() ),
+					),
+					'secondary' => get_option( 'users_can_register' )
+						? array(
+							'label' => __( 'Create an account', 'eg-care' ),
+							'url'   => wp_registration_url(),
+						)
+						: ( $book
+							? array(
+								'label' => __( 'Browse doctors', 'eg-care' ),
+								'url'   => $book,
+							)
+							: array() ),
+				)
+			);
 		}
 
 		// The template below carries an inline handler that reads egCareSettings,
@@ -577,7 +791,29 @@ class Shortcodes {
 	 */
 	public static function render_instant_doctor_shortcode() {
 		if ( ! is_user_logged_in() ) {
-			return '<div class="eg-care-alert">' . esc_html__( 'Please log in to ask for an instant consultation.', 'eg-care' ) . ' <a href="' . esc_url( wp_login_url( get_permalink() ) ) . '">' . esc_html__( 'Log In Here', 'eg-care' ) . '</a></div>';
+			return self::access_gate(
+				array(
+					'icon'      => 'instant',
+					'title'     => __( 'Sign in to ask for a doctor', 'eg-care' ),
+					'message'   => __( 'A request has to belong to an account: that is how the doctor reaches you, and how the fee is taken once one accepts.', 'eg-care' ),
+					'points'    => array(
+						/* translators: %s: consultation fee, already formatted. */
+						sprintf( __( 'A consultation costs %s, paid only after a doctor accepts', 'eg-care' ), number_format_i18n( \EGCare\Fees::breakdown( \EGCare\Fees::instant_request_fee() )['total'] ) . ' BDT' ),
+						__( 'Your request goes to every doctor on duty at once', 'eg-care' ),
+						__( 'Nothing is charged while you wait, and nothing if nobody answers', 'eg-care' ),
+					),
+					'primary'   => array(
+						'label' => __( 'Log in', 'eg-care' ),
+						'url'   => wp_login_url( self::return_here() ),
+					),
+					'secondary' => get_option( 'users_can_register' )
+						? array(
+							'label' => __( 'Create an account', 'eg-care' ),
+							'url'   => wp_registration_url(),
+						)
+						: array(),
+				)
+			);
 		}
 
 		self::enqueue_settings( array( 'userType' => 'patient' ) );
