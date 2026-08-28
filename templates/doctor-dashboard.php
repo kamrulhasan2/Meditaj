@@ -19,12 +19,21 @@ $user = wp_get_current_user();
 			<h2>Welcome back, <?php echo esc_html( $user->display_name ); ?>!</h2>
 			<p class="role-caption"><?php esc_html_e( 'Registered EG Care Specialist', 'eg-care' ); ?></p>
 		</div>
-		<div class="instant-status-toggle">
-			<span class="toggle-label"><?php esc_html_e( 'Go Online (Instant Call)', 'eg-care' ); ?></span>
-			<label class="eg-care-switch">
-				<input type="checkbox" id="dashboard-instant-toggle">
-				<span class="slider round"></span>
-			</label>
+		<div class="eg-care-dashboard-switches">
+			<div class="instant-status-toggle">
+				<span class="toggle-label"><?php esc_html_e( 'Go Online (Instant Call)', 'eg-care' ); ?></span>
+				<label class="eg-care-switch">
+					<input type="checkbox" id="dashboard-instant-toggle">
+					<span class="slider round"></span>
+				</label>
+			</div>
+			<div class="instant-status-toggle">
+				<span class="toggle-label"><?php esc_html_e( 'Take Instant Requests', 'eg-care' ); ?></span>
+				<label class="eg-care-switch">
+					<input type="checkbox" id="dashboard-duty-toggle">
+					<span class="slider round"></span>
+				</label>
+			</div>
 		</div>
 	</div>
 
@@ -57,6 +66,10 @@ $user = wp_get_current_user();
 	<!-- Tab Navigation -->
 	<div class="eg-care-dashboard-tabs">
 		<button type="button" class="tab-trigger active" data-tab="appointments"><?php esc_html_e( 'Today\'s Appointments', 'eg-care' ); ?></button>
+		<button type="button" class="tab-trigger" data-tab="instant">
+			<?php esc_html_e( 'Instant Requests', 'eg-care' ); ?>
+			<span class="eg-care-queue-count" id="instant-queue-count" hidden>0</span>
+		</button>
 		<button type="button" class="tab-trigger" data-tab="upcoming"><?php esc_html_e( 'Upcoming Consultations', 'eg-care' ); ?></button>
 		<button type="button" class="tab-trigger" data-tab="slots"><?php esc_html_e( 'Schedules & Slots', 'eg-care' ); ?></button>
 		<button type="button" class="tab-trigger" data-tab="profile"><?php esc_html_e( 'Profile Settings', 'eg-care' ); ?></button>
@@ -84,6 +97,15 @@ $user = wp_get_current_user();
 						</tr>
 					</tbody>
 				</table>
+			</div>
+		</div>
+
+		<!-- Pane: the open instant queue -->
+		<div class="tab-pane" id="pane-instant">
+			<h3><?php esc_html_e( 'Patients Waiting Now', 'eg-care' ); ?></h3>
+			<p class="eg-care-pane-lede" id="instant-duty-note"></p>
+			<div id="instant-queue-target">
+				<p class="eg-care-no-data"><?php esc_html_e( 'Loading requests...', 'eg-care' ); ?></p>
 			</div>
 		</div>
 

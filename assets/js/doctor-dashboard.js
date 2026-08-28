@@ -551,8 +551,241 @@ document.addEventListener('DOMContentLoaded', function() {
 		loadStats();
 	});
 
+	// =====================================================================
+	// Instant requests: patients asking for whoever is free.
+	// =====================================================================
+	const dutyToggle = document.getElementById('dashboard-duty-toggle');
+	const queueTarget = document.getElementById('instant-queue-target');
+	const queueCount = document.getElementById('instant-queue-count');
+	const dutyNote = document.getElementById('instant-duty-note');
+
+	// How often the queue refreshes while the doctor is looking at it. Someone
+	// waiting on the other end should not sit there for a minute because a
+	// screen refreshed slowly.
+	const QUEUE_POLL_MS = 5000;
+
+	let queuePollTimer = null;
+	let onDuty = false;
+	let instantFee = 0;
+
+	function api(path, options) {
+		options = options || {};
+		options.headers = Object.assign(
+			{ 'X-WP-Nonce': egCareSettings.nonce },
+			options.body ? { 'Content-Type': 'application/json' } : {},
+			options.headers || {}
+		);
+
+		return fetch(egCareSettings.restUrl + path, options).then(res =>
+			res.json().then(body => {
+				if ( ! res.ok ) {
+					throw new Error(body && body.message ? body.message : 'Something went wrong.');
+				}
+				return body;
+			})
+		);
+	}
+
+	function escapeText(text) {
+		const div = document.createElement('div');
+		div.textContent = null === text || undefined === text ? '' : text;
+		return div.innerHTML;
+	}
+
+	function describeDuty() {
+		if ( ! dutyNote ) {
+			return;
+		}
+
+		if ( ! onDuty ) {
+			dutyNote.textContent = 'Turn on "Take Instant Requests" above to answer patients who ask for '
+				+ 'whoever is free. They pay a fixed ' + Math.round(instantFee) + ' BDT, whoever accepts.';
+			return;
+		}
+
+		if ( ! onlineToggle.checked ) {
+			dutyNote.textContent = 'You are on instant duty but shown as offline, so requests will not '
+				+ 'come to you. Go online above to start receiving them.';
+			return;
+		}
+
+		dutyNote.textContent = 'Accepting a request creates the appointment and gives you the patient\'s '
+			+ 'number. They pay ' + Math.round(instantFee) + ' BDT, then the call opens.';
+	}
+
+	function loadDuty() {
+		if ( ! dutyToggle ) {
+			return Promise.resolve();
+		}
+
+		return api('doctor/me/instant-duty')
+			.then(duty => {
+				onDuty = !! duty.accepts_instant_requests;
+				instantFee = parseFloat(duty.fee) || 0;
+				dutyToggle.checked = onDuty;
+				describeDuty();
+			})
+			.catch(err => console.error('Instant duty could not be read:', err));
+	}
+
+	if ( dutyToggle ) {
+		dutyToggle.addEventListener('change', function() {
+			const wanted = dutyToggle.checked;
+			dutyToggle.disabled = true;
+
+			api('doctor/me/instant-duty', {
+				method: 'POST',
+				body: JSON.stringify({ accepts_instant_requests: wanted })
+			})
+				.then(duty => {
+					onDuty = !! duty.accepts_instant_requests;
+					dutyToggle.checked = onDuty;
+					describeDuty();
+					loadQueue();
+				})
+				.catch(err => {
+					console.error('Instant duty could not be saved:', err);
+					// Put the switch back where it was rather than let it show
+					// a state the server never agreed to.
+					dutyToggle.checked = onDuty;
+				})
+				.finally(() => {
+					dutyToggle.disabled = false;
+				});
+		});
+	}
+
+	function waitedFor(since) {
+		const seconds = Math.max(0, Math.round((Date.now() - new Date(since.replace(' ', 'T')).getTime()) / 1000));
+		if ( seconds < 60 ) {
+			return 'just now';
+		}
+		const minutes = Math.floor(seconds / 60);
+		return minutes === 1 ? '1 minute ago' : minutes + ' minutes ago';
+	}
+
+	function renderQueue(requests) {
+		queueTarget.innerHTML = '';
+
+		if ( queueCount ) {
+			queueCount.textContent = requests.length;
+			queueCount.hidden = 0 === requests.length;
+		}
+
+		if ( ! requests.length ) {
+			queueTarget.innerHTML = '<p class="eg-care-no-data">Nobody is waiting right now.</p>';
+			return;
+		}
+
+		requests.forEach(request => {
+			const card = document.createElement('div');
+			card.className = 'eg-care-queue-card';
+			card.setAttribute('data-id', request.id);
+			card.innerHTML =
+				'<div class="eg-care-queue-head">'
+				+ '<span class="eg-care-queue-name">' + escapeText(request.patient_name)
+				+ (request.patient_age ? ' <span class="eg-care-queue-age">' + request.patient_age + ' yrs</span>' : '')
+				+ '</span>'
+				+ '<span class="eg-care-queue-waited">' + escapeText(waitedFor(request.waiting_since)) + '</span>'
+				+ '</div>'
+				+ '<p class="eg-care-queue-symptoms">' + escapeText(request.symptoms) + '</p>'
+				+ '<div class="eg-care-queue-foot">'
+				+ '<span class="eg-care-queue-fee">' + Math.round(request.amount) + ' BDT</span>'
+				+ '<button type="button" class="eg-care-btn-register cyan-btn eg-care-queue-accept">Accept</button>'
+				+ '</div>';
+
+			card.querySelector('.eg-care-queue-accept').addEventListener('click', function() {
+				const button = this;
+				button.disabled = true;
+				button.textContent = 'Accepting...';
+
+				api('instant-requests/' + request.id + '/claim', { method: 'POST' })
+					.then(claimed => {
+						// Show what accepting bought: the number to call on, and
+						// that the patient still has to pay before the call.
+						card.classList.add('claimed');
+						card.innerHTML =
+							'<div class="eg-care-queue-head">'
+							+ '<span class="eg-care-queue-name">' + escapeText(claimed.patient_name) + '</span>'
+							+ '<span class="eg-care-queue-waited">Yours</span>'
+							+ '</div>'
+							+ '<p class="eg-care-queue-symptoms">' + escapeText(claimed.symptoms) + '</p>'
+							+ '<p class="eg-care-queue-contact">Contact: <strong>'
+							+ escapeText(claimed.contact_number || '') + '</strong></p>'
+							+ '<p class="eg-care-queue-note">Waiting for the patient to pay. '
+							+ 'The consultation will appear under Today\'s Appointments.</p>';
+						loadAppointments();
+					})
+					.catch(err => {
+						button.disabled = false;
+						button.textContent = 'Accept';
+						const note = document.createElement('p');
+						note.className = 'eg-care-queue-note error';
+						note.textContent = err.message;
+						card.appendChild(note);
+						// Whatever happened, the queue has moved on since this
+						// card was drawn.
+						setTimeout(loadQueue, 1500);
+					});
+			});
+
+			queueTarget.appendChild(card);
+		});
+	}
+
+	function loadQueue() {
+		if ( ! queueTarget ) {
+			return;
+		}
+
+		api('doctor/me/instant-requests')
+			.then(renderQueue)
+			.catch(err => {
+				console.error('The instant queue could not be loaded:', err);
+				queueTarget.innerHTML = '<p class="eg-care-no-data">The queue could not be loaded.</p>';
+			});
+	}
+
+	// Poll only while the tab is actually being looked at: a dashboard left
+	// open in a background tab should not keep asking all day.
+	function startQueuePolling() {
+		stopQueuePolling();
+		queuePollTimer = setInterval(loadQueue, QUEUE_POLL_MS);
+	}
+
+	function stopQueuePolling() {
+		if ( queuePollTimer ) {
+			clearInterval(queuePollTimer);
+			queuePollTimer = null;
+		}
+	}
+
+	document.querySelectorAll('.tab-trigger').forEach(trigger => {
+		trigger.addEventListener('click', function() {
+			if ( 'instant' === trigger.getAttribute('data-tab') ) {
+				loadQueue();
+				startQueuePolling();
+			} else {
+				stopQueuePolling();
+			}
+		});
+	});
+
+	document.addEventListener('visibilitychange', function() {
+		if ( document.hidden ) {
+			stopQueuePolling();
+		}
+	});
+
+	if ( onlineToggle ) {
+		// The two switches describe one situation between them, so the note
+		// under the queue has to follow both.
+		onlineToggle.addEventListener('change', describeDuty);
+	}
+
 	// Bootstrap Render
 	loadStats();
 	loadAppointments();
 	loadWeeklySchedules();
+	loadDuty().then(loadQueue);
 });

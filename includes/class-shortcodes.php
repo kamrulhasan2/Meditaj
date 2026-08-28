@@ -50,6 +50,7 @@ class Shortcodes {
 		add_shortcode( 'eg_care_booking_flow', array( __CLASS__, 'render_booking_shortcode' ) );
 		add_shortcode( 'eg_care_doctor_dashboard', array( __CLASS__, 'render_doctor_dashboard_shortcode' ) );
 		add_shortcode( 'eg_care_patient_dashboard', array( __CLASS__, 'render_patient_dashboard_shortcode' ) );
+		add_shortcode( 'eg_care_instant_doctor', array( __CLASS__, 'render_instant_doctor_shortcode' ) );
 		add_action( 'template_redirect', array( __CLASS__, 'handle_gateway_return' ), 1 );
 		add_action( 'template_redirect', array( __CLASS__, 'process_registration_form' ) );
 	}
@@ -565,6 +566,26 @@ class Shortcodes {
 
 		ob_start();
 		include EG_CARE_PATH . 'templates/patient-dashboard.php';
+		return ob_get_clean();
+	}
+
+	/**
+	 * Render the instant consultation request screen.
+	 *
+	 * Logged in only, and deliberately so: the request has to belong to
+	 * somebody the doctor can reach and who can be charged afterwards.
+	 */
+	public static function render_instant_doctor_shortcode() {
+		if ( ! is_user_logged_in() ) {
+			return '<div class="eg-care-alert">' . esc_html__( 'Please log in to ask for an instant consultation.', 'eg-care' ) . ' <a href="' . esc_url( wp_login_url( get_permalink() ) ) . '">' . esc_html__( 'Log In Here', 'eg-care' ) . '</a></div>';
+		}
+
+		self::enqueue_settings( array( 'userType' => 'patient' ) );
+
+		wp_enqueue_script( 'eg-care-instant-request-js', EG_CARE_URL . 'assets/js/instant-request.js', array( self::SETTINGS_HANDLE ), eg_care_asset_version( 'assets/js/instant-request.js' ), true );
+
+		ob_start();
+		include EG_CARE_PATH . 'templates/instant-request.php';
 		return ob_get_clean();
 	}
 }

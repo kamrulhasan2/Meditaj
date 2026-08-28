@@ -240,6 +240,7 @@ class AdminMenu {
 			update_option( 'eg_care_ssl_sandbox', isset( $_POST['eg_care_ssl_sandbox'] ) ? '1' : '0' );
 			update_option( 'eg_care_commission_percentage', floatval( $_POST['eg_care_commission_percentage'] ) );
 			update_option( \EGCare\Fees::SERVICE_CHARGE_OPTION, floatval( $_POST['eg_care_service_charge_percentage'] ) );
+			update_option( \EGCare\Fees::INSTANT_REQUEST_FEE_OPTION, max( 0, floatval( $_POST['eg_care_instant_request_fee'] ) ) );
 			update_option( 'eg_care_agora_app_id', sanitize_text_field( $_POST['eg_care_agora_app_id'] ) );
 			
 			$new_agora_app_crt = sanitize_text_field( $_POST['eg_care_agora_app_certificate'] );
@@ -255,6 +256,7 @@ class AdminMenu {
 		$sandbox       = get_option( 'eg_care_ssl_sandbox', '1' );
 		$commission    = get_option( 'eg_care_commission_percentage', '15' );
 		$service_charge = \EGCare\Fees::service_charge_percentage();
+		$instant_fee    = \EGCare\Fees::instant_request_fee();
 		$agora_app_id  = get_option( 'eg_care_agora_app_id', '' );
 		$agora_app_crt = get_option( 'eg_care_agora_app_certificate', '' );
 
@@ -329,6 +331,13 @@ class AdminMenu {
 						<td>
 							<input name="eg_care_service_charge_percentage" type="number" id="eg_care_service_charge_percentage" value="<?php echo esc_attr( $service_charge ); ?>" min="0" max="100" step="0.5" class="small-text" required>
 							<p class="description"><?php esc_html_e( 'Added on top of the consultation fee at checkout. The patient pays fee + this percentage.', 'eg-care' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="eg_care_instant_request_fee"><?php esc_html_e( 'Instant Request Fee (BDT)', 'eg-care' ); ?></label></th>
+						<td>
+							<input name="eg_care_instant_request_fee" type="number" id="eg_care_instant_request_fee" value="<?php echo esc_attr( $instant_fee ); ?>" min="0" step="10" class="small-text" required>
+							<p class="description"><?php esc_html_e( 'Charged when a patient asks for whoever is free rather than for a named doctor. One price for everybody, because the patient has to be told what it costs before any doctor has answered. A doctor\'s own instant call fee still applies when a patient picks that doctor by name.', 'eg-care' ); ?></p>
 						</td>
 					</tr>
 					<tr>

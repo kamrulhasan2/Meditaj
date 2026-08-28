@@ -26,6 +26,16 @@ class Fees {
 	const SERVICE_CHARGE_DEFAULT = 5.0;
 
 	/**
+	 * Option holding the fee for an instant request.
+	 */
+	const INSTANT_REQUEST_FEE_OPTION = 'eg_care_instant_request_fee';
+
+	/**
+	 * Fee used when the option has never been saved.
+	 */
+	const INSTANT_REQUEST_FEE_DEFAULT = 200.0;
+
+	/**
 	 * Percentage the platform adds on top of the consultation fee, paid by the
 	 * patient.
 	 *
@@ -43,6 +53,23 @@ class Fees {
 		// A negative or absurd percentage would silently produce a wrong bill,
 		// so clamp rather than trust whatever is in the options table.
 		return max( 0.0, min( 100.0, $value ) );
+	}
+
+	/**
+	 * What an instant request costs.
+	 *
+	 * One number for everybody, set in EG Care -> Settings, because a patient
+	 * asking for whoever is free has to be told the price before they ask - and
+	 * at that moment nobody knows which doctor will answer. The doctor's own
+	 * instant call fee still applies when a patient picks that doctor by name.
+	 *
+	 * @return float Fee in BDT.
+	 */
+	public static function instant_request_fee() {
+		$value = get_option( self::INSTANT_REQUEST_FEE_OPTION, self::INSTANT_REQUEST_FEE_DEFAULT );
+		$value = is_numeric( $value ) ? floatval( $value ) : self::INSTANT_REQUEST_FEE_DEFAULT;
+
+		return max( 0.0, $value );
 	}
 
 	/**

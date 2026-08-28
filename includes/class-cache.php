@@ -32,6 +32,7 @@ class Cache {
 		'eg_care_patient_dashboard',
 		'eg_care_doctor_dashboard',
 		'eg_care_doctor_registration',
+		'eg_care_instant_doctor',
 	);
 
 	/**

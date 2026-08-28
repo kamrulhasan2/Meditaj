@@ -17,7 +17,7 @@ class DB {
 	/**
 	 * Current database schema version.
 	 */
-	const DB_VERSION = '1.4.0';
+	const DB_VERSION = '1.5.0';
 
 	/**
 	 * Get custom table names.
@@ -33,6 +33,7 @@ class DB {
 			'reviews'      => $wpdb->prefix . 'eg_care_reviews',
 			'transactions' => $wpdb->prefix . 'eg_care_transactions',
 			'family_members' => $wpdb->prefix . 'eg_care_family_members',
+			'instant_requests' => $wpdb->prefix . 'eg_care_instant_requests',
 		);
 	}
 
@@ -81,6 +82,7 @@ class DB {
   organization varchar(255) DEFAULT NULL,
   follow_up_days int(11) DEFAULT 0 NOT NULL,
   follow_up_cost decimal(10,2) DEFAULT 0.00 NOT NULL,
+  accepts_instant_requests tinyint(1) DEFAULT 0 NOT NULL,
   bank_account_name varchar(255) DEFAULT NULL,
   bank_account_no varchar(100) DEFAULT NULL,
   bank_branch_name varchar(255) DEFAULT NULL,
@@ -94,6 +96,7 @@ class DB {
   KEY user_id (user_id),
   KEY verification_status (verification_status),
   KEY is_online (is_online),
+  KEY instant_duty (accepts_instant_requests, is_online),
   KEY fee_verification (consultation_fee, verification_status)
 ) $charset_collate;";
 
@@ -134,6 +137,7 @@ class DB {
   video_token_doctor text DEFAULT NULL,
   uploaded_files text DEFAULT NULL,
   symptom_notes text DEFAULT NULL,
+  instant_request_id bigint(20) DEFAULT NULL,
   reminder_sent_at datetime DEFAULT NULL,
   created_at datetime NOT NULL,
   updated_at datetime NOT NULL,
@@ -141,6 +145,7 @@ class DB {
   KEY doctor_id (doctor_id),
   KEY patient_user_id (patient_user_id),
   KEY family_member_id (family_member_id),
+  KEY instant_request_id (instant_request_id),
   KEY status (status),
   KEY doctor_slot (doctor_id, appointment_date, appointment_time)
 ) $charset_collate;";
@@ -202,6 +207,41 @@ class DB {
   updated_at datetime NOT NULL,
   PRIMARY KEY  (id),
   KEY user_id (user_id)
+) $charset_collate;";
+
+		// 7. wp_eg_care_instant_requests
+		//
+		// A patient asking for whoever is free, rather than for a named doctor.
+		// The request sits here until a doctor on instant duty claims it, and
+		// only then does an appointment exist - which is why this is a table of
+		// its own rather than an appointment in some earlier status. An
+		// appointment nobody ever answered would otherwise clutter the ledger
+		// and the doctor's own list.
+		//
+		// The patient's details are copied in rather than read back through
+		// family_member_id, for the same reason the appointment snapshots them:
+		// the request is a record of what was asked at the time.
+		$sql[] = "CREATE TABLE {$tables['instant_requests']} (
+  id bigint(20) NOT NULL AUTO_INCREMENT,
+  patient_user_id bigint(20) NOT NULL,
+  family_member_id bigint(20) DEFAULT NULL,
+  patient_name varchar(255) NOT NULL,
+  patient_age int(11) DEFAULT NULL,
+  patient_relation varchar(100) DEFAULT NULL,
+  contact_number varchar(20) NOT NULL,
+  symptoms text NOT NULL,
+  amount decimal(10,2) NOT NULL,
+  status enum('pending','claimed','cancelled','expired') DEFAULT 'pending' NOT NULL,
+  doctor_id bigint(20) DEFAULT NULL,
+  appointment_id bigint(20) DEFAULT NULL,
+  expires_at datetime NOT NULL,
+  claimed_at datetime DEFAULT NULL,
+  created_at datetime NOT NULL,
+  updated_at datetime NOT NULL,
+  PRIMARY KEY  (id),
+  KEY patient_user_id (patient_user_id),
+  KEY doctor_id (doctor_id),
+  KEY open_queue (status, expires_at)
 ) $charset_collate;";
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';

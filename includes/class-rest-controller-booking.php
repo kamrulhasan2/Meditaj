@@ -150,10 +150,13 @@ class RestControllerBooking extends WP_REST_Controller {
 	 * the occasional international number, so this rejects what is obviously not
 	 * a phone number rather than trying to enforce one shape.
 	 *
+	 * Public because the instant request queue applies the same rule; a second
+	 * copy of it would be a second thing to keep in step.
+	 *
 	 * @param string $raw Number as typed.
 	 * @return string|WP_Error Cleaned number.
 	 */
-	private static function normalize_contact_number( $raw ) {
+	public static function normalize_contact_number( $raw ) {
 		$raw = trim( (string) $raw );
 
 		if ( '' === $raw ) {
