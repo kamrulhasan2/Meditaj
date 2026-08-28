@@ -334,10 +334,10 @@
 }
 
 .eg-care-btn-register {
-	background-color: #0f766e;
-	color: #ffffff;
-	border: none;
-	border-radius: 8px;
+	background-color: #0f766e !important;
+	color: #ffffff !important;
+	border: none !important;
+	border-radius: 8px !important;
 	padding: 14px 32px;
 	font-size: 16px;
 	font-weight: 700;
@@ -347,7 +347,7 @@
 }
 
 .eg-care-btn-register:hover {
-	background-color: #0d9488;
+	background-color: #0d9488 !important;
 	transform: translateY(-1px);
 	box-shadow: 0 6px 20px rgba(13, 148, 136, 0.4);
 }
@@ -886,10 +886,10 @@ button.eg-care-back-to-list {
 .eg-care-btn-card-action {
 	width: 100%;
 	padding: 10px;
-	background-color: #0f766e;
-	color: #ffffff;
-	border: none;
-	border-radius: 6px;
+	background-color: #0f766e !important;
+	color: #ffffff !important;
+	border: none !important;
+	border-radius: 6px !important;
 	font-size: 13px;
 	font-weight: 700;
 	cursor: pointer;
@@ -897,7 +897,7 @@ button.eg-care-back-to-list {
 }
 
 .eg-care-btn-card-action:hover {
-	background-color: #0d9488;
+	background-color: #0d9488 !important;
 }
 
 /* Step 3: Doctor Details & Checkout Screen */
@@ -1594,10 +1594,10 @@ button.eg-care-back-to-list {
 }
 
 .eg-care-btn-secondary {
-	background-color: #ffffff;
-	border: 1px solid #cbd5e1;
-	color: #475569;
-	border-radius: 8px;
+	background-color: #ffffff !important;
+	border: 1px solid #cbd5e1 !important;
+	color: #475569 !important;
+	border-radius: 8px !important;
 	padding: 12px;
 	font-weight: 700;
 	font-size: 13px;
@@ -1606,9 +1606,9 @@ button.eg-care-back-to-list {
 }
 
 .eg-care-btn-secondary:hover {
-	background-color: #f8fafc;
-	color: #1e293b;
-	border-color: #94a3b8;
+	background-color: #f8fafc !important;
+	color: #1e293b !important;
+	border-color: #94a3b8 !important;
 }
 
 /* Success Popup overlay screen */
@@ -2373,9 +2373,10 @@ a.eg-care-report-link:hover {
 	align-items: flex-start;
 	gap: 3px;
 	padding: 14px 14px 13px;
-	border: 1.5px solid #e2e8f0;
-	border-radius: 10px;
-	background: #fff;
+	border: 1.5px solid #e2e8f0 !important;
+	border-radius: 10px !important;
+	background: #fff !important;
+	color: #0f172a !important;
 	cursor: pointer;
 	text-align: left;
 	font: inherit;
@@ -2383,7 +2384,7 @@ a.eg-care-report-link:hover {
 }
 
 .eg-care-family-card:hover {
-	border-color: #99c9c4;
+	border-color: #99c9c4 !important;
 }
 
 .eg-care-family-card:focus-visible {
@@ -2392,8 +2393,8 @@ a.eg-care-report-link:hover {
 }
 
 .eg-care-family-card.active {
-	border-color: #0f766e;
-	box-shadow: 0 0 0 3px rgba(15, 118, 110, .12);
+	border-color: #0f766e !important;
+	box-shadow: 0 0 0 3px rgba(15, 118, 110, .12) !important;
 }
 
 .eg-care-family-badge {
