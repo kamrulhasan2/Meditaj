@@ -80,6 +80,7 @@ All private REST routes require authenticated cookie session headers (`X-WP-Nonc
 * `POST /wp-json/eg-care/v1/instant-requests` - Ask for whoever is free. Returns the request already waiting if the patient has one, so a double click cannot queue two.
 * `GET /wp-json/eg-care/v1/instant-requests/{id}` - Where the request has got to. Readable only by the patient who made it.
 * `DELETE /wp-json/eg-care/v1/instant-requests/{id}` - Withdraw a request nobody has accepted yet.
+* `GET /wp-json/eg-care/v1/instant-availability` - How many doctors are on instant duty right now, a few of their names, and the fee broken into its lines.
 * `GET /wp-json/eg-care/v1/doctor/me/instant-requests` - The open queue. Patient phone numbers are withheld until a request is yours.
 * `POST /wp-json/eg-care/v1/instant-requests/{id}/claim` - Accept one. A single conditional UPDATE decides it, so two doctors pressing Accept together cannot both win.
 * `GET|POST /wp-json/eg-care/v1/doctor/me/instant-duty` - Read or set whether you are taking instant requests.

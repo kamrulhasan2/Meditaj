@@ -688,6 +688,9 @@ document.addEventListener('DOMContentLoaded', function() {
 				+ '</span>'
 				+ '<span class="eg-care-queue-waited">' + escapeText(waitedFor(request.waiting_since)) + '</span>'
 				+ '</div>'
+				+ ( request.specialty
+					? '<span class="eg-care-queue-tag">' + escapeText(request.specialty) + '</span>'
+					: '' )
 				+ '<p class="eg-care-queue-symptoms">' + escapeText(request.symptoms) + '</p>'
 				+ '<div class="eg-care-queue-foot">'
 				+ '<span class="eg-care-queue-fee">' + Math.round(request.amount) + ' BDT</span>'

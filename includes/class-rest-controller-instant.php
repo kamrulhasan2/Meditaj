@@ -89,6 +89,18 @@ class RestControllerInstant extends WP_REST_Controller {
 
 		register_rest_route(
 			$namespace,
+			'/instant-availability',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_availability' ),
+					'permission_callback' => array( $this, 'check_logged_in_permission' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			$namespace,
 			'/doctor/me/instant-requests',
 			array(
 				array(
@@ -177,6 +189,81 @@ class RestControllerInstant extends WP_REST_Controller {
 	}
 
 	/**
+	 * Who could answer right now, and what it will cost.
+	 *
+	 * Real numbers rather than reassuring ones: the count is the doctors
+	 * actually on instant duty and online this minute, so a patient can see
+	 * whether asking is worth it before they type anything.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function get_availability() {
+		global $wpdb;
+
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
+
+		$rows = $wpdb->get_results(
+			"SELECT m.post_id FROM $table_meta m
+			JOIN {$wpdb->posts} p ON m.post_id = p.ID
+			WHERE p.post_type = 'doctors' AND p.post_status = 'publish'
+				AND m.verification_status = 'approved'
+				AND m.accepts_instant_requests = 1 AND m.is_online = 1
+			ORDER BY m.avg_rating DESC, m.experience_years DESC"
+		);
+
+		$doctors = array();
+
+		// Only the first few are pictured; the count below is the real total.
+		foreach ( array_slice( (array) $rows, 0, 8 ) as $row ) {
+			$post = get_post( (int) $row->post_id );
+
+			if ( ! $post ) {
+				continue;
+			}
+
+			$doctors[] = array(
+				'id'        => (int) $post->ID,
+				'name'      => $post->post_title,
+				'photo_url' => get_the_post_thumbnail_url( $post->ID, 'thumbnail' ) ?: null,
+			);
+		}
+
+		$breakdown = \EGCare\Fees::breakdown( \EGCare\Fees::instant_request_fee() );
+
+		return new WP_REST_Response(
+			array(
+				'doctors_on_duty' => count( (array) $rows ),
+				'doctors'         => $doctors,
+				'wait_minutes'    => self::REQUEST_TTL_MINUTES,
+				'breakdown'       => $breakdown,
+			),
+			200
+		);
+	}
+
+	/**
+	 * A specialty slug the patient tagged the request with, or null.
+	 *
+	 * Checked against the real taxonomy rather than stored as typed. The tag is
+	 * triage information for whoever answers - it does not route the request,
+	 * because an instant request goes to whoever is free by definition.
+	 *
+	 * @param mixed $candidate Slug from the request.
+	 * @return string|null
+	 */
+	private function clean_specialty( $candidate ) {
+		$slug = sanitize_title( (string) $candidate );
+
+		if ( '' === $slug ) {
+			return null;
+		}
+
+		$term = get_term_by( 'slug', $slug, 'specialty' );
+
+		return $term ? $term->slug : null;
+	}
+
+	/**
 	 * Put a request into the queue.
 	 *
 	 * @param \WP_REST_Request $request REST request object.
@@ -228,6 +315,11 @@ class RestControllerInstant extends WP_REST_Controller {
 			return $patient;
 		}
 
+		// The service charge applies here exactly as it does to a booked
+		// consultation. Charging the bare fee for one and fee-plus-charge for
+		// the other would make the same setting mean two different things.
+		$breakdown = \EGCare\Fees::breakdown( \EGCare\Fees::instant_request_fee() );
+
 		$now     = current_time( 'mysql' );
 		$expires = gmdate( 'Y-m-d H:i:s', strtotime( $now ) + ( self::REQUEST_TTL_MINUTES * MINUTE_IN_SECONDS ) );
 
@@ -241,13 +333,14 @@ class RestControllerInstant extends WP_REST_Controller {
 				'patient_relation' => $patient['relation'],
 				'contact_number'   => $contact,
 				'symptoms'         => $symptoms,
-				'amount'           => \EGCare\Fees::instant_request_fee(),
+				'specialty_slug'   => $this->clean_specialty( $request->get_param( 'specialty' ) ),
+				'amount'           => $breakdown['total'],
 				'status'           => 'pending',
 				'expires_at'       => $expires,
 				'created_at'       => $now,
 				'updated_at'       => $now,
 			),
-			array( '%d', '%d', '%s', '%d', '%s', '%s', '%s', '%f', '%s', '%s', '%s', '%s' )
+			array( '%d', '%d', '%s', '%d', '%s', '%s', '%s', '%s', '%f', '%s', '%s', '%s', '%s' )
 		);
 
 		if ( ! $inserted ) {
@@ -693,13 +786,35 @@ class RestControllerInstant extends WP_REST_Controller {
 			'patient_name'   => $row->patient_name,
 			'contact_number' => $row->contact_number,
 			'symptoms'       => $row->symptoms,
+			'specialty'      => $row->specialty_slug ? $row->specialty_slug : null,
 			'amount'         => (float) $row->amount,
+			// The lines behind the total, so the summary the patient agreed to
+			// and the amount they are charged come from one calculation.
+			'breakdown'      => \EGCare\Fees::breakdown( \EGCare\Fees::instant_request_fee() ),
 			'doctor'         => $doctor,
 			'appointment_id' => $row->appointment_id ? (int) $row->appointment_id : null,
 			'expires_at'     => $row->expires_at,
 			'seconds_left'   => max( 0, strtotime( $row->expires_at ) - strtotime( current_time( 'mysql' ) ) ),
 			'created_at'     => $row->created_at,
 		);
+	}
+
+	/**
+	 * The readable name of a tagged specialty, or null.
+	 *
+	 * @param string|null $slug Stored slug.
+	 * @return string|null
+	 */
+	private function specialty_label( $slug ) {
+		if ( ! $slug ) {
+			return null;
+		}
+
+		$term = get_term_by( 'slug', $slug, 'specialty' );
+
+		// A term deleted since the request was made leaves the slug behind
+		// rather than an empty chip.
+		return $term ? $term->name : $slug;
 	}
 
 	/**
@@ -720,6 +835,7 @@ class RestControllerInstant extends WP_REST_Controller {
 			'patient_name'   => $row->patient_name,
 			'patient_age'    => null !== $row->patient_age ? (int) $row->patient_age : null,
 			'symptoms'       => $row->symptoms,
+			'specialty'      => $this->specialty_label( $row->specialty_slug ),
 			'amount'         => (float) $row->amount,
 			'appointment_id' => $row->appointment_id ? (int) $row->appointment_id : null,
 			'waiting_since'  => $row->created_at,

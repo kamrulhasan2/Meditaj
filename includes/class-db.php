@@ -17,7 +17,7 @@ class DB {
 	/**
 	 * Current database schema version.
 	 */
-	const DB_VERSION = '1.5.0';
+	const DB_VERSION = '1.6.0';
 
 	/**
 	 * Get custom table names.
@@ -230,6 +230,7 @@ class DB {
   patient_relation varchar(100) DEFAULT NULL,
   contact_number varchar(20) NOT NULL,
   symptoms text NOT NULL,
+  specialty_slug varchar(100) DEFAULT NULL,
   amount decimal(10,2) NOT NULL,
   status enum('pending','claimed','cancelled','expired') DEFAULT 'pending' NOT NULL,
   doctor_id bigint(20) DEFAULT NULL,
