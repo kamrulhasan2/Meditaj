@@ -512,10 +512,13 @@ class Shortcodes {
 	 * page exists and leaving them to find it. Cached, because this runs on a
 	 * screen nobody is signed in to and the answer changes about once a year.
 	 *
+	 * Public because SpecialtyArchive sends visitors to the same pages, and a
+	 * second copy of the lookup would be a second cache to keep in step.
+	 *
 	 * @param string $shortcode Shortcode tag, without brackets.
 	 * @return string Permalink, or an empty string when no page has it.
 	 */
-	private static function page_with_shortcode( $shortcode ) {
+	public static function page_with_shortcode( $shortcode ) {
 		global $wpdb;
 
 		$key    = 'eg_care_page_' . $shortcode;

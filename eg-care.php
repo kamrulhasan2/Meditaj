@@ -143,6 +143,7 @@ add_action(
 \EGCare\Roles::init();
 \EGCare\Shortcodes::init();
 \EGCare\SingleDoctor::init();
+\EGCare\SpecialtyArchive::init();
 \EGCare\Cache::init();
 \EGCare\SecureUploads::init();
 \EGCare\AdminMenu::init();
