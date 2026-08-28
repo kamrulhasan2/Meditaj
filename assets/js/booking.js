@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 					const iconContainer = card.querySelector('.eg-care-specialty-icon');
 					if ( spec.icon_url ) {
-						iconContainer.innerHTML = `<img src="${spec.icon_url}" alt="${spec.name}" style="width:32px; height:32px;">`;
+						iconContainer.innerHTML = `<img src="${escapeHtml(spec.icon_url)}" alt="${escapeHtml(spec.name)}" style="width:32px; height:32px;">`;
 					} else {
 						// Default SVG icon
 						iconContainer.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 32px; height: 32px; color: #0d9488;"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`;
@@ -1004,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		// Populate Avatar
 		const avatarWrap = app.querySelector('.detail-avatar-wrap');
 		if ( doc.photo_url ) {
-			avatarWrap.innerHTML = `<img src="${doc.photo_url}" class="eg-care-detail-avatar" alt="${escapeHtml(doc.name)}">`;
+			avatarWrap.innerHTML = `<img src="${escapeHtml(doc.photo_url)}" class="eg-care-detail-avatar" alt="${escapeHtml(doc.name)}">`;
 		} else {
 			const initials = doc.name.split(' ').filter(n => n !== 'Dr.').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 			avatarWrap.innerHTML = `<div class="eg-care-detail-avatar-placeholder">${escapeHtml(initials)}</div>`;

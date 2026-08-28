@@ -586,10 +586,22 @@ document.addEventListener('DOMContentLoaded', function() {
 		);
 	}
 
+	/**
+	 * Escape a value for HTML, attributes included.
+	 *
+	 * The textContent-into-innerHTML trick this used to do escapes < and &
+	 * but leaves quotes alone, which is fine in a text node and an injection
+	 * point inside title="..." or src="...". Doctor names come from post
+	 * titles, so they are not something to take on trust.
+	 *
+	 * @param {*} text Value to escape.
+	 * @return {string} Escaped text.
+	 */
 	function escapeText(text) {
-		const div = document.createElement('div');
-		div.textContent = null === text || undefined === text ? '' : text;
-		return div.innerHTML;
+		return String(null === text || undefined === text ? '' : text)
+			.replace(/[&<>"']/g, function(ch) {
+				return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[ch];
+			});
 	}
 
 	function describeDuty() {
