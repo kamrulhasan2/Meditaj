@@ -369,7 +369,7 @@ class AdminMenu {
 
 			<div style="background: #fff; border: 1px solid #ccd0d4; border-radius: 8px; padding: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 30px;">
 				<p style="font-size: 15px; line-height: 1.6; color: #334155; margin-top: 0;">
-					<?php esc_html_e( 'Welcome to EG Care! This guide walks you through the step-by-step process of setting up shortcodes, integrating SSLCommerz sandbox payments, securing WebRTC video calls via Agora, and scheduling automated email alerts.', 'eg-care' ); ?>
+					<?php esc_html_e( 'Welcome to EG Care! This guide walks you through setting up the shortcodes and their pages, turning on instant doctor requests, integrating SSLCommerz payments, securing WebRTC video calls via Agora, and scheduling automated email alerts.', 'eg-care' ); ?>
 				</p>
 			</div>
 
@@ -392,7 +392,7 @@ class AdminMenu {
 					<tbody>
 						<tr>
 							<td><code style="font-size: 13px; color: #0f766e; font-weight: bold;">[eg_care_booking_flow]</code></td>
-							<td><?php esc_html_e( 'Renders the complete patient-facing telemedicine booking journey (specialty selection → slots grid → checkout).', 'eg-care' ); ?></td>
+							<td><?php esc_html_e( 'Renders the patient-facing booking journey: the doctor list with its filters, then the doctor and their slots, then checkout. Takes an optional doctor attribute - [eg_care_booking_flow doctor="41"] opens the flow on that one doctor.', 'eg-care' ); ?></td>
 							<td><span class="eg-care-status-badge status-approved" style="font-size: 10px;"><?php esc_html_e( 'PUBLIC GUEST', 'eg-care' ); ?></span></td>
 						</tr>
 						<tr>
@@ -406,18 +406,46 @@ class AdminMenu {
 							<td><span class="eg-care-status-badge status-pending" style="font-size: 10px;"><?php esc_html_e( 'DOCTORS ONLY', 'eg-care' ); ?></span></td>
 						</tr>
 						<tr>
+							<td><code style="font-size: 13px; color: #0f766e; font-weight: bold;">[eg_care_instant_doctor]</code></td>
+							<td><?php esc_html_e( 'Renders the instant consultation request screen: a patient describes the problem and waits for whichever doctor on duty accepts first, then pays and the call opens.', 'eg-care' ); ?></td>
+							<td><span class="eg-care-status-badge status-pending" style="font-size: 10px;"><?php esc_html_e( 'PATIENTS ONLY', 'eg-care' ); ?></span></td>
+						</tr>
+						<tr>
 							<td><code style="font-size: 13px; color: #0f766e; font-weight: bold;">[eg_care_doctor_registration]</code></td>
 							<td><?php esc_html_e( 'Renders a streamlined onboarding form for new doctors to sign up and submit certificates/license.', 'eg-care' ); ?></td>
 							<td><span class="eg-care-status-badge status-approved" style="font-size: 10px;"><?php esc_html_e( 'PUBLIC GUEST', 'eg-care' ); ?></span></td>
 						</tr>
 					</tbody>
 				</table>
+				<div style="background: #f0fdfa; border-left: 4px solid #0f766e; padding: 12px 15px; border-radius: 4px; font-size: 13px; color: #134e4a; margin-top: 15px;">
+					<strong><?php esc_html_e( 'Doctor profile pages need no page of their own.', 'eg-care' ); ?></strong>
+					<?php esc_html_e( 'Every approved doctor already has one at /doctors/{slug}/, served by the plugin unless your theme ships a single-doctors.php of its own. If those URLs return 404 after activating, visit Settings → Permalinks once to flush the rewrite rules.', 'eg-care' ); ?>
+				</div>
 			</div>
 
-			<!-- SECTION 2: SSLCommerz Integration -->
+			<!-- SECTION 2: Instant Doctor Requests -->
 			<div class="eg-care-form-card" style="margin-bottom: 30px; padding: 25px;">
 				<h3 style="margin-top: 0; font-size: 18px; color: #0f766e; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; font-weight: 700;">
-					<?php esc_html_e( '2. SSLCommerz Payment Gateway Setup', 'eg-care' ); ?>
+					<?php esc_html_e( '2. Instant Doctor Requests', 'eg-care' ); ?>
+				</h3>
+				<p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 15px;">
+					<?php esc_html_e( 'A patient who does not want to choose a doctor describes the problem and waits. The request goes into an open queue that every doctor on instant duty can see, and the first to accept it gets it.', 'eg-care' ); ?>
+				</p>
+				<ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #334155; line-height: 1.6; margin-bottom: 15px;">
+					<li><?php printf( __( 'Set the <strong>Instant Request Fee</strong> on the <a href="%s">Settings page</a>. One price applies whoever answers, because the patient is told what it costs before any doctor has accepted.', 'eg-care' ), admin_url( 'admin.php?page=eg-care-settings' ) ); ?></li>
+					<li><?php esc_html_e( 'Publish a page carrying the [eg_care_instant_doctor] shortcode and link it from your menu, next to the booking page.', 'eg-care' ); ?></li>
+					<li><?php esc_html_e( 'Each doctor who wants these patients opens their own dashboard and turns on "Take Instant Requests", beside "Go Online". Both switches have to be on: a doctor who left duty on but went offline is not there to answer, so no requests reach them.', 'eg-care' ); ?></li>
+				</ol>
+				<div style="background: #fff8e1; border-left: 4px solid #ffb300; padding: 12px 15px; border-radius: 4px; font-size: 13px; color: #5d4037;">
+					<strong><?php esc_html_e( 'Payment comes after a doctor accepts, not before.', 'eg-care' ); ?></strong>
+					<?php esc_html_e( 'A request waits 15 minutes; if nobody accepts it in that time it closes itself, the patient is told plainly, and nothing is charged. That way there is never a payment to refund for a request nobody answered.', 'eg-care' ); ?>
+				</div>
+			</div>
+
+			<!-- SECTION 3: SSLCommerz Integration -->
+			<div class="eg-care-form-card" style="margin-bottom: 30px; padding: 25px;">
+				<h3 style="margin-top: 0; font-size: 18px; color: #0f766e; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; font-weight: 700;">
+					<?php esc_html_e( '3. SSLCommerz Payment Gateway Setup', 'eg-care' ); ?>
 				</h3>
 				<ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #334155; line-height: 1.6;">
 					<li><?php printf( __( 'Navigate to the <a href="%s">Settings page</a> in this plugin.', 'eg-care' ), admin_url( 'admin.php?page=eg-care-settings' ) ); ?></li>
@@ -427,10 +455,10 @@ class AdminMenu {
 				</ol>
 			</div>
 
-			<!-- SECTION 3: Agora Video Setup -->
+			<!-- SECTION 4: Agora Video Setup -->
 			<div class="eg-care-form-card" style="margin-bottom: 30px; padding: 25px;">
 				<h3 style="margin-top: 0; font-size: 18px; color: #0f766e; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; font-weight: 700;">
-					<?php esc_html_e( '3. Agora WebRTC Video Call Integration', 'eg-care' ); ?>
+					<?php esc_html_e( '4. Agora WebRTC Video Call Integration', 'eg-care' ); ?>
 				</h3>
 				<p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 15px;">
 					<?php esc_html_e( 'To generate short-lived, encrypted version 007 RTC AccessTokens, you must register the keys on your Agora Console:', 'eg-care' ); ?>
@@ -446,10 +474,10 @@ class AdminMenu {
 				</div>
 			</div>
 
-			<!-- SECTION 4: WP-Cron & Email Reminders -->
+			<!-- SECTION 5: WP-Cron & Email Reminders -->
 			<div class="eg-care-form-card" style="margin-bottom: 30px; padding: 25px;">
 				<h3 style="margin-top: 0; font-size: 18px; color: #0f766e; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; font-weight: 700;">
-					<?php esc_html_e( '4. Automated Email Alerts & Cron Reminders', 'eg-care' ); ?>
+					<?php esc_html_e( '5. Automated Email Alerts & Cron Reminders', 'eg-care' ); ?>
 				</h3>
 				<p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 15px;">
 					<?php esc_html_e( 'EG Care automatically fires transactional emails on booking confirmations, doctor meta approvals, and schedules reminder emails 30 minutes before consultations.', 'eg-care' ); ?>
