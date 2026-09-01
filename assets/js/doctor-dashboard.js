@@ -156,11 +156,11 @@ document.addEventListener('DOMContentLoaded', function() {
 					const escapedNotes = escapeHtml(app.symptom_notes || '');
 
 					tr.innerHTML = `
-						<td><strong>${escapedName}</strong> <span class="relation-tag">${escapedRelation}</span></td>
-						<td>${formatTime24To12(app.appointment_time)}</td>
-						<td><span class="symptom-notes-cell" title="${escapedNotes}">${escapedNotes || '-'}</span>${reportLinks(app)}</td>
-						<td>${app.amount} BDT</td>
-						<td>
+						<td data-label="Patient Name"><strong>${escapedName}</strong> <span class="relation-tag">${escapedRelation}</span></td>
+						<td data-label="Schedule Time">${formatTime24To12(app.appointment_time)}</td>
+						<td data-label="Symptoms &amp; Reports"><span class="symptom-notes-cell" title="${escapedNotes}">${escapedNotes || '-'}</span>${reportLinks(app)}</td>
+						<td data-label="Fee (Gross)">${app.amount} BDT</td>
+						<td data-label="Actions">
 							<button type="button" class="eg-care-btn-join-call" data-id="${parseInt(app.id, 10)}">
 								Join Call
 							</button>
@@ -193,11 +193,11 @@ document.addEventListener('DOMContentLoaded', function() {
 					const escapedNotes = escapeHtml(app.symptom_notes || '');
 
 					tr.innerHTML = `
-						<td><strong>${escapedName}</strong> <span class="relation-tag">${escapedRelation}</span></td>
-						<td>${app.appointment_date}</td>
-						<td>${formatTime24To12(app.appointment_time)}</td>
-						<td><span class="symptom-notes-cell" title="${escapedNotes}">${escapedNotes || '-'}</span>${reportLinks(app)}</td>
-						<td>${app.amount} BDT</td>
+						<td data-label="Patient Name"><strong>${escapedName}</strong> <span class="relation-tag">${escapedRelation}</span></td>
+						<td data-label="Schedule Date">${app.appointment_date}</td>
+						<td data-label="Schedule Time">${formatTime24To12(app.appointment_time)}</td>
+						<td data-label="Symptoms &amp; Reports"><span class="symptom-notes-cell" title="${escapedNotes}">${escapedNotes || '-'}</span>${reportLinks(app)}</td>
+						<td data-label="Fee (Gross)">${app.amount} BDT</td>
 					`;
 					upcomingTarget.appendChild(tr);
 				});

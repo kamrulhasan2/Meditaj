@@ -3293,3 +3293,349 @@ button.eg-care-linkish[hidden] {
 		flex: 1 1 100%;
 	}
 }
+
+
+/* ==========================================================================
+   Dashboards on a phone
+   --------------------------------------------------------------------------
+   The patient dashboard carries most of its layout in inline style attributes
+   (a hard three-column stats grid, a space-between header, 20-25px padding),
+   which no plain rule can reach - hence !important on those, and only those.
+   The doctor dashboard is class-driven, so its rules stay ordinary.
+   ========================================================================== */
+
+@media (max-width: 768px) {
+
+	/* ---- shell ---- */
+
+	.eg-care-patient-dashboard {
+		padding: 14px !important;
+	}
+
+	.eg-care-patient-dashboard .eg-care-dashboard-section {
+		padding: 16px !important;
+		margin-bottom: 18px !important;
+	}
+
+	.eg-care-patient-dashboard img,
+	.eg-care-dashboard-wrapper img {
+		max-width: 100%;
+		height: auto;
+	}
+
+	/* ---- patient: header ---- */
+
+	.eg-care-patient-header {
+		flex-direction: column !important;
+		align-items: flex-start !important;
+		gap: 14px !important;
+		padding-bottom: 16px !important;
+		margin-bottom: 20px !important;
+	}
+
+	.eg-care-patient-header h2 {
+		font-size: 20px !important;
+		line-height: 1.3 !important;
+		overflow-wrap: anywhere;
+	}
+
+	.eg-care-patient-header p {
+		font-size: 13px !important;
+		line-height: 1.5 !important;
+	}
+
+	/* ---- patient: the three summary tiles ---- */
+
+	.eg-care-patient-stats {
+		grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+		gap: 10px !important;
+		margin-bottom: 20px !important;
+	}
+
+	/* Three tiles in two columns: the last one takes the whole row
+	   rather than sitting half-width next to nothing. */
+	.eg-care-patient-stats > div:last-child {
+		grid-column: 1 / -1 !important;
+	}
+
+	.eg-care-patient-stats > div {
+		padding: 12px 10px !important;
+	}
+
+	.eg-care-patient-stats > div > span {
+		font-size: 11px !important;
+		line-height: 1.35 !important;
+		display: block;
+	}
+
+	/* 28px numbers were the loudest thing on the screen. */
+	.eg-care-patient-stats > div > h3 {
+		font-size: 20px !important;
+		margin-top: 6px !important;
+		overflow-wrap: anywhere;
+	}
+
+	/* ---- section headings, both dashboards ---- */
+
+	.eg-care-patient-dashboard .eg-care-dashboard-section > h3 {
+		font-size: 16px !important;
+		line-height: 1.35 !important;
+		margin-bottom: 14px !important;
+	}
+
+	.tab-pane h3 {
+		font-size: 16px;
+		line-height: 1.35;
+	}
+
+	/* ---- doctor: header and the two duty switches ---- */
+
+	.eg-care-dashboard-header {
+		margin-bottom: 20px;
+	}
+
+	.eg-care-dashboard-header h2 {
+		font-size: 19px;
+		line-height: 1.3;
+		overflow-wrap: anywhere;
+	}
+
+	.eg-care-dashboard-switches {
+		width: 100%;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 10px;
+	}
+
+	/* Label left, switch right - a phone has the width for exactly that. */
+	.instant-status-toggle {
+		justify-content: space-between;
+		padding: 10px 14px;
+	}
+
+	.instant-status-toggle .toggle-label {
+		font-size: 12px;
+	}
+
+	/* ---- doctor: stat cards ---- */
+
+	.eg-care-stats-row {
+		gap: 12px !important;
+		margin-bottom: 20px;
+	}
+
+	.eg-care-stat-card {
+		padding: 14px;
+		gap: 14px;
+	}
+
+	.stat-icon {
+		width: 38px;
+		height: 38px;
+		font-size: 17px;
+		flex: 0 0 auto;
+	}
+
+	.stat-details {
+		min-width: 0;
+	}
+
+	.stat-details .stat-num {
+		font-size: 17px;
+		overflow-wrap: anywhere;
+	}
+
+	/* ---- doctor: tab strip stays one swipeable line ---- */
+
+	.eg-care-dashboard-tabs {
+		gap: 2px;
+		margin-bottom: 18px;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+	}
+
+	.eg-care-dashboard-tabs::-webkit-scrollbar {
+		display: none;
+	}
+
+	.eg-care-dashboard-tabs button.tab-trigger {
+		padding: 10px 12px !important;
+		font-size: 13px !important;
+	}
+
+	/* ==================================================================
+	   Tables become cards
+	   A 750px-wide table inside a horizontally scrolling box means the
+	   reader has to scroll sideways for every single row. Below 768px each
+	   row becomes its own card and each cell prints its column name from
+	   data-label, so nothing is lost and nothing runs off the screen.
+	   ================================================================== */
+
+	.eg-care-table-responsive {
+		overflow-x: visible !important;
+		border: none !important;
+		background: transparent !important;
+		border-radius: 0 !important;
+	}
+
+	table.eg-care-dashboard-table,
+	table.eg-care-patient-table {
+		display: block !important;
+		width: 100% !important;
+		min-width: 0 !important;
+	}
+
+	/* The column names live in each cell now. */
+	.eg-care-dashboard-table thead,
+	.eg-care-patient-table thead {
+		display: none !important;
+	}
+
+	.eg-care-dashboard-table tbody,
+	.eg-care-patient-table tbody {
+		display: block !important;
+	}
+
+	.eg-care-dashboard-table tbody tr,
+	.eg-care-patient-table tbody tr {
+		display: block !important;
+		border: 1px solid #e2e8f0 !important;
+		border-radius: 10px !important;
+		background: #ffffff !important;
+		padding: 4px 14px !important;
+		margin-bottom: 12px !important;
+	}
+
+	.eg-care-dashboard-table tbody tr:last-child,
+	.eg-care-patient-table tbody tr:last-child {
+		margin-bottom: 0 !important;
+	}
+
+	/* Label parked on the left, value free to be anything - text, a badge,
+	   a button, a list of report links - on the right. */
+	.eg-care-dashboard-table tbody td,
+	.eg-care-patient-table tbody td {
+		display: block !important;
+		position: relative !important;
+		padding: 9px 0 9px 40% !important;
+		border-bottom: 1px solid #f1f5f9 !important;
+		text-align: right !important;
+		font-size: 13px !important;
+		line-height: 1.5 !important;
+		min-height: 20px;
+		overflow-wrap: anywhere;
+	}
+
+	.eg-care-dashboard-table tbody tr td:last-child,
+	.eg-care-patient-table tbody tr td:last-child {
+		border-bottom: none !important;
+	}
+
+	.eg-care-dashboard-table tbody td::before,
+	.eg-care-patient-table tbody td::before {
+		content: attr(data-label);
+		position: absolute;
+		left: 0;
+		top: 9px;
+		width: 36%;
+		text-align: left;
+		font-size: 11px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+		color: #64748b;
+		line-height: 1.5;
+	}
+
+	/* The full-width "loading" / "nothing here" / "failed" rows have no
+	   column of their own, so they keep the centred single-cell shape. */
+	.eg-care-dashboard-table tbody td.loading-cell,
+	.eg-care-dashboard-table tbody td.empty-cell,
+	.eg-care-dashboard-table tbody td.error-cell,
+	.eg-care-patient-table tbody td[colspan] {
+		padding: 22px 10px !important;
+		text-align: center !important;
+	}
+
+	.eg-care-dashboard-table tbody td.loading-cell::before,
+	.eg-care-dashboard-table tbody td.empty-cell::before,
+	.eg-care-dashboard-table tbody td.error-cell::before,
+	.eg-care-patient-table tbody td[colspan]::before {
+		content: none;
+	}
+
+	/* Symptoms were clipped to one 250px line for the table layout; in a
+	   card they can simply wrap. */
+	.symptom-notes-cell {
+		max-width: none !important;
+		white-space: normal !important;
+		overflow: visible !important;
+		text-overflow: clip !important;
+	}
+
+	.eg-care-report-links {
+		display: block;
+		margin-top: 4px;
+	}
+
+	/* ---- forms and uploads ---- */
+
+	/* Under 16px, Safari on iOS zooms the whole page in when a field takes
+	   focus and never zooms back out. */
+	.eg-care-field input[type="text"],
+	.eg-care-field input[type="email"],
+	.eg-care-field input[type="password"],
+	.eg-care-field input[type="number"],
+	.eg-care-field input[type="date"],
+	.eg-care-field input[type="tel"],
+	.eg-care-field select,
+	.eg-care-field textarea,
+	.time-group input[type="time"],
+	.time-group select {
+		font-size: 16px;
+	}
+
+	.eg-care-field label {
+		font-size: 13px;
+	}
+
+	.eg-care-modern-upload-wrapper {
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+
+	.eg-care-file-name {
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+
+	.eg-care-patient-dashboard .eg-care-btn-register,
+	.eg-care-dashboard-wrapper .eg-care-btn-register {
+		width: 100%;
+		padding: 13px 20px;
+		font-size: 15px;
+	}
+
+	.eg-care-family-form-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+	}
+}
+
+/* Two tiles side by side stop being readable somewhere around here. */
+@media (max-width: 344px) {
+	.eg-care-patient-stats {
+		grid-template-columns: minmax(0, 1fr) !important;
+	}
+
+	.eg-care-dashboard-table tbody td,
+	.eg-care-patient-table tbody td {
+		padding-left: 45% !important;
+	}
+
+	.eg-care-dashboard-table tbody td::before,
+	.eg-care-patient-table tbody td::before {
+		width: 42%;
+	}
+}

@@ -147,15 +147,15 @@ foreach ( $appointments as $appt ) {
 							$time_val = mysql2date( 'g:i A', $app->appointment_time, false );
 						?>
 							<tr style="border-bottom: 1px solid #f1f5f9;">
-								<td style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
-								<td><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?> (<?php echo esc_html( $app->family_member_relation ? $app->family_member_relation : 'Self' ); ?>)<?php echo $eg_care_report_links( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
-								<td><?php echo esc_html( $time_val ); ?></td>
-								<td>
+								<td data-label="<?php esc_attr_e( 'Doctor', 'eg-care' ); ?>" style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
+								<td data-label="<?php esc_attr_e( 'Patient Name', 'eg-care' ); ?>"><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?> (<?php echo esc_html( $app->family_member_relation ? $app->family_member_relation : 'Self' ); ?>)<?php echo $eg_care_report_links( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+								<td data-label="<?php esc_attr_e( 'Schedule Time', 'eg-care' ); ?>"><?php echo esc_html( $time_val ); ?></td>
+								<td data-label="<?php esc_attr_e( 'Type', 'eg-care' ); ?>">
 									<span style="font-size: 11px; background: <?php echo 'instant' === $app->appointment_type ? '#e0f2fe; color: #0369a1;' : '#f0fdf4; color: #166534;'; ?> padding: 2px 8px; border-radius: 12px; font-weight: 600;">
 										<?php echo esc_html( strtoupper( $app->appointment_type ) ); ?>
 									</span>
 								</td>
-								<td style="text-align: right;">
+								<td data-label="<?php esc_attr_e( 'Actions', 'eg-care' ); ?>" style="text-align: right;">
 									<button type="button" class="eg-care-btn-join-call <?php echo $is_call_window ? 'active' : 'disabled'; ?>" data-id="<?php echo intval( $app->id ); ?>" <?php echo $is_call_window ? '' : 'disabled'; ?> style="padding: 6px 14px; border-radius: 6px; font-weight: 600; border: none; font-size: 13px;">
 										<?php esc_html_e( 'Join Call', 'eg-care' ); ?>
 									</button>
@@ -193,11 +193,11 @@ foreach ( $appointments as $appt ) {
 							$date_val = mysql2date( 'M d, Y', $app->appointment_date, false );
 						?>
 							<tr style="border-bottom: 1px solid #f1f5f9;">
-								<td style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
-								<td><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?><?php echo $eg_care_report_links( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
-								<td><?php echo esc_html( $date_val . ' @ ' . $time_val ); ?></td>
-								<td><?php echo esc_html( $app->amount ); ?> BDT</td>
-								<td>
+								<td data-label="<?php esc_attr_e( 'Doctor', 'eg-care' ); ?>" style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
+								<td data-label="<?php esc_attr_e( 'Patient Name', 'eg-care' ); ?>"><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?><?php echo $eg_care_report_links( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+								<td data-label="<?php esc_attr_e( 'Date & Time', 'eg-care' ); ?>"><?php echo esc_html( $date_val . ' @ ' . $time_val ); ?></td>
+								<td data-label="<?php esc_attr_e( 'Fee paid', 'eg-care' ); ?>"><?php echo esc_html( $app->amount ); ?> BDT</td>
+								<td data-label="<?php esc_attr_e( 'Status', 'eg-care' ); ?>">
 									<span style="font-size: 11px; background: <?php echo 'pending_payment' === $app->status ? '#fef3c7; color: #92400e;' : '#f0fdf4; color: #166534;'; ?> padding: 2px 8px; border-radius: 12px; font-weight: 600;">
 										<?php echo esc_html( strtoupper( $app->status ) ); ?>
 									</span>
@@ -239,16 +239,16 @@ foreach ( $appointments as $appt ) {
 							$reviewed = $wpdb->get_var( $wpdb->prepare( "SELECT rating FROM {$wpdb->prefix}eg_care_reviews WHERE appointment_id = %d", $app->id ) );
 						?>
 							<tr style="border-bottom: 1px solid #f1f5f9;">
-								<td style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
-								<td><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?><?php echo $eg_care_report_links( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
-								<td><?php echo esc_html( $date_val . ' @ ' . $time_val ); ?></td>
-								<td><?php echo esc_html( $app->amount ); ?> BDT</td>
-								<td>
+								<td data-label="<?php esc_attr_e( 'Doctor', 'eg-care' ); ?>" style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
+								<td data-label="<?php esc_attr_e( 'Patient Name', 'eg-care' ); ?>"><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?><?php echo $eg_care_report_links( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+								<td data-label="<?php esc_attr_e( 'Date & Time', 'eg-care' ); ?>"><?php echo esc_html( $date_val . ' @ ' . $time_val ); ?></td>
+								<td data-label="<?php esc_attr_e( 'Paid Amount', 'eg-care' ); ?>"><?php echo esc_html( $app->amount ); ?> BDT</td>
+								<td data-label="<?php esc_attr_e( 'Status', 'eg-care' ); ?>">
 									<span style="font-size: 11px; background: <?php echo 'completed' === $app->status ? '#dcfce7; color: #166534;' : '#fee2e2; color: #991b1b;'; ?> padding: 2px 8px; border-radius: 12px; font-weight: 600;">
 										<?php echo esc_html( strtoupper( $app->status ) ); ?>
 									</span>
 								</td>
-								<td style="text-align: right;">
+								<td data-label="<?php esc_attr_e( 'Feedback', 'eg-care' ); ?>" style="text-align: right;">
 									<?php if ( 'completed' === $app->status ) : ?>
 										<?php if ( $reviewed ) : ?>
 											<span style="color: #fbbf24; font-weight: 600; font-size: 13px;">★ <?php echo intval( $reviewed ); ?> / 5</span>
