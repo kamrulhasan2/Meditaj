@@ -2191,7 +2191,7 @@ button.eg-care-back-to-list {
 	position: relative !important;
 }
 
-.remote-video-stream div {
+.remote-video-stream > div:not(.video-placeholder) {
 	width: 100% !important;
 	height: 100% !important;
 }
@@ -2208,8 +2208,9 @@ button.eg-care-back-to-list {
 	position: absolute !important;
 	bottom: 100px !important;
 	right: 20px !important;
-	width: 150px !important;
-	height: 200px !important;
+	/* Landscape, like the camera - a 150x200 portrait box cropped faces. */
+	width: 180px !important;
+	height: 135px !important;
 	background-color: #334155 !important;
 	border-radius: 8px !important;
 	overflow: hidden !important;
@@ -2218,9 +2219,17 @@ button.eg-care-back-to-list {
 	z-index: 5 !important;
 }
 
-.local-video-stream div {
+/* Only the Agora player wrapper, never the "You" badge - the old
+   descendant selector stretched the badge (and its 50% black
+   background) across the whole picture-in-picture box. */
+.local-video-stream > div:not(.local-video-badge) {
 	width: 100% !important;
 	height: 100% !important;
+}
+
+.local-video-stream > .local-video-badge {
+	width: auto !important;
+	height: auto !important;
 }
 
 .video-controls-toolbar {
@@ -2241,6 +2250,12 @@ button.eg-care-back-to-list {
 .control-btn {
 	width: 50px !important;
 	height: 50px !important;
+	/* Astra gives every <button> 15px 30px of padding. With border-box that
+	   left a zero-width content box, and the SVG - a flex item - shrank to
+	   0px, so the icons were invisible. */
+	padding: 0 !important;
+	box-sizing: border-box !important;
+	line-height: 1 !important;
 	border-radius: 50% !important;
 	border: none !important;
 	cursor: pointer !important;
@@ -2270,10 +2285,11 @@ button.eg-care-back-to-list {
 	color: #ffffff !important;
 }
 
+/* No transform here: the hangup SVG already carries rotate(135deg) inline.
+   Both together made 270deg, and :hover scale() wiped the rotation. */
 .control-btn.end-call {
 	background-color: #ef4444 !important;
 	color: #ffffff !important;
-	transform: rotate(135deg) !important;
 }
 
 .control-btn.end-call:hover {
@@ -2288,12 +2304,24 @@ button.eg-care-back-to-list {
 .control-btn .video-icon {
 	width: 20px !important;
 	height: 20px !important;
+	/* Belt and braces: never let flex shrink the icon away again. */
+	min-width: 20px !important;
+	flex: 0 0 auto !important;
 	color: #ffffff !important;
 	fill: none !important;
 	display: block !important;
 	margin: 0 auto !important;
 	stroke: currentColor !important;
 	stroke-width: 2.5px !important;
+}
+
+/* The picture-in-picture box takes a smaller share of a phone screen. */
+@media (max-width: 768px) {
+	.local-video-stream {
+		width: 120px !important;
+		height: 90px !important;
+		bottom: 110px !important;
+	}
 }
 
 /* Custom Responsive Overrides for Mobile Telemedicine Portals */

@@ -92,7 +92,7 @@
 				
 				<!-- Picture-in-Picture Local Video Stream -->
 				<div id="local-video-container" class="local-video-stream">
-					<div style="position: absolute; bottom: 8px; left: 8px; font-size: 10px; background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px; color: #fff; z-index: 10; font-weight: bold;">You</div>
+					<div class="local-video-badge" style="position: absolute; bottom: 8px; left: 8px; font-size: 10px; background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px; color: #fff; z-index: 10; font-weight: bold;">You</div>
 				</div>
 			</div>
 			
@@ -309,7 +309,10 @@
 						placeholder.style.display = 'none';
 					}
 					// Play remote participant video
-					user.videoTrack.play('remote-video-container');
+					// Agora defaults to fit: 'cover', which zooms the feed to fill the
+					// container and crops whatever does not fit - on a laptop that cut
+					// faces in half. 'contain' shows the whole frame.
+					user.videoTrack.play('remote-video-container', { fit: 'contain' });
 				}
 				
 				if ( mediaType === 'audio' ) {
@@ -340,7 +343,7 @@
 			[localAudioTrack, localVideoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks();
 
 			// Play Local Camera feed inside PiP window
-			await localVideoTrack.play('local-video-container');
+			await localVideoTrack.play('local-video-container', { fit: 'contain' });
 
 			// Publish local tracks
 			await client.publish([localAudioTrack, localVideoTrack]);
