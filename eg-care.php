@@ -160,6 +160,7 @@ add_action(
 \EGCare\Shortcodes::init();
 \EGCare\SingleDoctor::init();
 \EGCare\SpecialtyArchive::init();
+\EGCare\SearchRedirect::init();
 \EGCare\Cache::init();
 \EGCare\SecureUploads::init();
 \EGCare\AdminMenu::init();
