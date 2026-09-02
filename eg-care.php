@@ -3,7 +3,7 @@
  * Plugin Name: EG Care - Doctor Calling & Appointment System
  * Plugin URI:  https://github.com/kamrulhasan2/Meditaj
  * Description: Telemedicine and doctor appointment booking platform with Agora video integration and local payment options.
- * Version:     1.1.1
+ * Version:     1.1.2
  * Author:      Kamrul Hasan
  * Text Domain: eg-care
  * Domain Path: /languages
@@ -18,31 +18,47 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define constants.
-define( 'EG_CARE_VERSION', '1.1.1' );
+define( 'EG_CARE_VERSION', '1.1.2' );
 define( 'EG_CARE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'EG_CARE_URL', plugin_dir_url( __FILE__ ) );
 
 /**
  * Version string for a plugin asset.
  *
- * Returns the plugin version, so browsers, page caches and CSS/JS combining
- * can actually hold on to the file. When WP_DEBUG is on it returns the file's
- * modification time instead, so a local edit shows up without a hard refresh -
- * unlike time(), which changed the URL on every single request and defeated
- * caching altogether.
+ * Returns the file's modification time, so browsers, page caches and CSS/JS
+ * combining can hold on to a file for as long as it does not change - and drop
+ * it the moment it does.
+ *
+ * The plugin version alone was not enough: a release where the version bump
+ * lands before the changed asset leaves every browser that loaded the site in
+ * between holding a stale file under a URL that will never change again. The
+ * mtime moves with the file itself, so that window cannot happen. It costs one
+ * stat() per asset, which the OS has cached anyway. EG_CARE_VERSION remains the
+ * fallback when the file cannot be found.
  *
  * @param string $relative_path Path relative to the plugin root, e.g. 'assets/js/booking.js'.
  * @return string Version string.
  */
 function eg_care_asset_version( $relative_path ) {
-	if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-		$file = EG_CARE_PATH . ltrim( $relative_path, '/' );
-		if ( file_exists( $file ) ) {
-			return (string) filemtime( $file );
+	static $cache = array();
+
+	if ( isset( $cache[ $relative_path ] ) ) {
+		return $cache[ $relative_path ];
+	}
+
+	$file    = EG_CARE_PATH . ltrim( $relative_path, '/' );
+	$version = EG_CARE_VERSION;
+
+	if ( file_exists( $file ) ) {
+		$mtime = filemtime( $file );
+		if ( $mtime ) {
+			$version = EG_CARE_VERSION . '.' . $mtime;
 		}
 	}
 
-	return EG_CARE_VERSION;
+	$cache[ $relative_path ] = $version;
+
+	return $version;
 }
 
 /**
