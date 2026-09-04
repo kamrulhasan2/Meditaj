@@ -823,6 +823,15 @@ class Shortcodes {
 
 		wp_enqueue_script( 'eg-care-instant-request-js', EG_CARE_URL . 'assets/js/instant-request.js', array( self::SETTINGS_HANDLE ), eg_care_asset_version( 'assets/js/instant-request.js' ), true );
 
+		// Coming back from the gateway, this page shows the confirmation and its
+		// Join Video Call button, which needs the call scripts. They are heavy -
+		// the Agora SDK is fetched from their CDN - so an ordinary view of the
+		// request form does not pay for them.
+		if ( isset( $_GET['eg_care_payment'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			wp_enqueue_script( 'agora-rtc-sdk', 'https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js', array(), '4.20.0', true );
+			wp_enqueue_script( 'eg-care-video-call-js', EG_CARE_URL . 'assets/js/video-call.js', array( 'agora-rtc-sdk', self::SETTINGS_HANDLE ), eg_care_asset_version( 'assets/js/video-call.js' ), true );
+		}
+
 		ob_start();
 		include EG_CARE_PATH . 'templates/instant-request.php';
 		return ob_get_clean();

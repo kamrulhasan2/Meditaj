@@ -13,6 +13,19 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
+
+/**
+ * Paying for an instant consultation sends the patient to the gateway and the
+ * gateway sends them back here. Without this the page just drew the empty
+ * request form again, so somebody who had paid was left with no confirmation
+ * and no way into the call they had just bought.
+ */
+$eg_care_payment_handled = false;
+require EG_CARE_PATH . 'templates/partials/payment-return.php';
+
+if ( $eg_care_payment_handled ) {
+	return;
+}
 ?>
 
 <div class="eg-care-instant-wrapper" id="eg-care-instant-app">
