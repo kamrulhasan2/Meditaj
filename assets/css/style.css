@@ -2196,12 +2196,102 @@ button.eg-care-back-to-list {
 	height: 100% !important;
 }
 
+/* The standby panel behind the remote video. It has three states, set on
+   data-state: nobody has joined yet, they are here with the camera off, or
+   their video is playing and the whole panel steps out of the way. */
 .video-placeholder {
 	font-size: 18px !important;
 	color: #94a3b8 !important;
 	text-align: center !important;
 	position: absolute !important;
 	z-index: 2 !important;
+	display: flex !important;
+	flex-direction: column !important;
+	align-items: center !important;
+	justify-content: center !important;
+	gap: 12px !important;
+	padding: 20px !important;
+}
+
+#remote-placeholder[data-state="video"] {
+	display: none !important;
+}
+
+#remote-placeholder[data-state="waiting"] .note-camera-off,
+#remote-placeholder[data-state="camera-off"] .note-waiting {
+	display: none !important;
+}
+
+.remote-standby-avatar {
+	box-sizing: border-box;
+	width: 112px;
+	height: 112px;
+	border-radius: 50%;
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: #1e293b;
+	border: 2px solid #334155;
+}
+
+.remote-standby-avatar img {
+	width: 100% !important;
+	height: 100% !important;
+	object-fit: cover !important;
+	display: block !important;
+}
+
+.remote-standby-avatar span {
+	font-size: 38px;
+	font-weight: 700;
+	color: #cbd5e1;
+	letter-spacing: .02em;
+}
+
+.remote-standby-name {
+	font-size: 18px;
+	font-weight: 700;
+	color: #e2e8f0;
+}
+
+.remote-standby-note {
+	font-size: 14px;
+	color: #94a3b8;
+}
+
+/* The same idea in the corner: your own camera off is a state worth naming,
+   not an unexplained black rectangle. */
+/* [hidden] has to win over the display below, or the cover is up before
+   anyone has touched the camera button. */
+.local-video-off[hidden] {
+	display: none !important;
+}
+
+.local-video-off {
+	position: absolute !important;
+	top: 0 !important;
+	right: 0 !important;
+	bottom: 0 !important;
+	left: 0 !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	text-align: center !important;
+	padding: 6px !important;
+	background-color: #1e293b !important;
+	color: #cbd5e1 !important;
+	font-size: 11px !important;
+	font-weight: 600 !important;
+	line-height: 1.4 !important;
+	z-index: 5 !important;
+}
+
+@media (max-width: 768px) {
+	.remote-standby-avatar { width: 84px; height: 84px; }
+	.remote-standby-avatar span { font-size: 28px; }
+	.remote-standby-name { font-size: 16px; }
+	.remote-standby-note { font-size: 13px; }
 }
 
 .local-video-stream {

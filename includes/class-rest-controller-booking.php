@@ -514,15 +514,22 @@ class RestControllerBooking extends WP_REST_Controller {
 		// Someone has stepped into the room, so let the other party's dashboard ring.
 		$this->start_ringing( $appointment, $current_user_id );
 
+		// The face to show while the other party's camera is off. A doctor has a
+		// featured image. A patient may not - and when the consultation is for a
+		// family member there is no photo of that person anywhere - so the call
+		// falls back to their initials rather than a stock silhouette.
+		$partner_avatar = $is_doctor ? '' : (string) get_the_post_thumbnail_url( $appointment->doctor_id, 'medium' );
+
 		return new WP_REST_Response(
 			array(
-				'token'        => $token,
-				'app_id'       => get_option( 'eg_care_agora_app_id', '' ),
-				'channel_name' => $video_room_id,
-				'uid'          => 0,
-				'is_doctor'    => $is_doctor,
-				'doctor_name'  => get_the_title( $appointment->doctor_id ),
-				'patient_name' => $appointment->family_member_name ? $appointment->family_member_name : wp_get_current_user()->display_name,
+				'token'          => $token,
+				'app_id'         => get_option( 'eg_care_agora_app_id', '' ),
+				'channel_name'   => $video_room_id,
+				'uid'            => 0,
+				'is_doctor'      => $is_doctor,
+				'doctor_name'    => get_the_title( $appointment->doctor_id ),
+				'patient_name'   => $appointment->family_member_name ? $appointment->family_member_name : wp_get_current_user()->display_name,
+				'partner_avatar' => $partner_avatar,
 			),
 			200
 		);

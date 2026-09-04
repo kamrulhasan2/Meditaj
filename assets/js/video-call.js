@@ -50,7 +50,7 @@
 				loadingOverlay.remove();
 
 				// 2. Initialize Agora Call Modal
-				injectVideoCallModal(data.doctor_name, data.patient_name, data.is_doctor);
+				injectVideoCallModal(data.doctor_name, data.patient_name, data.is_doctor, data.partner_avatar);
 				
 				// 3. Connect to Agora Client Session
 				await runAgoraSession(data, appointmentId);
@@ -63,8 +63,24 @@
 		}
 	};
 
+	// Names and URLs below come out of the database and are dropped straight
+	// into markup, so they are escaped on the way in.
+	function esc(value) {
+		const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+		return String(value === null || value === undefined ? '' : value).replace(/[&<>"']/g, c => map[c]);
+	}
+
+	// Two letters for somebody with no photo, the way every call app does it.
+	function initials(name) {
+		const clean = String(name || '').replace(/^\s*(dr|prof|mr|mrs|ms)\.?\s+/i, '').trim();
+		const parts = clean.split(/\s+/).filter(Boolean);
+		if ( ! parts.length ) { return '?'; }
+		if ( parts.length === 1 ) { return parts[0].slice(0, 2).toUpperCase(); }
+		return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+	}
+
 	// Inject the Call Overlay Modal UI into the page DOM.
-	function injectVideoCallModal(doctorName, patientName, isDoctor) {
+	function injectVideoCallModal(doctorName, patientName, isDoctor, partnerAvatar) {
 		// Remove existing modal if any
 		const oldModal = document.getElementById('eg-care-video-call-modal');
 		if ( oldModal ) {
@@ -73,6 +89,10 @@
 
 		const partnerName = isDoctor ? patientName : doctorName;
 		const labelText = isDoctor ? 'Patient Feed' : 'Doctor Feed';
+		const safePartner = esc(partnerName);
+		const avatarHtml = partnerAvatar
+			? `<img src="${esc(partnerAvatar)}" alt="">`
+			: `<span>${esc(initials(partnerName))}</span>`;
 
 		const modalHtml = `
 		<div id="eg-care-video-call-modal" class="eg-care-video-modal">
@@ -84,14 +104,19 @@
 			<div class="video-grid-container">
 				<!-- Fullscreen Remote Video Stream -->
 				<div id="remote-video-container" class="remote-video-stream">
-					<div class="video-placeholder" id="remote-placeholder">
-						<div style="font-size: 24px; margin-bottom: 10px;">🕒</div>
-						<div>Waiting for ${partnerName} to join the call...</div>
+					<!-- Three states, one panel: waiting for them, they are here with
+					     the camera off, or their video is playing and this is hidden. -->
+					<div class="video-placeholder" id="remote-placeholder" data-state="waiting">
+						<div class="remote-standby-avatar">${avatarHtml}</div>
+						<div class="remote-standby-name">${safePartner}</div>
+						<div class="remote-standby-note note-waiting">Waiting for ${safePartner} to join the call...</div>
+						<div class="remote-standby-note note-camera-off">Camera is off</div>
 					</div>
 				</div>
 				
 				<!-- Picture-in-Picture Local Video Stream -->
 				<div id="local-video-container" class="local-video-stream">
+					<div class="local-video-off" id="local-video-off" hidden>Your camera is off</div>
 					<div class="local-video-badge" style="position: absolute; bottom: 8px; left: 8px; font-size: 10px; background: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 4px; color: #fff; z-index: 10; font-weight: bold;">You</div>
 				</div>
 			</div>
@@ -117,6 +142,18 @@
 		let localAudioTrack = null;
 		let localVideoTrack = null;
 		let callTimerInterval = null;
+
+		// Whether the other party is in the room, and whether their camera is on,
+		// are two different facts. Treating them as one is what made somebody who
+		// had joined with their camera off read as never having arrived.
+		let remoteJoined = false;
+		let remoteVideoOn = false;
+
+		function paintRemoteState() {
+			const panel = document.getElementById('remote-placeholder');
+			if ( ! panel ) { return; }
+			panel.setAttribute('data-state', remoteVideoOn ? 'video' : ( remoteJoined ? 'camera-off' : 'waiting' ));
+		}
 
 		const btnMic = document.getElementById('btn-toggle-mic');
 		const btnCam = document.getElementById('btn-toggle-cam');
@@ -299,35 +336,45 @@
 			// Agora fires 'user-published' for already-present publishers as soon
 			// as join() resolves, so registering them afterwards makes whoever
 			// joins second miss the other party's streams permanently.
+			client.on('user-joined', () => {
+				remoteJoined = true;
+				paintRemoteState();
+			});
+
+			client.on('user-left', () => {
+				remoteJoined = false;
+				remoteVideoOn = false;
+				paintRemoteState();
+			});
+
 			client.on('user-published', async (user, mediaType) => {
 				await client.subscribe(user, mediaType);
-				
+
+				// Publishing anything at all means they are in the room, whether or
+				// not 'user-joined' has been seen for them yet.
+				remoteJoined = true;
+
 				if ( mediaType === 'video' ) {
-					// Hide waiting placeholder
-					const placeholder = document.getElementById('remote-placeholder');
-					if ( placeholder ) {
-						placeholder.style.display = 'none';
-					}
-					// Play remote participant video
+					remoteVideoOn = true;
+					paintRemoteState();
 					// Agora defaults to fit: 'cover', which zooms the feed to fill the
 					// container and crops whatever does not fit - on a laptop that cut
 					// faces in half. 'contain' shows the whole frame.
 					user.videoTrack.play('remote-video-container', { fit: 'contain' });
 				}
-				
+
 				if ( mediaType === 'audio' ) {
-					// Play remote participant audio
+					paintRemoteState();
 					user.audioTrack.play();
 				}
 			});
 
 			client.on('user-unpublished', (user, mediaType) => {
 				if ( mediaType === 'video' ) {
-					// Show waiting placeholder
-					const placeholder = document.getElementById('remote-placeholder');
-					if ( placeholder ) {
-						placeholder.style.display = 'block';
-					}
+					// Their camera went off. They are still here, and the panel now
+					// says so instead of claiming they never joined.
+					remoteVideoOn = false;
+					paintRemoteState();
 				}
 			});
 
@@ -381,9 +428,11 @@
 			});
 
 			let isCamDisabled = false;
+			const localOff = document.getElementById('local-video-off');
 			btnCam.addEventListener('click', async () => {
 				if ( ! isCamDisabled ) {
 					await localVideoTrack.setEnabled(false);
+					if ( localOff ) { localOff.hidden = false; }
 					btnCam.classList.remove('cam-on');
 					btnCam.classList.add('cam-off');
 					btnCam.innerHTML = icons.camOff;
@@ -391,6 +440,7 @@
 					isCamDisabled = true;
 				} else {
 					await localVideoTrack.setEnabled(true);
+					if ( localOff ) { localOff.hidden = true; }
 					btnCam.classList.remove('cam-off');
 					btnCam.classList.add('cam-on');
 					btnCam.innerHTML = icons.camOn;
