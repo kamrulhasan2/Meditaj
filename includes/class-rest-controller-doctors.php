@@ -456,7 +456,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 		}
 
 		// 2. Perform slot calculation algorithm.
-		$day = $this->calculate_slots( $id, $date );
+		$day = self::calculate_slots( $id, $date );
 
 		// The response carries the doctor's sitting hours for the day next to
 		// the slots themselves, so the booking screen can print "Available
@@ -514,6 +514,11 @@ class RestControllerDoctors extends WP_REST_Controller {
 	/**
 	 * Calculate slots for a doctor on a specific date.
 	 *
+	 * Static and public because this is the one place that decides what a
+	 * doctor is actually offering. RestControllerBooking::create_appointment()
+	 * asks the same question before writing a row, so a booking cannot name a
+	 * time this method would never have produced.
+	 *
 	 * @param int    $doctor_id Doctor Post ID.
 	 * @param string $date Date string in YYYY-MM-DD format.
 	 * @return array {
@@ -522,7 +527,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 	 *     @type array       $slots      List of slots, each with time and available.
 	 * }
 	 */
-	private function calculate_slots( $doctor_id, $date ) {
+	public static function calculate_slots( $doctor_id, $date ) {
 		global $wpdb;
 
 		// 1. Get Day of Week (1 = Monday, ..., 7 = Sunday).
@@ -615,13 +620,14 @@ class RestControllerDoctors extends WP_REST_Controller {
 			$is_booked = in_array( $slot_time, $booked_times, true );
 			$available = ! $is_booked;
 
-			// If the target date is today, check if slot is in the past.
-			if ( $available && $date === current_time( 'Y-m-d' ) ) {
-				// Here the slot is a real moment in the surgery's day, so it is
-				// read in the site's timezone and measured against real now.
+			// Anything already past is gone. This used to ask only about today,
+			// which meant yesterday's sitting came back fully bookable.
+			if ( $available ) {
+				// The slot is a real moment in the surgery's day, so it is read
+				// in the site's timezone and measured against real now.
 				$slot_timestamp = \EGCare\Time::stamp( $date, $slot_time );
 				if ( false !== $slot_timestamp && $slot_timestamp < $now_timestamp ) {
-					$available = false; // Slot has already passed today.
+					$available = false;
 				}
 			}
 

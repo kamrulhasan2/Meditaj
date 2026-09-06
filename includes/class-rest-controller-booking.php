@@ -315,6 +315,36 @@ class RestControllerBooking extends WP_REST_Controller {
 			return new WP_Error( 'rest_not_found', __( 'Selected doctor profile not found or not approved.', 'eg-care' ), array( 'status' => 404 ) );
 		}
 
+		// A scheduled booking has to name a slot this doctor is really offering.
+		// Until now the row was written from whatever date and time the request
+		// carried, so a request made outside the booking screen could sit itself
+		// down last Tuesday, or at 03:17 on a day the doctor does not work.
+		// RestControllerDoctors::calculate_slots() is what the booking screen
+		// was shown; asking it again here is the server making the same answer
+		// binding.
+		if ( 'scheduled' === $booking_type ) {
+			$offered = \EGCare\RestControllerDoctors::calculate_slots( $doctor_id, $date );
+			$slot    = null;
+
+			foreach ( $offered['slots'] as $candidate ) {
+				if ( $candidate['time'] === $time ) {
+					$slot = $candidate;
+					break;
+				}
+			}
+
+			if ( null === $slot ) {
+				return new WP_Error( 'eg_care_slot_unknown', __( 'That is not one of this doctor\'s slots on that day.', 'eg-care' ), array( 'status' => 400 ) );
+			}
+
+			// Covers a slot already booked and a slot already past. The
+			// FOR UPDATE check below still has the last word on a race between
+			// two patients reaching for the same one.
+			if ( empty( $slot['available'] ) ) {
+				return new WP_Error( 'eg_care_slot_unavailable', __( 'That slot is no longer available.', 'eg-care' ), array( 'status' => 409 ) );
+			}
+		}
+
 		// 2. Wrap block in transaction for race condition protection.
 		$wpdb->query( 'START TRANSACTION' );
 
