@@ -3,7 +3,7 @@
  * Plugin Name: EG Care - Doctor Calling & Appointment System
  * Plugin URI:  https://github.com/kamrulhasan2/Meditaj
  * Description: Telemedicine and doctor appointment booking platform with Agora video integration and local payment options.
- * Version:     1.1.2
+ * Version:     1.2.0
  * Author:      Kamrul Hasan
  * Text Domain: eg-care
  * Domain Path: /languages
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define constants.
-define( 'EG_CARE_VERSION', '1.1.2' );
+define( 'EG_CARE_VERSION', '1.2.0' );
 define( 'EG_CARE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'EG_CARE_URL', plugin_dir_url( __FILE__ ) );
 
