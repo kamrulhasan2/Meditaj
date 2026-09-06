@@ -426,10 +426,18 @@ class RestControllerBooking extends WP_REST_Controller {
 		global $wpdb;
 		$id                 = intval( $request->get_param( 'id' ) );
 		$table_appointments = \EGCare\DB::get_table( 'appointments' );
+		$table_meta         = \EGCare\DB::get_table( 'doctors_meta' );
 
+		// The doctor's WordPress user id rides along so the same three-way check
+		// complete_appointment() and generate_video_token() make can be made
+		// here. LEFT, not INNER, because a patient must still be able to read
+		// their own booking if the doctor's profile has since been removed.
 		$appointment = $wpdb->get_row(
 			$wpdb->prepare(
-				"SELECT * FROM $table_appointments WHERE id = %d",
+				"SELECT a.*, d.user_id as doctor_user_id
+				 FROM $table_appointments a
+				 LEFT JOIN $table_meta d ON a.doctor_id = d.post_id
+				 WHERE a.id = %d",
 				$id
 			)
 		);
@@ -438,11 +446,20 @@ class RestControllerBooking extends WP_REST_Controller {
 			return new WP_Error( 'rest_not_found', __( 'Appointment request not found.', 'eg-care' ), array( 'status' => 404 ) );
 		}
 
-		// Enforce ownership / authorization checks: Patient owner or admin only.
+		// Enforce ownership: the patient it is for, the doctor it is with, or an
+		// administrator. The doctor was missing, which left them able to end the
+		// appointment and join its video call but not to read it.
 		$current_user_id = get_current_user_id();
-		if ( intval( $appointment->patient_user_id ) !== $current_user_id && ! current_user_can( 'manage_options' ) ) {
+		$is_patient      = ( intval( $appointment->patient_user_id ) === $current_user_id );
+		$is_doctor       = ( ! empty( $appointment->doctor_user_id ) && intval( $appointment->doctor_user_id ) === $current_user_id );
+
+		if ( ! $is_patient && ! $is_doctor && ! current_user_can( 'manage_options' ) ) {
 			return new WP_Error( 'rest_forbidden', __( 'You do not have permission to view this booking.', 'eg-care' ), array( 'status' => 403 ) );
 		}
+
+		// Only the check above needed it. It is not part of what an appointment
+		// is, and the patient has no business with the doctor's account id.
+		unset( $appointment->doctor_user_id );
 
 		return new WP_REST_Response( $appointment, 200 );
 	}
