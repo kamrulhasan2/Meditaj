@@ -158,6 +158,7 @@ add_action(
 \EGCare\CPT::init();
 \EGCare\Roles::init();
 \EGCare\Shortcodes::init();
+\EGCare\Nonce::init();
 \EGCare\SingleDoctor::init();
 \EGCare\SpecialtyArchive::init();
 \EGCare\SearchRedirect::init();

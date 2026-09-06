@@ -22,6 +22,18 @@ class Shortcodes {
 	const SETTINGS_HANDLE = 'eg-care-settings';
 
 	/**
+	 * The script that recovers from a stale nonce.
+	 *
+	 * It wraps window.fetch, so it has to run before any script that calls it.
+	 * enqueue_settings() below is the first thing every render method does, so
+	 * this handle enters the queue ahead of booking.js and the rest, and it
+	 * depends on SETTINGS_HANDLE for the object it reads. WordPress prints in
+	 * queue order once dependencies are resolved, which is why none of the
+	 * other enqueues has to name it.
+	 */
+	const GUARD_HANDLE = 'eg-care-nonce-guard';
+
+	/**
 	 * Values handed to the browser this request.
 	 *
 	 * @var array
@@ -425,6 +437,13 @@ class Shortcodes {
 		$defaults = array(
 			'restUrl'          => esc_url_raw( rest_url( 'eg-care/v1/' ) ),
 			'nonce'            => wp_create_nonce( 'wp_rest' ),
+			// A printed nonce goes stale - cached HTML, a page left open past
+			// the nonce lifetime, a login or logout in another tab. These let
+			// assets/js/nonce-guard.js fetch a replacement and retry instead of
+			// leaving the visitor with a booking that silently will not submit.
+			'ajaxUrl'          => esc_url_raw( admin_url( 'admin-ajax.php' ) ),
+			'nonceAction'      => \EGCare\Nonce::ACTION,
+			'loggedIn'         => is_user_logged_in(),
 			// The checkout summary prints this before the booking request is
 			// sent; the server recalculates it and stays authoritative.
 			'serviceChargePct' => \EGCare\Fees::service_charge_percentage(),
@@ -443,6 +462,17 @@ class Shortcodes {
 		// clear it first and print a single definition.
 		wp_script_add_data( self::SETTINGS_HANDLE, 'data', '' );
 		wp_localize_script( self::SETTINGS_HANDLE, 'egCareSettings', self::$settings );
+
+		// Every render method calls this before enqueueing its own scripts, so
+		// the guard is printed first and window.fetch is already wrapped by the
+		// time booking.js or either dashboard runs.
+		wp_enqueue_script(
+			self::GUARD_HANDLE,
+			EG_CARE_URL . 'assets/js/nonce-guard.js',
+			array( self::SETTINGS_HANDLE ),
+			eg_care_asset_version( 'assets/js/nonce-guard.js' ),
+			true
+		);
 	}
 
 	/**
