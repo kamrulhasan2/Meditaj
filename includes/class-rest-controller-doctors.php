@@ -553,8 +553,15 @@ class RestControllerDoctors extends WP_REST_Controller {
 		$day_start  = null;
 		$day_end    = null;
 		foreach ( $schedules as $rule ) {
-			$start = strtotime( $date . ' ' . $rule->start_time );
-			$end   = strtotime( $date . ' ' . $rule->end_time );
+			// Clock-face arithmetic only: Time::wall() and gmdate() are both
+			// fixed to UTC, so a 10:00 sitting comes back out as 10:00 whatever
+			// the site's timezone is.
+			$start = \EGCare\Time::wall( $date, $rule->start_time );
+			$end   = \EGCare\Time::wall( $date, $rule->end_time );
+
+			if ( false === $start || false === $end ) {
+				continue;
+			}
 			
 			$duration_sec = intval( $rule->slot_duration_min ) * 60;
 			$break_sec    = intval( isset( $rule->break_duration_min ) ? $rule->break_duration_min : 0 ) * 60;
@@ -602,7 +609,7 @@ class RestControllerDoctors extends WP_REST_Controller {
 
 		// 5. Compare and build result.
 		$result        = array();
-		$now_timestamp = current_time( 'timestamp' ); // WordPress local time.
+		$now_timestamp = time();
 
 		foreach ( $slots as $slot_time ) {
 			$is_booked = in_array( $slot_time, $booked_times, true );
@@ -610,8 +617,10 @@ class RestControllerDoctors extends WP_REST_Controller {
 
 			// If the target date is today, check if slot is in the past.
 			if ( $available && $date === current_time( 'Y-m-d' ) ) {
-				$slot_timestamp = strtotime( $date . ' ' . $slot_time );
-				if ( $slot_timestamp < $now_timestamp ) {
+				// Here the slot is a real moment in the surgery's day, so it is
+				// read in the site's timezone and measured against real now.
+				$slot_timestamp = \EGCare\Time::stamp( $date, $slot_time );
+				if ( false !== $slot_timestamp && $slot_timestamp < $now_timestamp ) {
 					$available = false; // Slot has already passed today.
 				}
 			}

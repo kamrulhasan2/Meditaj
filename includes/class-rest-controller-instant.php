@@ -320,8 +320,16 @@ class RestControllerInstant extends WP_REST_Controller {
 		// the other would make the same setting mean two different things.
 		$breakdown = \EGCare\Fees::breakdown( \EGCare\Fees::instant_request_fee() );
 
-		$now     = current_time( 'mysql' );
-		$expires = gmdate( 'Y-m-d H:i:s', strtotime( $now ) + ( self::REQUEST_TTL_MINUTES * MINUTE_IN_SECONDS ) );
+		$now = current_time( 'mysql' );
+
+		// expires_at is compared against current_time('mysql') later, so both
+		// ends stay on the site's wall clock. Time::wall() and gmdate() are the
+		// UTC-fixed pair that adds minutes to it without PHP's ambient timezone
+		// getting a say.
+		$expires = gmdate(
+			'Y-m-d H:i:s',
+			\EGCare\Time::wall( substr( $now, 0, 10 ), substr( $now, 11, 8 ) ) + ( self::REQUEST_TTL_MINUTES * MINUTE_IN_SECONDS )
+		);
 
 		$inserted = $wpdb->insert(
 			$table,

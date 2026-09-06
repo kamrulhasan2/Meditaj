@@ -256,7 +256,29 @@ class RestControllerBooking extends WP_REST_Controller {
 
 		// 1. Validation. A saved family member carries its own relation, so
 		// patient_relation is only required when one was not chosen.
-		if ( empty( $doctor_id ) || empty( $booking_type ) || empty( $date ) || empty( $time ) ) {
+		if ( empty( $doctor_id ) || empty( $booking_type ) ) {
+			return new WP_Error( 'rest_bad_request', __( 'Required fields are missing.', 'eg-care' ), array( 'status' => 400 ) );
+		}
+
+		if ( ! in_array( $booking_type, array( 'instant', 'scheduled' ), true ) ) {
+			return new WP_Error( 'rest_bad_request', __( 'Invalid booking type.', 'eg-care' ), array( 'status' => 400 ) );
+		}
+
+		// An instant call starts now, and "now" is the server's business. The
+		// browser used to send its own clock for these, so a patient in Dhaka
+		// filed appointments six hours ahead of the site's own time: the slot
+		// grid showed the wrong hour blocked, and reminders looked into a
+		// future that had not happened. RestControllerInstant::create() has
+		// always taken the time from here; both paths now agree.
+		$now = current_time( 'mysql' );
+
+		if ( 'instant' === $booking_type ) {
+			$date = substr( $now, 0, 10 );
+			$time = substr( $now, 11, 8 );
+		}
+
+		// A scheduled booking still names its slot, and must.
+		if ( empty( $date ) || empty( $time ) ) {
 			return new WP_Error( 'rest_bad_request', __( 'Required fields are missing.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
@@ -276,10 +298,6 @@ class RestControllerBooking extends WP_REST_Controller {
 
 		if ( is_wp_error( $patient ) ) {
 			return $patient;
-		}
-
-		if ( ! in_array( $booking_type, array( 'instant', 'scheduled' ), true ) ) {
-			return new WP_Error( 'rest_bad_request', __( 'Invalid booking type.', 'eg-care' ), array( 'status' => 400 ) );
 		}
 
 		// Verify target doctor is active and approved.
@@ -328,8 +346,9 @@ class RestControllerBooking extends WP_REST_Controller {
 		$breakdown    = \EGCare\Fees::breakdown( $fee );
 		$total_amount = $breakdown['total'];
 
-		// Insert new appointment.
-		$now      = current_time( 'mysql' );
+		// Insert new appointment. $now was taken at the top of the request, so
+		// an instant appointment's time and its created_at are the same reading
+		// of the clock rather than two a few milliseconds apart.
 		$inserted = $wpdb->insert(
 			$table_appointments,
 			array(
@@ -475,8 +494,13 @@ class RestControllerBooking extends WP_REST_Controller {
 
 		// Validate time window (except for instant call which starts immediately).
 		if ( 'scheduled' === $appointment->appointment_type ) {
-			$appointment_timestamp = strtotime( $appointment->appointment_date . ' ' . $appointment->appointment_time );
-			$now_timestamp         = current_time( 'timestamp' );
+			// A real moment, read in the site's timezone, against a real now.
+			$appointment_timestamp = \EGCare\Time::stamp( $appointment->appointment_date, $appointment->appointment_time );
+			$now_timestamp         = time();
+
+			if ( false === $appointment_timestamp ) {
+				return new WP_Error( 'rest_server_error', __( 'This appointment has an unreadable schedule time.', 'eg-care' ), array( 'status' => 500 ) );
+			}
 
 			// Call allowed 15 mins before to 60 mins after scheduled start time.
 			$window_start = $appointment_timestamp - ( 15 * 60 );

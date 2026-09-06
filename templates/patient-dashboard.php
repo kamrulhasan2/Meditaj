@@ -57,7 +57,7 @@ $upcoming_bookings    = array();
 $past_history         = array();
 
 $today_str = current_time( 'Y-m-d' );
-$now_ts    = current_time( 'timestamp' );
+$now_ts    = time();
 
 foreach ( $appointments as $appt ) {
 	if ( 'completed' === $appt->status || 'cancelled' === $appt->status || 'no_show' === $appt->status ) {
@@ -136,11 +136,13 @@ foreach ( $appointments as $appt ) {
 							if ( 'instant' === $app->appointment_type ) {
 								$is_call_window = true;
 							} else {
-								$app_time_ts = strtotime( $app->appointment_date . ' ' . $app->appointment_time );
-								$start_allowed = $app_time_ts - ( 15 * MINUTE_IN_SECONDS );
-								$end_allowed   = $app_time_ts + ( 60 * MINUTE_IN_SECONDS );
-								if ( $now_ts >= $start_allowed && $now_ts <= $end_allowed ) {
-									$is_call_window = true;
+								$app_time_ts = \EGCare\Time::stamp( $app->appointment_date, $app->appointment_time );
+								if ( false !== $app_time_ts ) {
+									$start_allowed = $app_time_ts - ( 15 * MINUTE_IN_SECONDS );
+									$end_allowed   = $app_time_ts + ( 60 * MINUTE_IN_SECONDS );
+									if ( $now_ts >= $start_allowed && $now_ts <= $end_allowed ) {
+										$is_call_window = true;
+									}
 								}
 							}
 							
