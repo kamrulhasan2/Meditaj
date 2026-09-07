@@ -3592,7 +3592,7 @@ button.eg-care-linkish[hidden] {
 		border: 1px solid #e2e8f0 !important;
 		border-radius: 10px !important;
 		background: #ffffff !important;
-		padding: 4px 14px !important;
+		padding: 6px 16px !important;
 		margin-bottom: 12px !important;
 	}
 
@@ -3601,15 +3601,19 @@ button.eg-care-linkish[hidden] {
 		margin-bottom: 0 !important;
 	}
 
-	/* Label parked on the left, value free to be anything - text, a badge,
-	   a button, a list of report links - on the right. */
+	/* Label above, value below, both starting at the same left edge.
+	   These were two columns with the value hard against the right border,
+	   which left a wide empty gutter down the middle and pushed a long
+	   doctor's name into a ragged block jammed at the card's edge. Stacking
+	   gives every value the full width of the card and nothing ends up
+	   crowding the border. */
 	.eg-care-dashboard-table tbody td,
 	.eg-care-patient-table tbody td {
 		display: block !important;
 		position: relative !important;
-		padding: 9px 0 9px 40% !important;
+		padding: 10px 0 !important;
 		border-bottom: 1px solid #f1f5f9 !important;
-		text-align: right !important;
+		text-align: left !important;
 		font-size: 13px !important;
 		line-height: 1.5 !important;
 		min-height: 20px;
@@ -3624,10 +3628,8 @@ button.eg-care-linkish[hidden] {
 	.eg-care-dashboard-table tbody td::before,
 	.eg-care-patient-table tbody td::before {
 		content: attr(data-label);
-		position: absolute;
-		left: 0;
-		top: 9px;
-		width: 36%;
+		display: block;
+		margin-bottom: 2px;
 		text-align: left;
 		font-size: 11px;
 		font-weight: 700;
@@ -3719,13 +3721,4 @@ button.eg-care-linkish[hidden] {
 		grid-template-columns: minmax(0, 1fr) !important;
 	}
 
-	.eg-care-dashboard-table tbody td,
-	.eg-care-patient-table tbody td {
-		padding-left: 45% !important;
-	}
-
-	.eg-care-dashboard-table tbody td::before,
-	.eg-care-patient-table tbody td::before {
-		width: 42%;
-	}
 }
