@@ -65,13 +65,16 @@ foreach ( $appointments as $appt ) {
 		continue;
 	}
 
+	// A call somebody has already stepped into is 'ongoing', not 'confirmed'.
+	// It has to stay in Active Consultations - that row is the only way back in
+	// after a connection drops.
+	$eg_care_open = in_array( $appt->status, array( 'confirmed', 'ongoing' ), true );
+
 	// Active consultations: Today's scheduled or instant call
-	if ( 'instant' === $appt->appointment_type && 'confirmed' === $appt->status ) {
+	if ( 'instant' === $appt->appointment_type && $eg_care_open ) {
 		$active_consultations[] = $appt;
-	} elseif ( $appt->appointment_date === $today_str && 'confirmed' === $appt->status ) {
+	} elseif ( $appt->appointment_date === $today_str && $eg_care_open ) {
 		$active_consultations[] = $appt;
-	} elseif ( $appt->appointment_date > $today_str && 'confirmed' === $appt->status ) {
-		$upcoming_bookings[] = $appt;
 	} else {
 		$upcoming_bookings[] = $appt;
 	}
@@ -132,19 +135,13 @@ foreach ( $appointments as $appt ) {
 					<tbody>
 						<?php foreach ( $active_consultations as $app ) : 
 							// Check call window
-							$is_call_window = false;
-							if ( 'instant' === $app->appointment_type ) {
-								$is_call_window = true;
-							} else {
-								$app_time_ts = \EGCare\Time::stamp( $app->appointment_date, $app->appointment_time );
-								if ( false !== $app_time_ts ) {
-									$start_allowed = $app_time_ts - ( 15 * MINUTE_IN_SECONDS );
-									$end_allowed   = $app_time_ts + ( 60 * MINUTE_IN_SECONDS );
-									if ( $now_ts >= $start_allowed && $now_ts <= $end_allowed ) {
-										$is_call_window = true;
-									}
-								}
-							}
+							// One source of truth: the same window generate_video_token()
+							// enforces, so the button is never enabled for a call the
+							// endpoint would refuse, or greyed out for one it would allow.
+							$eg_care_window = \EGCare\RestControllerBooking::call_window( $app );
+							$is_call_window = null !== $eg_care_window
+								&& $now_ts >= $eg_care_window['start']
+								&& $now_ts <= $eg_care_window['end'];
 							
 							$time_val = mysql2date( 'g:i A', $app->appointment_time, false );
 						?>

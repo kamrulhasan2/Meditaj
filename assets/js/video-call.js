@@ -159,8 +159,17 @@
 		const btnCam = document.getElementById('btn-toggle-cam');
 		const btnEnd = document.getElementById('btn-end-call');
 
-		// Handle Cleanup and Leave Operation
-		async function endCallSession() {
+		// Whether this browser is the doctor's decides what the red button means:
+		// the doctor ends the consultation, the patient only leaves the room.
+		const isDoctor = !! credentials.is_doctor;
+
+		// Handle Cleanup and Leave Operation.
+		//
+		// completeAppointment is false for anything that is not the doctor
+		// deliberately finishing: a patient leaving, and above all a failure to
+		// connect. Marking the appointment completed in those cases is what used
+		// to lock both parties out of a call that had merely dropped.
+		async function endCallSession( completeAppointment ) {
 			// Clear duration timer
 			if ( callTimerInterval ) {
 				clearInterval(callTimerInterval);
@@ -189,6 +198,12 @@
 			const modal = document.getElementById('eg-care-video-call-modal');
 			if ( modal ) {
 				modal.remove();
+			}
+
+			if ( ! completeAppointment ) {
+				// The room is simply left. The appointment keeps its status, so
+				// whoever walked out can walk back in while the window is open.
+				return;
 			}
 
 			// Update appointment status to Completed in background
@@ -449,13 +464,26 @@
 				}
 			});
 
-			// End Call button binding
-			btnEnd.addEventListener('click', endCallSession);
+			// End Call button binding.
+			if ( ! isDoctor ) {
+				btnEnd.title = 'Leave call';
+				btnEnd.setAttribute('aria-label', 'Leave call');
+			}
+
+			btnEnd.addEventListener('click', function () {
+				if ( isDoctor && ! window.confirm('End this consultation? The patient will not be able to rejoin.') ) {
+					return;
+				}
+
+				endCallSession( isDoctor );
+			});
 
 		} catch (e) {
+			// A failure to connect is not the end of the consultation. Tear the
+			// room down and leave the appointment alone so it can be rejoined.
 			console.error('Error starting Agora session:', e);
-			alert('Failed to connect to video session: ' + e.message);
-			endCallSession();
+			alert('Could not connect to the video session: ' + e.message + '\n\nYou can press Join Call again.');
+			endCallSession( false );
 		}
 	}
 

@@ -495,6 +495,54 @@ class RestControllerBooking extends WP_REST_Controller {
 	}
 
 	/**
+	 * How long a call stays joinable.
+	 *
+	 * A dropped call is the ordinary case, not the exception - a phone loses
+	 * signal, a browser is closed by accident, a laptop sleeps. The window is
+	 * what lets the same two people walk back into the same room afterwards,
+	 * so it is generous on purpose.
+	 *
+	 * @param object $appointment Appointment row.
+	 * @return array{start:int,end:int}|null Real timestamps, or null when the
+	 *                                       schedule cannot be read.
+	 */
+	public static function call_window( $appointment ) {
+		if ( 'instant' === $appointment->appointment_type ) {
+			// An instant call has no slot, so it is timed from the moment it was
+			// booked. Without this it stayed joinable for ever.
+			$booked = \EGCare\Time::stamp(
+				substr( (string) $appointment->created_at, 0, 10 ),
+				substr( (string) $appointment->created_at, 11, 8 )
+			);
+
+			if ( false === $booked || ! $booked ) {
+				return null;
+			}
+
+			$minutes = (int) apply_filters( 'eg_care_instant_call_window_minutes', 30, $appointment );
+
+			return array(
+				'start' => $booked,
+				'end'   => $booked + ( max( 1, $minutes ) * MINUTE_IN_SECONDS ),
+			);
+		}
+
+		$starts_at = \EGCare\Time::stamp( $appointment->appointment_date, $appointment->appointment_time );
+
+		if ( false === $starts_at ) {
+			return null;
+		}
+
+		$before = (int) apply_filters( 'eg_care_call_window_before_minutes', 15, $appointment );
+		$after  = (int) apply_filters( 'eg_care_call_window_after_minutes', 60, $appointment );
+
+		return array(
+			'start' => $starts_at - ( max( 0, $before ) * MINUTE_IN_SECONDS ),
+			'end'   => $starts_at + ( max( 1, $after ) * MINUTE_IN_SECONDS ),
+		);
+	}
+
+	/**
 	 * Generate an Agora RTC token for a confirmed appointment call window.
 	 *
 	 * @param \WP_REST_Request $request REST request object.
@@ -539,27 +587,22 @@ class RestControllerBooking extends WP_REST_Controller {
 			return new WP_Error( 'rest_forbidden', __( 'Video calling is only allowed for confirmed appointments.', 'eg-care' ), array( 'status' => 403 ) );
 		}
 
-		// Validate time window (except for instant call which starts immediately).
-		if ( 'scheduled' === $appointment->appointment_type ) {
-			// A real moment, read in the site's timezone, against a real now.
-			$appointment_timestamp = \EGCare\Time::stamp( $appointment->appointment_date, $appointment->appointment_time );
-			$now_timestamp         = time();
+		// Validate the time window. Both kinds of appointment have one now: an
+		// instant call used to have none at all.
+		$window = self::call_window( $appointment );
 
-			if ( false === $appointment_timestamp ) {
-				return new WP_Error( 'rest_server_error', __( 'This appointment has an unreadable schedule time.', 'eg-care' ), array( 'status' => 500 ) );
-			}
+		if ( null === $window ) {
+			return new WP_Error( 'rest_server_error', __( 'This appointment has an unreadable schedule time.', 'eg-care' ), array( 'status' => 500 ) );
+		}
 
-			// Call allowed 15 mins before to 60 mins after scheduled start time.
-			$window_start = $appointment_timestamp - ( 15 * 60 );
-			$window_end   = $appointment_timestamp + ( 60 * 60 );
+		$now_timestamp = time();
 
-			if ( $now_timestamp < $window_start ) {
-				return new WP_Error( 'rest_forbidden', __( 'The call window has not opened yet. You can join 15 minutes before the start time.', 'eg-care' ), array( 'status' => 403 ) );
-			}
+		if ( $now_timestamp < $window['start'] ) {
+			return new WP_Error( 'rest_forbidden', __( 'The call window has not opened yet. You can join 15 minutes before the start time.', 'eg-care' ), array( 'status' => 403 ) );
+		}
 
-			if ( $now_timestamp > $window_end ) {
-				return new WP_Error( 'rest_forbidden', __( 'The call window has closed.', 'eg-care' ), array( 'status' => 403 ) );
-			}
+		if ( $now_timestamp > $window['end'] ) {
+			return new WP_Error( 'rest_forbidden', __( 'The call window has closed.', 'eg-care' ), array( 'status' => 403 ) );
 		}
 
 		// Ensure video_room_id is generated.
@@ -580,6 +623,19 @@ class RestControllerBooking extends WP_REST_Controller {
 
 		if ( ! $token ) {
 			return new WP_Error( 'rest_internal_error', __( 'Failed to generate video credentials. Ensure App Credentials are configured in settings.', 'eg-care' ), array( 'status' => 500 ) );
+		}
+
+		// Someone is in the room. Recording that is what lets a dashboard tell a
+		// call in progress from one nobody has joined, and what stops the sweep
+		// in Cron from closing a consultation that is still going on.
+		if ( 'confirmed' === $appointment->status ) {
+			$wpdb->update(
+				$table_appointments,
+				array( 'status' => 'ongoing' ),
+				array( 'id' => $appointment->id ),
+				array( '%s' ),
+				array( '%d' )
+			);
 		}
 
 		// Someone has stepped into the room, so let the other party's dashboard ring.
@@ -639,8 +695,20 @@ class RestControllerBooking extends WP_REST_Controller {
 		$is_doctor       = ( intval( $current_user_id ) === intval( $appointment->doctor_user_id ) );
 		$is_patient      = ( intval( $current_user_id ) === intval( $appointment->patient_user_id ) );
 
-		if ( ! $is_doctor && ! $is_patient ) {
+		// An administrator is admitted here so they can close a consultation a
+		// doctor left hanging - the same thing the Appointments screen already
+		// lets them do.
+		$is_admin = current_user_can( 'manage_options' );
+
+		if ( ! $is_doctor && ! $is_patient && ! $is_admin ) {
 			return new WP_Error( 'rest_forbidden', __( 'You do not have permission to modify this appointment.', 'eg-care' ), array( 'status' => 403 ) );
+		}
+
+		// Only the doctor closes a consultation. A patient whose connection drops
+		// used to end it for both of them, and once it read as completed neither
+		// could get back into the room.
+		if ( ! $is_doctor && ! $is_admin ) {
+			return new WP_Error( 'rest_forbidden', __( 'Only the doctor can close this consultation.', 'eg-care' ), array( 'status' => 403 ) );
 		}
 
 		// State Validation: appointment must be paid and currently confirmed/ongoing.

@@ -14,6 +14,7 @@ class Cron {
 		add_action( 'wp', array( __CLASS__, 'schedule_jobs' ) );
 		add_action( 'eg_care_appointment_reminder_cron', array( __CLASS__, 'run_reminders' ) );
 		add_action( 'eg_care_expire_pending_cron', array( __CLASS__, 'expire_pending_payments' ) );
+		add_action( 'eg_care_expire_pending_cron', array( __CLASS__, 'close_finished_calls' ) );
 	}
 
 	/**
@@ -181,6 +182,61 @@ class Cron {
 			if ( $claimed ) {
 				Notifications::send_appointment_reminder_emails( $appt->id );
 			}
+		}
+	}
+
+	/**
+	 * Close consultations whose call window has long passed.
+	 *
+	 * Only the doctor can complete a consultation now, which is right - but a
+	 * doctor who simply closes the tab would otherwise leave the appointment
+	 * sitting at confirmed or ongoing for ever, and every report that counts
+	 * completed consultations would be wrong.
+	 *
+	 * The grace period is counted from the end of the join window, so nothing is
+	 * closed while it could still legitimately be rejoined.
+	 */
+	public static function close_finished_calls() {
+		global $wpdb;
+
+		$table = \EGCare\DB::get_table( 'appointments' );
+		$grace = (int) apply_filters( 'eg_care_call_close_grace_minutes', 30 );
+		$grace = max( 0, $grace ) * MINUTE_IN_SECONDS;
+
+		$rows = $wpdb->get_results(
+			"SELECT id, appointment_type, appointment_date, appointment_time, created_at
+			   FROM $table
+			  WHERE status IN ( 'confirmed', 'ongoing' )
+			    AND payment_status = 'paid'"
+		);
+
+		if ( ! $rows ) {
+			return;
+		}
+
+		$now    = time();
+		$closed = 0;
+
+		foreach ( $rows as $row ) {
+			$window = \EGCare\RestControllerBooking::call_window( $row );
+
+			if ( null === $window || $now <= $window['end'] + $grace ) {
+				continue;
+			}
+
+			$wpdb->update(
+				$table,
+				array( 'status' => 'completed' ),
+				array( 'id' => (int) $row->id ),
+				array( '%s' ),
+				array( '%d' )
+			);
+
+			$closed++;
+		}
+
+		if ( $closed ) {
+			do_action( 'eg_care_calls_closed', $closed );
 		}
 	}
 
