@@ -182,15 +182,13 @@ class SecureUploads {
 	public static function get_view_url( $attachment_id ) {
 		$attachment_id = (int) $attachment_id;
 
-		return wp_nonce_url(
-			add_query_arg(
-				array(
-					'action'        => self::ACTION,
-					'attachment_id' => $attachment_id,
-				),
-				admin_url( 'admin-post.php' )
+		return add_query_arg(
+			array(
+				'action'        => self::ACTION,
+				'attachment_id' => $attachment_id,
+				'_wpnonce'      => wp_create_nonce( self::ACTION . '_' . $attachment_id ),
 			),
-			self::ACTION . '_' . $attachment_id
+			admin_url( 'admin-post.php' )
 		);
 	}
 
@@ -220,16 +218,14 @@ class SecureUploads {
 		$appointment_id = (int) $appointment_id;
 		$attachment_id  = (int) $attachment_id;
 
-		return wp_nonce_url(
-			add_query_arg(
-				array(
-					'action'         => self::REPORT_ACTION,
-					'appointment_id' => $appointment_id,
-					'attachment_id'  => $attachment_id,
-				),
-				admin_url( 'admin-post.php' )
+		return add_query_arg(
+			array(
+				'action'         => self::REPORT_ACTION,
+				'appointment_id' => $appointment_id,
+				'attachment_id'  => $attachment_id,
+				'_wpnonce'       => wp_create_nonce( self::REPORT_ACTION . '_' . $appointment_id . '_' . $attachment_id ),
 			),
-			self::REPORT_ACTION . '_' . $appointment_id . '_' . $attachment_id
+			admin_url( 'admin-post.php' )
 		);
 	}
 
