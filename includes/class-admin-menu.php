@@ -14,6 +14,24 @@ class AdminMenu {
 	 */
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'register_menus' ) );
+		add_action( 'admin_head', array( __CLASS__, 'hide_edit_doctor_item' ) );
+	}
+
+	/**
+	 * Take Edit Doctor out of the sidebar, without taking away access to it.
+	 *
+	 * Calling remove_submenu_page() during admin_menu would do more than hide
+	 * the item. wp-admin/admin.php works out which page was asked for by looking
+	 * the slug up in $submenu to find its parent, builds the hook name from that
+	 * pair, and refuses the request when the result is not in $_registered_pages.
+	 * Remove the entry before that runs and the lookup fails, so every visit
+	 * ends in "Sorry, you are not allowed to access this page."
+	 *
+	 * admin_head fires after that check and before menu-header.php draws the
+	 * sidebar, which is exactly the window this needs.
+	 */
+	public static function hide_edit_doctor_item() {
+		remove_submenu_page( 'eg-care', \EGCare\AdminDoctors::EDIT_PAGE );
 	}
 
 	/**
@@ -74,8 +92,9 @@ class AdminMenu {
 
 		// Reachable from the Doctor List and Pending Verifications rows, but not
 		// a menu item: an Edit link with no doctor chosen would only lead to an
-		// error. Registered under the real parent and then hidden, because
-		// add_submenu_page( null, ... ) makes PHP 8 complain from inside core.
+		// error. It is registered under the real parent and hidden later, on
+		// admin_head - see hide_edit_doctor_item() for why it cannot be hidden
+		// here.
 		add_submenu_page(
 			'eg-care',
 			__( 'Edit Doctor', 'eg-care' ),
@@ -84,7 +103,6 @@ class AdminMenu {
 			\EGCare\AdminDoctors::EDIT_PAGE,
 			array( '\EGCare\AdminDoctors', 'render_edit_doctor_page' )
 		);
-		remove_submenu_page( 'eg-care', \EGCare\AdminDoctors::EDIT_PAGE );
 
 		add_submenu_page(
 			'eg-care',
