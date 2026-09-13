@@ -72,6 +72,20 @@ class AdminMenu {
 			array( '\EGCare\AdminDoctors', 'render_add_doctor_page' )
 		);
 
+		// Reachable from the Doctor List and Pending Verifications rows, but not
+		// a menu item: an Edit link with no doctor chosen would only lead to an
+		// error. Registered under the real parent and then hidden, because
+		// add_submenu_page( null, ... ) makes PHP 8 complain from inside core.
+		add_submenu_page(
+			'eg-care',
+			__( 'Edit Doctor', 'eg-care' ),
+			__( 'Edit Doctor', 'eg-care' ),
+			'manage_options',
+			\EGCare\AdminDoctors::EDIT_PAGE,
+			array( '\EGCare\AdminDoctors', 'render_edit_doctor_page' )
+		);
+		remove_submenu_page( 'eg-care', \EGCare\AdminDoctors::EDIT_PAGE );
+
 		add_submenu_page(
 			'eg-care',
 			__( 'Patients', 'eg-care' ),

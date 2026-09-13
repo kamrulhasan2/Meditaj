@@ -659,7 +659,7 @@ class AdminDoctors {
 								<td>
 									<strong><a href="<?php echo esc_url( get_edit_post_link( $doctor->post_id ) ); ?>"><?php echo esc_html( $doctor->post_title ); ?></a></strong>
 									<div class="row-actions" style="position: static !important; visibility: visible !important;">
-										<span class="edit"><a href="<?php echo esc_url( get_edit_post_link( $doctor->post_id ) ); ?>"><?php esc_html_e( 'Edit CPT', 'eg-care' ); ?></a></span>
+										<span class="edit"><a href="<?php echo esc_url( self::edit_url( $doctor->id ) ); ?>"><?php esc_html_e( 'Edit', 'eg-care' ); ?></a></span>
 									</div>
 								</td>
 								<td>
@@ -991,6 +991,652 @@ class AdminDoctors {
 			$wpdb->insert( $table_meta, $data );
 		}
 	}
+
+	/* ---------------------------------------------------------------------
+	 * Edit Doctor
+	 *
+	 * Everything about a doctor lives in three places - the WordPress user, the
+	 * `doctors` post, and the doctors_meta row - and until now only the middle
+	 * one had a screen. The CPT meta box covers doctors_meta, but the `doctors`
+	 * post type is registered with show_in_rest, so the block editor renders and
+	 * pushes that box into the collapsed drawer at the very bottom of the page,
+	 * where nobody finds it. It also has no way to change the specialty, the
+	 * certificate, or the account the doctor signs in with.
+	 *
+	 * This screen edits all three together, laid out like Add New Doctor so the
+	 * two read the same way. The meta box is deliberately left in place: anyone
+	 * already used to it keeps working.
+	 * ------------------------------------------------------------------- */
+
+	/**
+	 * Where the Edit Doctor screen lives.
+	 */
+	const EDIT_PAGE = 'eg-care-edit-doctor';
+
+	/**
+	 * Link to the Edit Doctor screen for one doctors_meta row.
+	 *
+	 * @param int $meta_id Row id in doctors_meta.
+	 * @return string
+	 */
+	public static function edit_url( $meta_id ) {
+		return admin_url( 'admin.php?page=' . self::EDIT_PAGE . '&id=' . (int) $meta_id );
+	}
+
+	/**
+	 * Fetch a doctor by its doctors_meta row id.
+	 *
+	 * @param int $meta_id Row id.
+	 * @return object|null
+	 */
+	private static function get_doctor( $meta_id ) {
+		global $wpdb;
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
+
+		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_meta WHERE id = %d", (int) $meta_id ) );
+	}
+
+	/**
+	 * Read a posted value, falling back to what is already stored.
+	 *
+	 * A failed save re-renders the form, and the doctor should see what they
+	 * just typed rather than have it silently reverted.
+	 *
+	 * @param string $key      Field name.
+	 * @param mixed  $fallback Stored value.
+	 * @return string
+	 */
+	private static function field_value( $key, $fallback ) {
+		if ( isset( $_POST['eg_care_edit_doctor_submit'] ) && isset( $_POST[ $key ] ) ) {
+			return (string) wp_unslash( $_POST[ $key ] );
+		}
+
+		return null === $fallback ? '' : (string) $fallback;
+	}
+
+	/**
+	 * Render the Edit Doctor screen.
+	 */
+	public static function render_edit_doctor_page() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to view this page.', 'eg-care' ) );
+		}
+
+		wp_enqueue_script( 'eg-care-admin-add-doctor-js', EG_CARE_URL . 'assets/js/admin-add-doctor.js', array(), eg_care_asset_version( 'assets/js/admin-add-doctor.js' ), true );
+
+		$meta_id = isset( $_GET['id'] ) ? absint( $_GET['id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$message = '';
+		$error   = '';
+
+		if ( isset( $_POST['eg_care_edit_doctor_submit'] ) ) {
+			if ( ! isset( $_POST['eg_care_edit_doctor_nonce'] ) || ! wp_verify_nonce( $_POST['eg_care_edit_doctor_nonce'], 'eg_care_edit_doctor_' . $meta_id ) ) {
+				$error = __( 'Security verification failed.', 'eg-care' );
+			} else {
+				$result = self::handle_edit_doctor_submission( $meta_id );
+				if ( is_wp_error( $result ) ) {
+					$error = $result->get_error_message();
+				} else {
+					$message = __( 'Doctor updated.', 'eg-care' );
+				}
+			}
+		}
+
+		// Read AFTER saving, so the form shows what was just written.
+		$doctor = self::get_doctor( $meta_id );
+
+		if ( ! $doctor ) {
+			echo '<div class="wrap eg-care-admin-wrap"><h1>' . esc_html__( 'Edit Doctor', 'eg-care' ) . '</h1>';
+			echo '<div class="notice notice-error"><p>' . esc_html__( 'That doctor could not be found. It may have been deleted.', 'eg-care' ) . '</p></div>';
+			echo '<p><a href="' . esc_url( admin_url( 'admin.php?page=eg-care-doctors' ) ) . '" class="button">' . esc_html__( 'Back to Doctor List', 'eg-care' ) . '</a></p></div>';
+			return;
+		}
+
+		$post = get_post( $doctor->post_id );
+		$user = get_userdata( $doctor->user_id );
+
+		$specialties = get_terms(
+			array(
+				'taxonomy'   => 'specialty',
+				'hide_empty' => false,
+			)
+		);
+
+		$current_terms   = wp_get_post_terms( $doctor->post_id, 'specialty', array( 'fields' => 'ids' ) );
+		$current_special = ! is_wp_error( $current_terms ) && ! empty( $current_terms ) ? (int) $current_terms[0] : 0;
+		$current_special = (int) self::field_value( 'specialty_id', $current_special );
+
+		// Which payout column already holds something decides which tab opens.
+		$payout_type = '' !== (string) $doctor->mobile_banking_no || '' !== (string) $doctor->mobile_banking_type ? 'mobile' : 'bank';
+		$payout_type = self::field_value( 'payout_type', $payout_type );
+
+		$thumb_id = get_post_thumbnail_id( $doctor->post_id );
+		$certs    = json_decode( (string) $doctor->certificate_files, true );
+		$certs    = is_array( $certs ) ? array_filter( $certs ) : array();
+		?>
+		<div class="wrap eg-care-admin-wrap">
+			<div class="eg-care-admin-header">
+				<h1 class="eg-care-admin-title">
+					<?php
+					printf(
+						/* translators: %s: doctor name */
+						esc_html__( 'Edit Doctor: %s', 'eg-care' ),
+						esc_html( $post ? $post->post_title : __( '(untitled)', 'eg-care' ) )
+					);
+					?>
+				</h1>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=eg-care-doctors' ) ); ?>" class="page-title-action">
+					<?php esc_html_e( 'Back to List', 'eg-care' ); ?>
+				</a>
+				<?php if ( $post ) : ?>
+					<a href="<?php echo esc_url( get_edit_post_link( $doctor->post_id ) ); ?>" class="page-title-action">
+						<?php esc_html_e( 'Open in WordPress editor', 'eg-care' ); ?>
+					</a>
+				<?php endif; ?>
+			</div>
+
+			<?php if ( $error ) : ?>
+				<div class="notice notice-error is-dismissible"><p><?php echo esc_html( $error ); ?></p></div>
+			<?php endif; ?>
+			<?php if ( $message ) : ?>
+				<div class="notice notice-success is-dismissible"><p><?php echo esc_html( $message ); ?></p></div>
+			<?php endif; ?>
+			<?php if ( ! $user ) : ?>
+				<div class="notice notice-warning">
+					<p><?php esc_html_e( 'This doctor has no WordPress account attached, so the account fields below are disabled. The profile can still be edited.', 'eg-care' ); ?></p>
+				</div>
+			<?php endif; ?>
+
+			<div class="eg-care-form-card">
+				<form method="post" enctype="multipart/form-data">
+					<?php wp_nonce_field( 'eg_care_edit_doctor_' . $meta_id, 'eg_care_edit_doctor_nonce' ); ?>
+
+					<!-- SECTION 1: the account the doctor signs in with -->
+					<div class="eg-care-form-section">
+						<h3 class="eg-care-form-section-title"><?php esc_html_e( '1. User Account Credentials', 'eg-care' ); ?></h3>
+						<div class="eg-care-form-grid">
+							<div class="eg-care-form-field">
+								<label><?php esc_html_e( 'Username', 'eg-care' ); ?></label>
+								<input type="text" value="<?php echo esc_attr( $user ? $user->user_login : '' ); ?>" disabled>
+								<p class="description"><?php esc_html_e( 'WordPress does not allow a username to be changed.', 'eg-care' ); ?></p>
+							</div>
+							<div class="eg-care-form-field">
+								<label for="doctor_email"><?php esc_html_e( 'Email Address', 'eg-care' ); ?></label>
+								<input type="email" name="doctor_email" id="doctor_email" <?php disabled( ! $user ); ?> value="<?php echo esc_attr( self::field_value( 'doctor_email', $user ? $user->user_email : '' ) ); ?>">
+								<p class="description"><?php esc_html_e( 'Verification and appointment notices are sent here.', 'eg-care' ); ?></p>
+							</div>
+							<div class="eg-care-form-field">
+								<label for="doctor_password"><?php esc_html_e( 'New Password', 'eg-care' ); ?></label>
+								<input type="password" name="doctor_password" id="doctor_password" autocomplete="new-password" minlength="6" <?php disabled( ! $user ); ?>>
+								<p class="description"><?php esc_html_e( 'Leave blank to keep the current password. Setting one signs the doctor out of their other sessions.', 'eg-care' ); ?></p>
+							</div>
+						</div>
+					</div>
+
+					<!-- SECTION 2: profile -->
+					<div class="eg-care-form-section">
+						<h3 class="eg-care-form-section-title"><?php esc_html_e( '2. Profile Information', 'eg-care' ); ?></h3>
+						<div class="eg-care-form-grid">
+							<div class="eg-care-form-field">
+								<label for="doctor_name"><?php esc_html_e( 'Full Name *', 'eg-care' ); ?></label>
+								<input type="text" name="doctor_name" id="doctor_name" required value="<?php echo esc_attr( self::field_value( 'doctor_name', $post ? $post->post_title : '' ) ); ?>">
+							</div>
+							<div class="eg-care-form-field">
+								<label for="specialty_id"><?php esc_html_e( 'Specialty', 'eg-care' ); ?></label>
+								<select name="specialty_id" id="specialty_id">
+									<option value=""><?php esc_html_e( '-- Select Specialty --', 'eg-care' ); ?></option>
+									<?php foreach ( $specialties as $spec ) : ?>
+										<option value="<?php echo esc_attr( $spec->term_id ); ?>" <?php selected( $current_special, (int) $spec->term_id ); ?>>
+											<?php echo esc_html( $spec->name ); ?>
+										</option>
+									<?php endforeach; ?>
+								</select>
+							</div>
+							<div class="eg-care-form-field">
+								<label for="doctor_photo"><?php esc_html_e( 'Profile Photo', 'eg-care' ); ?></label>
+								<?php if ( $thumb_id ) : ?>
+									<div style="margin-bottom:8px;">
+										<?php echo get_the_post_thumbnail( $doctor->post_id, array( 80, 80 ), array( 'style' => 'border-radius:6px;border:1px solid #ccd0d4;' ) ); ?>
+									</div>
+									<label style="font-weight:400;">
+										<input type="checkbox" name="remove_photo" value="1">
+										<?php esc_html_e( 'Remove the current photo', 'eg-care' ); ?>
+									</label>
+								<?php endif; ?>
+								<input type="file" name="doctor_photo" id="doctor_photo" accept="image/*">
+								<p class="description"><?php esc_html_e( 'Choosing a file replaces the current photo.', 'eg-care' ); ?></p>
+							</div>
+							<div class="eg-care-form-field">
+								<label for="provider_type"><?php esc_html_e( 'Provider Type', 'eg-care' ); ?></label>
+								<?php $provider_type = self::field_value( 'provider_type', $doctor->provider_type ); ?>
+								<select name="provider_type" id="provider_type">
+									<option value="doctor" <?php selected( $provider_type, 'doctor' ); ?>><?php esc_html_e( 'Doctor', 'eg-care' ); ?></option>
+									<option value="medical_professional" <?php selected( $provider_type, 'medical_professional' ); ?>><?php esc_html_e( 'Medical Professional', 'eg-care' ); ?></option>
+								</select>
+							</div>
+							<div class="eg-care-form-field">
+								<label for="mobile"><?php esc_html_e( 'Mobile *', 'eg-care' ); ?></label>
+								<input type="text" name="mobile" id="mobile" required value="<?php echo esc_attr( self::field_value( 'mobile', $doctor->mobile ) ); ?>">
+							</div>
+							<div class="eg-care-form-field">
+								<label for="nid"><?php esc_html_e( 'NID', 'eg-care' ); ?></label>
+								<input type="text" name="nid" id="nid" value="<?php echo esc_attr( self::field_value( 'nid', $doctor->nid ) ); ?>">
+							</div>
+							<div class="eg-care-form-field">
+								<label for="nationality"><?php esc_html_e( 'Nationality', 'eg-care' ); ?></label>
+								<?php $nationality = self::field_value( 'nationality', $doctor->nationality ); ?>
+								<select name="nationality" id="nationality">
+									<option value=""><?php esc_html_e( '-- Not stated --', 'eg-care' ); ?></option>
+									<option value="Bangladeshi" <?php selected( $nationality, 'Bangladeshi' ); ?>><?php esc_html_e( 'Bangladeshi', 'eg-care' ); ?></option>
+									<option value="Other" <?php selected( $nationality, 'Other' ); ?>><?php esc_html_e( 'Other', 'eg-care' ); ?></option>
+								</select>
+							</div>
+							<div class="eg-care-form-field">
+								<label for="organization"><?php esc_html_e( 'Organization', 'eg-care' ); ?></label>
+								<input type="text" name="organization" id="organization" value="<?php echo esc_attr( self::field_value( 'organization', $doctor->organization ) ); ?>">
+							</div>
+							<div class="eg-care-form-field span-2">
+								<label for="doctor_bio"><?php esc_html_e( 'Biography / Experience Overview', 'eg-care' ); ?></label>
+								<textarea name="doctor_bio" id="doctor_bio" rows="4"><?php echo esc_textarea( self::field_value( 'doctor_bio', $post ? $post->post_content : '' ) ); ?></textarea>
+							</div>
+						</div>
+					</div>
+
+					<!-- SECTION 3: professional -->
+					<div class="eg-care-form-section">
+						<h3 class="eg-care-form-section-title"><?php esc_html_e( '3. Professional Metadata & Pricing', 'eg-care' ); ?></h3>
+						<div class="eg-care-form-grid">
+							<div class="eg-care-form-field">
+								<label for="bmdc_license_no"><?php esc_html_e( 'BMDC Registration No', 'eg-care' ); ?></label>
+								<input type="text" name="bmdc_license_no" id="bmdc_license_no" value="<?php echo esc_attr( self::field_value( 'bmdc_license_no', $doctor->bmdc_license_no ) ); ?>">
+							</div>
+							<div class="eg-care-form-field">
+								<label for="bmdc_expiry_date"><?php esc_html_e( 'BMDC Expiry Date', 'eg-care' ); ?></label>
+								<?php
+								// 0000-00-00 is not a date any browser will show, and older
+								// rows can hold it. Treat it as "not set".
+								$expiry = (string) $doctor->bmdc_expiry_date;
+								$expiry = ( '' === $expiry || '0000-00-00' === $expiry ) ? '' : $expiry;
+								?>
+								<input type="date" name="bmdc_expiry_date" id="bmdc_expiry_date" value="<?php echo esc_attr( self::field_value( 'bmdc_expiry_date', $expiry ) ); ?>">
+							</div>
+							<div class="eg-care-form-field">
+								<label for="degree"><?php esc_html_e( 'Degrees / Qualifications (comma separated)', 'eg-care' ); ?></label>
+								<input type="text" name="degree" id="degree" placeholder="e.g. MBBS, FCPS, MD" value="<?php echo esc_attr( self::field_value( 'degree', $doctor->degree ) ); ?>">
+							</div>
+							<div class="eg-care-form-field">
+								<label for="designation"><?php esc_html_e( 'Designation', 'eg-care' ); ?></label>
+								<input type="text" name="designation" id="designation" placeholder="e.g. Associate Professor" value="<?php echo esc_attr( self::field_value( 'designation', $doctor->designation ) ); ?>">
+							</div>
+							<div class="eg-care-form-field">
+								<label for="experience_years"><?php esc_html_e( 'Years of Experience', 'eg-care' ); ?></label>
+								<input type="number" name="experience_years" id="experience_years" min="0" value="<?php echo esc_attr( self::field_value( 'experience_years', $doctor->experience_years ) ); ?>">
+							</div>
+							<div class="eg-care-form-field">
+								<label for="consultation_fee"><?php esc_html_e( 'Scheduled Consultation Fee (BDT) *', 'eg-care' ); ?></label>
+								<input type="number" name="consultation_fee" id="consultation_fee" min="0" step="0.01" required value="<?php echo esc_attr( self::field_value( 'consultation_fee', $doctor->consultation_fee ) ); ?>">
+								<p class="description"><?php esc_html_e( 'This is what the patient is charged, so it cannot be left blank.', 'eg-care' ); ?></p>
+							</div>
+							<div class="eg-care-form-field">
+								<label for="instant_call_fee"><?php esc_html_e( 'Instant Call Fee (BDT)', 'eg-care' ); ?></label>
+								<input type="number" name="instant_call_fee" id="instant_call_fee" min="0" step="0.01" value="<?php echo esc_attr( self::field_value( 'instant_call_fee', $doctor->instant_call_fee ) ); ?>">
+								<p class="description"><?php esc_html_e( '0 means an instant call falls back to the scheduled fee.', 'eg-care' ); ?></p>
+							</div>
+							<div class="eg-care-form-field">
+								<label for="follow_up_days"><?php esc_html_e( 'Follow up days', 'eg-care' ); ?></label>
+								<input type="number" name="follow_up_days" id="follow_up_days" min="0" value="<?php echo esc_attr( self::field_value( 'follow_up_days', $doctor->follow_up_days ) ); ?>">
+							</div>
+							<div class="eg-care-form-field">
+								<label for="follow_up_cost"><?php esc_html_e( 'Follow up cost', 'eg-care' ); ?></label>
+								<input type="number" name="follow_up_cost" id="follow_up_cost" min="0" step="0.01" value="<?php echo esc_attr( self::field_value( 'follow_up_cost', $doctor->follow_up_cost ) ); ?>">
+							</div>
+						</div>
+					</div>
+
+					<!-- SECTION 4: payout -->
+					<div class="eg-care-form-section">
+						<h3 class="eg-care-form-section-title"><?php esc_html_e( '4. Bank & Mobile Payout Settings', 'eg-care' ); ?></h3>
+
+						<div class="eg-care-form-grid" style="margin-bottom: 20px;">
+							<div class="eg-care-form-field">
+								<label for="payout_type"><?php esc_html_e( 'Payout Method', 'eg-care' ); ?></label>
+								<select name="payout_type" id="payout_type">
+									<option value="bank" <?php selected( $payout_type, 'bank' ); ?>><?php esc_html_e( 'Bank Account', 'eg-care' ); ?></option>
+									<option value="mobile" <?php selected( $payout_type, 'mobile' ); ?>><?php esc_html_e( 'Mobile Banking', 'eg-care' ); ?></option>
+								</select>
+								<p class="description"><?php esc_html_e( 'Saving keeps only the method selected here; the other one is cleared.', 'eg-care' ); ?></p>
+							</div>
+						</div>
+
+						<div class="eg-care-form-grid" id="sec_bank_fields"<?php echo 'bank' === $payout_type ? '' : ' style="display: none;"'; ?>>
+							<div class="eg-care-form-field span-2">
+								<label for="bank_branch"><?php esc_html_e( 'Bank Name &amp; Branch', 'eg-care' ); ?></label>
+								<input type="text" name="bank_branch" id="bank_branch" value="<?php echo esc_attr( self::field_value( 'bank_branch', $doctor->bank_branch_name ) ); ?>">
+								<p class="description"><?php esc_html_e( 'One box, because the record keeps one line for it.', 'eg-care' ); ?></p>
+							</div>
+							<div class="eg-care-form-field">
+								<label for="bank_account_no"><?php esc_html_e( 'Bank Account Number', 'eg-care' ); ?></label>
+								<input type="text" name="bank_account_no" id="bank_account_no" value="<?php echo esc_attr( self::field_value( 'bank_account_no', $doctor->bank_account_no ) ); ?>">
+							</div>
+							<div class="eg-care-form-field">
+								<label for="bank_account_name"><?php esc_html_e( 'Bank Account Name', 'eg-care' ); ?></label>
+								<input type="text" name="bank_account_name" id="bank_account_name" value="<?php echo esc_attr( self::field_value( 'bank_account_name', $doctor->bank_account_name ) ); ?>">
+							</div>
+							<div class="eg-care-form-field">
+								<label for="bank_routing_number"><?php esc_html_e( 'Routing Number', 'eg-care' ); ?></label>
+								<input type="text" name="bank_routing_number" id="bank_routing_number" value="<?php echo esc_attr( self::field_value( 'bank_routing_number', $doctor->bank_routing_number ) ); ?>">
+							</div>
+						</div>
+
+						<div class="eg-care-form-grid" id="sec_mobile_fields"<?php echo 'mobile' === $payout_type ? '' : ' style="display: none;"'; ?>>
+							<div class="eg-care-form-field">
+								<label for="mobile_banking_type"><?php esc_html_e( 'Mobile Banking Wallet', 'eg-care' ); ?></label>
+								<?php $wallet = self::field_value( 'mobile_banking_type', $doctor->mobile_banking_type ); ?>
+								<select name="mobile_banking_type" id="mobile_banking_type">
+									<option value="bkash" <?php selected( $wallet, 'bkash' ); ?>><?php esc_html_e( 'bKash', 'eg-care' ); ?></option>
+									<option value="nagad" <?php selected( $wallet, 'nagad' ); ?>><?php esc_html_e( 'Nagad', 'eg-care' ); ?></option>
+									<option value="rocket" <?php selected( $wallet, 'rocket' ); ?>><?php esc_html_e( 'Rocket', 'eg-care' ); ?></option>
+								</select>
+							</div>
+							<div class="eg-care-form-field">
+								<label for="mobile_banking_no"><?php esc_html_e( 'Mobile Wallet Number', 'eg-care' ); ?></label>
+								<input type="text" name="mobile_banking_no" id="mobile_banking_no" value="<?php echo esc_attr( self::field_value( 'mobile_banking_no', $doctor->mobile_banking_no ) ); ?>">
+							</div>
+						</div>
+					</div>
+
+					<!-- SECTION 5: documents -->
+					<div class="eg-care-form-section">
+						<h3 class="eg-care-form-section-title"><?php esc_html_e( '5. Verification Documents', 'eg-care' ); ?></h3>
+						<div class="eg-care-form-grid">
+							<div class="eg-care-form-field span-2">
+								<label><?php esc_html_e( 'Current certificate', 'eg-care' ); ?></label>
+								<p>
+									<?php
+									if ( $certs ) {
+										foreach ( $certs as $cert_id ) {
+											$url  = \EGCare\SecureUploads::get_view_url( $cert_id );
+											$mime = get_post_mime_type( $cert_id );
+											if ( $mime && false !== strpos( $mime, 'image' ) ) {
+												printf(
+													'<a href="%1$s" target="_blank" rel="noopener"><img src="%1$s" style="max-width:90px;max-height:90px;border:1px solid #ccd0d4;border-radius:4px;padding:2px;margin-right:6px;" alt="%2$s" /></a>',
+													esc_url( $url ),
+													esc_attr__( 'Certificate', 'eg-care' )
+												);
+											} else {
+												printf(
+													'<a href="%1$s" target="_blank" rel="noopener" class="button button-secondary" style="margin-right:6px;">%2$s</a>',
+													esc_url( $url ),
+													esc_html__( 'View Document', 'eg-care' )
+												);
+											}
+										}
+									} else {
+										esc_html_e( 'No certificate uploaded.', 'eg-care' );
+									}
+									?>
+								</p>
+								<label for="doctor_certificate" style="margin-top:8px;display:block;"><?php esc_html_e( 'Replace certificate', 'eg-care' ); ?></label>
+								<input type="file" name="doctor_certificate" id="doctor_certificate" accept=".pdf,image/*">
+								<p class="description"><?php esc_html_e( 'PDF, JPG, JPEG or PNG, up to 2 MB. Choosing a file replaces the one above.', 'eg-care' ); ?></p>
+							</div>
+						</div>
+					</div>
+
+					<!-- SECTION 6: status -->
+					<div class="eg-care-form-section">
+						<h3 class="eg-care-form-section-title"><?php esc_html_e( '6. Verification & Availability', 'eg-care' ); ?></h3>
+						<div class="eg-care-form-grid">
+							<div class="eg-care-form-field">
+								<label for="verification_status"><?php esc_html_e( 'Verification Status', 'eg-care' ); ?></label>
+								<?php $status = self::field_value( 'verification_status', $doctor->verification_status ); ?>
+								<select name="verification_status" id="verification_status">
+									<option value="pending" <?php selected( $status, 'pending' ); ?>><?php esc_html_e( 'Pending', 'eg-care' ); ?></option>
+									<option value="approved" <?php selected( $status, 'approved' ); ?>><?php esc_html_e( 'Approved', 'eg-care' ); ?></option>
+									<option value="rejected" <?php selected( $status, 'rejected' ); ?>><?php esc_html_e( 'Rejected', 'eg-care' ); ?></option>
+								</select>
+								<p class="description"><?php esc_html_e( 'Only approved doctors appear to patients. Changing this here does not send an email; use Approve or Reject on the Pending Verifications screen for that.', 'eg-care' ); ?></p>
+							</div>
+							<div class="eg-care-form-field">
+								<label for="is_online"><?php esc_html_e( 'Online for instant calls', 'eg-care' ); ?></label>
+								<?php $online = self::field_value( 'is_online', $doctor->is_online ); ?>
+								<select name="is_online" id="is_online">
+									<option value="0" <?php selected( $online, '0' ); ?>><?php esc_html_e( 'Offline', 'eg-care' ); ?></option>
+									<option value="1" <?php selected( $online, '1' ); ?>><?php esc_html_e( 'Online', 'eg-care' ); ?></option>
+								</select>
+							</div>
+						</div>
+					</div>
+
+					<p class="submit">
+						<input type="submit" name="eg_care_edit_doctor_submit" id="submit" class="button button-primary eg-care-btn-primary" value="<?php esc_attr_e( 'Save Changes', 'eg-care' ); ?>">
+					</p>
+				</form>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Write an edited doctor back to all three places it lives.
+	 *
+	 * @param int $meta_id doctors_meta row id.
+	 * @return true|\WP_Error
+	 */
+	private static function handle_edit_doctor_submission( $meta_id ) {
+		global $wpdb;
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return new \WP_Error( 'forbidden', __( 'You do not have permission to perform this action.', 'eg-care' ) );
+		}
+
+		$doctor = self::get_doctor( $meta_id );
+
+		if ( ! $doctor ) {
+			return new \WP_Error( 'not_found', __( 'That doctor could not be found.', 'eg-care' ) );
+		}
+
+		$post_id = (int) $doctor->post_id;
+		$user_id = (int) $doctor->user_id;
+		$user    = $user_id ? get_userdata( $user_id ) : null;
+
+		$name  = sanitize_text_field( wp_unslash( $_POST['doctor_name'] ?? '' ) );
+		$bio   = wp_kses_post( wp_unslash( $_POST['doctor_bio'] ?? '' ) );
+		$email = sanitize_email( wp_unslash( $_POST['doctor_email'] ?? '' ) );
+		$pass  = (string) ( $_POST['doctor_password'] ?? '' );
+
+		$mobile   = sanitize_text_field( wp_unslash( $_POST['mobile'] ?? '' ) );
+		$fee_raw  = trim( (string) ( $_POST['consultation_fee'] ?? '' ) );
+
+		// The same three the registration form insists on, for the same reasons:
+		// a nameless profile, an uncontactable doctor, and a blank fee that would
+		// be charged to the patient as 0.00.
+		if ( '' === $name || '' === $mobile || '' === $fee_raw ) {
+			return new \WP_Error( 'missing_fields', __( 'Full Name, Mobile and Consultation Fee are required.', 'eg-care' ) );
+		}
+
+		// The account, when there is one to change.
+		if ( $user ) {
+			if ( '' === $email || ! is_email( $email ) ) {
+				return new \WP_Error( 'bad_email', __( 'Please enter a valid email address.', 'eg-care' ) );
+			}
+
+			$owner = email_exists( $email );
+			if ( $owner && (int) $owner !== $user_id ) {
+				return new \WP_Error( 'email_taken', __( 'That email address belongs to another account.', 'eg-care' ) );
+			}
+
+			$account = array(
+				'ID'           => $user_id,
+				'user_email'   => $email,
+				'display_name' => $name,
+			);
+
+			if ( '' !== $pass ) {
+				if ( strlen( $pass ) < 6 ) {
+					return new \WP_Error( 'short_password', __( 'A new password must be at least 6 characters.', 'eg-care' ) );
+				}
+				$account['user_pass'] = $pass;
+			}
+
+			$updated = wp_update_user( $account );
+
+			if ( is_wp_error( $updated ) ) {
+				return $updated;
+			}
+		}
+
+		// The post. save_post_doctors would run the meta box handler over a
+		// request that carries none of its fields, so it is stood down first.
+		if ( $post_id ) {
+			remove_action( 'save_post_doctors', array( __CLASS__, 'save_doctor_meta_box_data' ) );
+
+			$post_result = wp_update_post(
+				array(
+					'ID'           => $post_id,
+					'post_title'   => $name,
+					'post_content' => $bio,
+				),
+				true
+			);
+
+			add_action( 'save_post_doctors', array( __CLASS__, 'save_doctor_meta_box_data' ) );
+
+			if ( is_wp_error( $post_result ) ) {
+				return $post_result;
+			}
+
+			$specialty_id = isset( $_POST['specialty_id'] ) ? absint( $_POST['specialty_id'] ) : 0;
+
+			if ( $specialty_id ) {
+				wp_set_object_terms( $post_id, $specialty_id, 'specialty' );
+			} else {
+				wp_set_object_terms( $post_id, array(), 'specialty' );
+			}
+
+			self::save_edited_photo( $post_id );
+		}
+
+		$payout = 'mobile' === ( $_POST['payout_type'] ?? 'bank' ) ? 'mobile' : 'bank';
+
+		$data = array(
+			'provider_type'       => sanitize_text_field( wp_unslash( $_POST['provider_type'] ?? '' ) ),
+			'bmdc_license_no'     => sanitize_text_field( wp_unslash( $_POST['bmdc_license_no'] ?? '' ) ),
+			// A date column: '' becomes 0000-00-00 on a server that is not
+			// strict, and a hard error on one that is.
+			'bmdc_expiry_date'    => '' !== trim( (string) ( $_POST['bmdc_expiry_date'] ?? '' ) ) ? sanitize_text_field( wp_unslash( $_POST['bmdc_expiry_date'] ) ) : null,
+			'degree'              => sanitize_text_field( wp_unslash( $_POST['degree'] ?? '' ) ),
+			'designation'         => sanitize_text_field( wp_unslash( $_POST['designation'] ?? '' ) ),
+			'consultation_fee'    => floatval( $fee_raw ),
+			'instant_call_fee'    => floatval( $_POST['instant_call_fee'] ?? 0 ),
+			'experience_years'    => intval( $_POST['experience_years'] ?? 0 ),
+			'is_online'           => ! empty( $_POST['is_online'] ) ? 1 : 0,
+			'verification_status' => sanitize_text_field( wp_unslash( $_POST['verification_status'] ?? 'pending' ) ),
+			'mobile'              => $mobile,
+			'nid'                 => sanitize_text_field( wp_unslash( $_POST['nid'] ?? '' ) ),
+			'nationality'         => sanitize_text_field( wp_unslash( $_POST['nationality'] ?? '' ) ),
+			'organization'        => sanitize_text_field( wp_unslash( $_POST['organization'] ?? '' ) ),
+			'follow_up_days'      => intval( $_POST['follow_up_days'] ?? 0 ),
+			'follow_up_cost'      => floatval( $_POST['follow_up_cost'] ?? 0 ),
+			// Only the chosen method is kept, so a payout can never be attempted
+			// against a stale account left behind by the other one.
+			'bank_account_name'   => 'bank' === $payout ? sanitize_text_field( wp_unslash( $_POST['bank_account_name'] ?? '' ) ) : null,
+			'bank_account_no'     => 'bank' === $payout ? sanitize_text_field( wp_unslash( $_POST['bank_account_no'] ?? '' ) ) : null,
+			'bank_branch_name'    => 'bank' === $payout ? sanitize_text_field( wp_unslash( $_POST['bank_branch'] ?? '' ) ) : null,
+			'bank_routing_number' => 'bank' === $payout ? sanitize_text_field( wp_unslash( $_POST['bank_routing_number'] ?? '' ) ) : null,
+			'mobile_banking_type' => 'mobile' === $payout ? sanitize_text_field( wp_unslash( $_POST['mobile_banking_type'] ?? '' ) ) : null,
+			'mobile_banking_no'   => 'mobile' === $payout ? sanitize_text_field( wp_unslash( $_POST['mobile_banking_no'] ?? '' ) ) : null,
+		);
+
+		if ( ! in_array( $data['verification_status'], array( 'pending', 'approved', 'rejected' ), true ) ) {
+			$data['verification_status'] = 'pending';
+		}
+
+		// A replacement certificate, when one was attached.
+		$new_cert = self::save_edited_certificate( $post_id );
+
+		if ( is_wp_error( $new_cert ) ) {
+			return $new_cert;
+		}
+
+		if ( $new_cert ) {
+			$data['certificate_files'] = wp_json_encode( array( $new_cert ) );
+		}
+
+		$table_meta = \EGCare\DB::get_table( 'doctors_meta' );
+		$saved      = $wpdb->update( $table_meta, $data, array( 'id' => (int) $meta_id ) );
+
+		if ( false === $saved ) {
+			return new \WP_Error( 'db_error', __( 'Failed to save the doctor record.', 'eg-care' ) );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Replace or remove the profile photo.
+	 *
+	 * @param int $post_id Doctor post id.
+	 */
+	private static function save_edited_photo( $post_id ) {
+		if ( ! empty( $_POST['remove_photo'] ) && empty( $_FILES['doctor_photo']['name'] ) ) {
+			delete_post_thumbnail( $post_id );
+			return;
+		}
+
+		if ( empty( $_FILES['doctor_photo']['name'] ) ) {
+			return;
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+
+		$attachment_id = media_handle_upload( 'doctor_photo', $post_id );
+
+		if ( ! is_wp_error( $attachment_id ) ) {
+			set_post_thumbnail( $post_id, $attachment_id );
+		}
+	}
+
+	/**
+	 * Store a replacement certificate.
+	 *
+	 * @param int $post_id Doctor post id.
+	 * @return int|false|\WP_Error Attachment id, false when nothing was attached.
+	 */
+	private static function save_edited_certificate( $post_id ) {
+		if ( empty( $_FILES['doctor_certificate']['name'] ) ) {
+			return false;
+		}
+
+		if ( ! $post_id ) {
+			return new \WP_Error( 'no_post', __( 'This doctor has no profile post, so a certificate cannot be attached.', 'eg-care' ) );
+		}
+
+		if ( UPLOAD_ERR_OK !== $_FILES['doctor_certificate']['error'] ) {
+			return new \WP_Error( 'upload_error', __( 'Error uploading the certificate. Please verify the file is not corrupted.', 'eg-care' ) );
+		}
+
+		if ( $_FILES['doctor_certificate']['size'] > 2 * 1024 * 1024 ) {
+			return new \WP_Error( 'too_large', __( 'Certificate file size exceeds the 2MB limit.', 'eg-care' ) );
+		}
+
+		$ext = strtolower( pathinfo( $_FILES['doctor_certificate']['name'], PATHINFO_EXTENSION ) );
+
+		if ( ! in_array( $ext, array( 'pdf', 'jpg', 'jpeg', 'png' ), true ) ) {
+			return new \WP_Error( 'bad_format', __( 'Invalid certificate format. Only PDF, JPG, JPEG, and PNG are allowed.', 'eg-care' ) );
+		}
+
+		// SecureUploads reads $_FILES by key and keeps the file out of the media
+		// library, which is what the registration form does too.
+		$cert_id = \EGCare\SecureUploads::handle_upload( 'doctor_certificate', $post_id );
+
+		if ( is_wp_error( $cert_id ) ) {
+			return $cert_id;
+		}
+
+		return (int) $cert_id;
+	}
 }
 
 /**
@@ -1046,8 +1692,11 @@ class EG_Care_Doctors_List_Table extends \WP_List_Table {
 	public function column_name( $item ) {
 		$actions = array();
 
-		// Edit link.
-		$actions['edit'] = sprintf( '<a href="%s">%s</a>', esc_url( get_edit_post_link( $item->post_id ) ), __( 'Edit', 'eg-care' ) );
+		// Edit link. AdminDoctors::edit_url() is the screen that can
+		// change everything about a doctor; the WordPress editor only reaches
+		// the post title, the body and the meta box buried under it.
+		$actions['edit'] = sprintf( '<a href="%s">%s</a>', esc_url( \EGCare\AdminDoctors::edit_url( $item->id ) ), __( 'Edit', 'eg-care' ) );
+		$actions['edit_cpt'] = sprintf( '<a href="%s">%s</a>', esc_url( get_edit_post_link( $item->post_id ) ), __( 'WP Editor', 'eg-care' ) );
 
 		// Approval / Rejection buttons.
 		if ( 'approved' !== $item->verification_status ) {
@@ -1063,7 +1712,7 @@ class EG_Care_Doctors_List_Table extends \WP_List_Table {
 		$delete_url = wp_nonce_url( admin_url( 'admin.php?page=eg-care-doctors&action=delete&id=' . $item->id ), 'eg_care_delete_doctor_' . $item->id );
 		$actions['delete'] = sprintf( '<a href="%s" style="color:red;" onclick="return confirm(\'%s\')">%s</a>', esc_url( $delete_url ), esc_attr__( 'Are you sure you want to delete this doctor? This will remove the WordPress user account and profile post too.', 'eg-care' ), __( 'Delete', 'eg-care' ) );
 
-		return sprintf( '<strong><a href="%1$s">%2$s</a></strong> %3$s', esc_url( get_edit_post_link( $item->post_id ) ), esc_html( $item->post_title ), $this->row_actions( $actions ) );
+		return sprintf( '<strong><a href="%1$s">%2$s</a></strong> %3$s', esc_url( \EGCare\AdminDoctors::edit_url( $item->id ) ), esc_html( $item->post_title ), $this->row_actions( $actions ) );
 	}
 
 	/**
