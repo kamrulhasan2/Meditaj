@@ -130,7 +130,8 @@ class Shortcodes {
 		$degree      = sanitize_text_field( $_POST['reg_degree'] );
 		$designation = sanitize_text_field( $_POST['reg_designation'] ); // defaults to Consultant
 		$experience  = intval( $_POST['reg_experience'] );
-		$fee         = floatval( $_POST['reg_fee'] );
+		$fee_raw     = isset( $_POST['reg_fee'] ) ? trim( (string) $_POST['reg_fee'] ) : '';
+		$fee         = floatval( $fee_raw );
 		$instant_fee = floatval( $_POST['reg_instant_fee'] ); // defaults to 0
 		$mobile      = sanitize_text_field( $_POST['reg_mobile'] );
 		$nid         = sanitize_text_field( $_POST['reg_nid'] );
@@ -159,8 +160,13 @@ class Shortcodes {
 			$m_no          = sanitize_text_field( $_POST['reg_m_no'] );
 		}
 
-		// Validate.
-		if ( empty( $username ) || empty( $email ) || empty( $password ) || empty( $name ) || empty( $license ) || empty( $expiry ) || empty( $specialty ) || empty( $mobile ) || empty( $nid ) || empty( $nationality ) || empty( $degree ) ) {
+		// Validate. Name, Mobile and Fee are what the client asks for; the
+		// username, email and password stay because wp_create_user() cannot make
+		// an account without them, and the doctor could never sign in.
+		//
+		// Fee is checked against the raw box rather than the float: a blank box
+		// becomes 0.00, and 0.00 is the amount the patient is charged.
+		if ( empty( $username ) || empty( $email ) || empty( $password ) || empty( $name ) || empty( $mobile ) || '' === $fee_raw ) {
 			self::$errors[] = __( 'All fields marked with an asterisk (*) are required.', 'eg-care' );
 			return;
 		}
@@ -175,16 +181,10 @@ class Shortcodes {
 			return;
 		}
 
-		// Validate file uploads first.
-		if ( empty( $_FILES['reg_certificate']['name'] ) ) {
-			self::$errors[] = __( 'You must upload a valid copy of your BMDC/Medical Certificate.', 'eg-care' );
-			return;
-		}
-
 		// Pre-flight file upload error validations and size limits (max 2MB).
 		$max_file_size = 2 * 1024 * 1024; // 2MB
 
-		if ( isset( $_FILES['reg_certificate'] ) ) {
+		if ( ! empty( $_FILES['reg_certificate']['name'] ) ) {
 			if ( $_FILES['reg_certificate']['error'] !== UPLOAD_ERR_OK ) {
 				self::$errors[] = __( 'Error uploading certificate file. Please verify the file is not corrupted.', 'eg-care' );
 				return;
@@ -207,11 +207,12 @@ class Shortcodes {
 		}
 
 		// Check file extension.
-		$cert_file = $_FILES['reg_certificate'];
-		$cert_ext  = strtolower( pathinfo( $cert_file['name'], PATHINFO_EXTENSION ) );
-		if ( ! in_array( $cert_ext, array( 'pdf', 'jpg', 'jpeg', 'png' ), true ) ) {
-			self::$errors[] = __( 'Invalid certificate format. Only PDF, JPG, JPEG, and PNG are allowed.', 'eg-care' );
-			return;
+		if ( ! empty( $_FILES['reg_certificate']['name'] ) ) {
+			$cert_ext = strtolower( pathinfo( $_FILES['reg_certificate']['name'], PATHINFO_EXTENSION ) );
+			if ( ! in_array( $cert_ext, array( 'pdf', 'jpg', 'jpeg', 'png' ), true ) ) {
+				self::$errors[] = __( 'Invalid certificate format. Only PDF, JPG, JPEG, and PNG are allowed.', 'eg-care' );
+				return;
+			}
 		}
 
 		// Create user.
@@ -261,20 +262,28 @@ class Shortcodes {
 			}
 		}
 
-		// 2. Certificate file.
-		$cert_id = \EGCare\SecureUploads::handle_upload( 'reg_certificate', $post_id );
-		if ( is_wp_error( $cert_id ) ) {
-			// Rollback.
-			wp_delete_post( $post_id, true );
-			global $wpdb;
-			$wpdb->delete( $wpdb->users, array( 'ID' => $user_id ), array( '%d' ) );
-			$wpdb->delete( $wpdb->usermeta, array( 'user_id' => $user_id ), array( '%d' ) );
-			self::$errors[] = __( 'Failed to save certificate attachment.', 'eg-care' );
-			return;
+		// 2. Certificate file. Optional now, so handle_upload() must not be
+		// called with nothing to upload - it would return WP_Error and roll a
+		// perfectly good registration back.
+		$cert_id = 0;
+
+		if ( ! empty( $_FILES['reg_certificate']['name'] ) ) {
+			$cert_id = \EGCare\SecureUploads::handle_upload( 'reg_certificate', $post_id );
+			if ( is_wp_error( $cert_id ) ) {
+				// Rollback.
+				wp_delete_post( $post_id, true );
+				global $wpdb;
+				$wpdb->delete( $wpdb->users, array( 'ID' => $user_id ), array( '%d' ) );
+				$wpdb->delete( $wpdb->usermeta, array( 'user_id' => $user_id ), array( '%d' ) );
+				self::$errors[] = __( 'Failed to save certificate attachment.', 'eg-care' );
+				return;
+			}
 		}
 
-		// Associate specialty taxonomy term.
-		wp_set_object_terms( $post_id, $specialty, 'specialty' );
+		// Associate specialty taxonomy term, when one was chosen.
+		if ( $specialty ) {
+			wp_set_object_terms( $post_id, $specialty, 'specialty' );
+		}
 
 		// Insert metadata row.
 		global $wpdb;
@@ -287,7 +296,7 @@ class Shortcodes {
 				'user_id'             => $user_id,
 				'provider_type'       => $provider,
 				'bmdc_license_no'     => $license,
-				'bmdc_expiry_date'    => $expiry,
+				'bmdc_expiry_date'    => '' !== $expiry ? $expiry : null,
 				'degree'              => $degree,
 				'designation'         => $designation,
 				'consultation_fee'    => $fee,
@@ -307,7 +316,7 @@ class Shortcodes {
 				'bank_routing_number' => $bank_routing,
 				'mobile_banking_type' => $m_wallet,
 				'mobile_banking_no'   => $m_no,
-				'certificate_files'   => wp_json_encode( array( $cert_id ) ),
+				'certificate_files'   => wp_json_encode( $cert_id ? array( $cert_id ) : array() ),
 				'created_at'          => current_time( 'mysql' ),
 			),
 			array(
@@ -342,7 +351,9 @@ class Shortcodes {
 
 		if ( false === $inserted ) {
 			// Rollback.
-			wp_delete_attachment( $cert_id, true );
+			if ( $cert_id ) {
+				wp_delete_attachment( $cert_id, true );
+			}
 			wp_delete_post( $post_id, true );
 			global $wpdb;
 			$wpdb->delete( $wpdb->users, array( 'ID' => $user_id ), array( '%d' ) );
@@ -387,11 +398,8 @@ class Shortcodes {
 					'i18n' => array(
 						'noFileChosen'          => __( 'No file chosen', 'eg-care' ),
 						'required'              => __( 'is required.', 'eg-care' ),
-						'requiredBank'          => __( 'is required for bank payout.', 'eg-care' ),
-						'requiredMobile'        => __( 'is required for mobile payout.', 'eg-care' ),
 						'photoTooLarge'         => __( 'Profile photo file size exceeds 2MB limit.', 'eg-care' ),
 						'certificateTooLarge'   => __( 'BMDC/Medical Certificate file size exceeds 2MB limit.', 'eg-care' ),
-						'certificateRequired'   => __( 'BMDC/Medical Certificate is required.', 'eg-care' ),
 						'validationHeading'     => __( 'Form Validation Errors:', 'eg-care' ),
 					),
 				)

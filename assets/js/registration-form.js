@@ -30,7 +30,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		bankSection.style.display = 'grid';
 		mobileSection.style.display = 'none';
 
-		bankSection.querySelectorAll('input, select').forEach(el => el.setAttribute('required', 'required'));
+		// Payout details are optional, so switching tabs only switches what is
+		// on screen - it must not make the visible section compulsory.
+		bankSection.querySelectorAll('input, select').forEach(el => el.removeAttribute('required'));
 		mobileSection.querySelectorAll('input, select').forEach(el => el.removeAttribute('required'));
 	});
 
@@ -42,8 +44,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		mobileSection.style.display = 'grid';
 		bankSection.style.display = 'none';
 
-		mobileSection.querySelectorAll('input, select').forEach(el => el.setAttribute('required', 'required'));
+		// Payout details are optional, so switching tabs only switches what is
+		// on screen - it must not make the visible section compulsory.
 		bankSection.querySelectorAll('input, select').forEach(el => el.removeAttribute('required'));
+		mobileSection.querySelectorAll('input, select').forEach(el => el.removeAttribute('required'));
 	});
 
 	// Filename updater inside labels
@@ -72,22 +76,15 @@ document.addEventListener('DOMContentLoaded', function() {
 			let errors = [];
 
 			// 1. Required text fields check
+			// Keep this list in step with process_registration_form(): the
+			// server refuses exactly these six and nothing else.
 			const requiredFields = [
 				{ id: 'reg_first_name', label: 'Name' },
 				{ id: 'reg_email', label: 'Email' },
 				{ id: 'reg_mobile', label: 'Mobile' },
-				{ id: 'reg_nid', label: 'NID' },
-				{ id: 'reg_nationality', label: 'Nationality' },
 				{ id: 'reg_fee', label: 'Consultation Fee' },
 				{ id: 'reg_username', label: 'Username' },
-				{ id: 'reg_password', label: 'Password' },
-				{ id: 'reg_license', label: 'BMDC Code' },
-				{ id: 'reg_bmdc_expiry', label: 'BMDC Expiry Date' },
-				{ id: 'reg_degree', label: 'Degrees' },
-				{ id: 'reg_specialty_id', label: 'Specialty' },
-				{ id: 'reg_experience', label: 'Years of Experience' },
-				{ id: 'reg_follow_up_days', label: 'Follow up days' },
-				{ id: 'reg_follow_up_cost', label: 'Follow up cost' }
+				{ id: 'reg_password', label: 'Password' }
 			];
 
 			requiredFields.forEach(function(field) {
@@ -100,39 +97,8 @@ document.addEventListener('DOMContentLoaded', function() {
 				}
 			});
 
-			// 2. Validate payout fields depending on selected tab
-			if (inputAccType.value === 'bank') {
-				const bankFields = [
-					{ id: 'reg_bank_name', label: 'Bank Name' },
-					{ id: 'reg_bank_branch', label: 'Branch Name' },
-					{ id: 'reg_bank_no', label: 'Account Number' },
-					{ id: 'reg_bank_acc_name', label: 'Account Name' },
-					{ id: 'reg_bank_routing', label: 'Routing Number' }
-				];
-				bankFields.forEach(function(field) {
-					const el = document.getElementById(field.id);
-					if (el && !el.value.trim()) {
-						errors.push(field.label + ' ' + i18n.requiredBank);
-						el.style.border = '1px solid #ef4444';
-					} else if (el) {
-						el.style.border = '';
-					}
-				});
-			} else {
-				const mobileFields = [
-					{ id: 'reg_m_wallet', label: 'Mobile Payout Wallet' },
-					{ id: 'reg_m_no', label: 'Mobile Wallet Number' }
-				];
-				mobileFields.forEach(function(field) {
-					const el = document.getElementById(field.id);
-					if (el && !el.value.trim()) {
-						errors.push(field.label + ' ' + i18n.requiredMobile);
-						el.style.border = '1px solid #ef4444';
-					} else if (el) {
-						el.style.border = '';
-					}
-				});
-			}
+			// 2. Payout details are optional; an administrator collects whatever
+			// is missing before the first payout.
 
 			// 3. File size limits (Max 2 MB)
 			const maxFileSize = 2 * 1024 * 1024; // 2MB
@@ -155,8 +121,6 @@ document.addEventListener('DOMContentLoaded', function() {
 				} else {
 					certInput.style.outline = '';
 				}
-			} else {
-				errors.push(i18n.certificateRequired);
 			}
 
 			// Show errors if any and block submission

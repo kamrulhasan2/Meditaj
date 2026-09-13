@@ -29,7 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<?php else : ?>
 
 		<div class="eg-care-register-header">
-			<h2 class="eg-care-register-title"><?php esc_html_e( 'Become a Provider', 'eg-care' ); ?></h2>
+			<h2 class="eg-care-register-title"><?php esc_html_e( 'Register as a Doctor', 'eg-care' ); ?></h2>
 			<p class="eg-care-register-desc"><?php esc_html_e( 'Join our telemedicine platform as a verified doctor or healthcare professional', 'eg-care' ); ?></p>
 		</div>
 
@@ -93,12 +93,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 						<input type="text" name="reg_mobile" id="reg_mobile" required placeholder="<?php esc_attr_e( 'Enter your number', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_mobile'] ) ? esc_attr( $_POST['reg_mobile'] ) : ''; ?>">
 					</div>
 					<div class="eg-care-field">
-						<label for="reg_nid"><?php esc_html_e( 'NID *', 'eg-care' ); ?></label>
-						<input type="text" name="reg_nid" id="reg_nid" required placeholder="<?php esc_attr_e( 'Enter your NID', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_nid'] ) ? esc_attr( $_POST['reg_nid'] ) : ''; ?>">
+						<label for="reg_nid"><?php esc_html_e( 'NID', 'eg-care' ); ?></label>
+						<input type="text" name="reg_nid" id="reg_nid" placeholder="<?php esc_attr_e( 'Enter your NID', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_nid'] ) ? esc_attr( $_POST['reg_nid'] ) : ''; ?>">
 					</div>
 					<div class="eg-care-field">
-						<label for="reg_nationality"><?php esc_html_e( 'Nationality *', 'eg-care' ); ?></label>
-						<select name="reg_nationality" id="reg_nationality" required>
+						<label for="reg_nationality"><?php esc_html_e( 'Nationality', 'eg-care' ); ?></label>
+						<select name="reg_nationality" id="reg_nationality">
 							<option value=""><?php esc_html_e( 'Select your nationality', 'eg-care' ); ?></option>
 							<?php $reg_nationality = isset( $_POST['reg_nationality'] ) ? sanitize_text_field( wp_unslash( $_POST['reg_nationality'] ) ) : 'Bangladeshi'; ?>
 							<option value="Bangladeshi" <?php selected( $reg_nationality, 'Bangladeshi' ); ?>>Bangladeshi</option>
@@ -140,20 +140,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<h3 class="eg-care-section-title"><?php esc_html_e( 'Professional Information', 'eg-care' ); ?></h3>
 				<div class="eg-care-fields-grid meta-fields">
 					<div class="eg-care-field">
-						<label for="reg_license"><?php esc_html_e( 'BMDC Code *', 'eg-care' ); ?></label>
-						<input type="text" name="reg_license" id="reg_license" required placeholder="<?php esc_attr_e( 'Enter BMDC code', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_license'] ) ? esc_attr( $_POST['reg_license'] ) : ''; ?>">
+						<label for="reg_license"><?php esc_html_e( 'BMDC Code', 'eg-care' ); ?></label>
+						<input type="text" name="reg_license" id="reg_license" placeholder="<?php esc_attr_e( 'Enter BMDC code', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_license'] ) ? esc_attr( $_POST['reg_license'] ) : ''; ?>">
 					</div>
 					<div class="eg-care-field">
-						<label for="reg_bmdc_expiry"><?php esc_html_e( 'BMDC Expiry Date *', 'eg-care' ); ?></label>
-						<input type="date" name="reg_bmdc_expiry" id="reg_bmdc_expiry" required value="<?php echo isset( $_POST['reg_bmdc_expiry'] ) ? esc_attr( $_POST['reg_bmdc_expiry'] ) : ''; ?>">
+						<label for="reg_bmdc_expiry"><?php esc_html_e( 'BMDC Expiry Date', 'eg-care' ); ?></label>
+						<input type="date" name="reg_bmdc_expiry" id="reg_bmdc_expiry" value="<?php echo isset( $_POST['reg_bmdc_expiry'] ) ? esc_attr( $_POST['reg_bmdc_expiry'] ) : ''; ?>">
 					</div>
 					<div class="eg-care-field">
-						<label for="reg_degree"><?php esc_html_e( 'Degrees *', 'eg-care' ); ?></label>
-						<input type="text" name="reg_degree" id="reg_degree" required placeholder="<?php esc_attr_e( 'Enter your degrees', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_degree'] ) ? esc_attr( $_POST['reg_degree'] ) : ''; ?>">
+						<label for="reg_degree"><?php esc_html_e( 'Degrees', 'eg-care' ); ?></label>
+						<input type="text" name="reg_degree" id="reg_degree" placeholder="<?php esc_attr_e( 'Enter your degrees', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_degree'] ) ? esc_attr( $_POST['reg_degree'] ) : ''; ?>">
 					</div>
 					<div class="eg-care-field">
-						<label for="reg_specialty_id"><?php esc_html_e( 'Specialty *', 'eg-care' ); ?></label>
-						<select name="reg_specialty_id" id="reg_specialty_id" required>
+						<label for="reg_specialty_id"><?php esc_html_e( 'Specialty', 'eg-care' ); ?></label>
+						<select name="reg_specialty_id" id="reg_specialty_id">
 							<option value=""><?php esc_html_e( 'Select Specialty', 'eg-care' ); ?></option>
 							<?php foreach ( $specialties as $spec ) : ?>
 								<option value="<?php echo esc_attr( $spec->term_id ); ?>" <?php echo ( isset( $_POST['reg_specialty_id'] ) && intval( $_POST['reg_specialty_id'] ) === $spec->term_id ) ? 'selected' : ''; ?>>
@@ -163,16 +163,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</select>
 					</div>
 					<div class="eg-care-field">
-						<label for="reg_experience"><?php esc_html_e( 'Years of Experience *', 'eg-care' ); ?></label>
-						<input type="number" name="reg_experience" id="reg_experience" min="0" required placeholder="<?php esc_attr_e( 'Enter your years of experience', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_experience'] ) ? esc_attr( $_POST['reg_experience'] ) : ''; ?>">
+						<label for="reg_experience"><?php esc_html_e( 'Years of Experience', 'eg-care' ); ?></label>
+						<input type="number" name="reg_experience" id="reg_experience" min="0" placeholder="<?php esc_attr_e( 'Enter your years of experience', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_experience'] ) ? esc_attr( $_POST['reg_experience'] ) : ''; ?>">
 					</div>
 					<div class="eg-care-field">
-						<label for="reg_follow_up_days"><?php esc_html_e( 'Follow up days *', 'eg-care' ); ?></label>
-						<input type="number" name="reg_follow_up_days" id="reg_follow_up_days" min="0" required placeholder="<?php esc_attr_e( 'Enter your follow up days', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_follow_up_days'] ) ? esc_attr( $_POST['reg_follow_up_days'] ) : ''; ?>">
+						<label for="reg_follow_up_days"><?php esc_html_e( 'Follow up days', 'eg-care' ); ?></label>
+						<input type="number" name="reg_follow_up_days" id="reg_follow_up_days" min="0" placeholder="<?php esc_attr_e( 'Enter your follow up days', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_follow_up_days'] ) ? esc_attr( $_POST['reg_follow_up_days'] ) : ''; ?>">
 					</div>
 					<div class="eg-care-field">
-						<label for="reg_follow_up_cost"><?php esc_html_e( 'Follow up cost *', 'eg-care' ); ?></label>
-						<input type="number" name="reg_follow_up_cost" id="reg_follow_up_cost" min="0" step="0.01" required placeholder="<?php esc_attr_e( 'Enter your follow up cost', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_follow_up_cost'] ) ? esc_attr( $_POST['reg_follow_up_cost'] ) : ''; ?>">
+						<label for="reg_follow_up_cost"><?php esc_html_e( 'Follow up cost', 'eg-care' ); ?></label>
+						<input type="number" name="reg_follow_up_cost" id="reg_follow_up_cost" min="0" step="0.01" placeholder="<?php esc_attr_e( 'Enter your follow up cost', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_follow_up_cost'] ) ? esc_attr( $_POST['reg_follow_up_cost'] ) : ''; ?>">
 					</div>
 					<!-- Add default instant call fee mapping same as fee or 0 -->
 					<input type="hidden" name="reg_instant_fee" value="0">
@@ -197,8 +197,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<!-- Bank Details Sub-Form -->
 				<div class="eg-care-fields-grid payout-fields" id="sec_acc_bank">
 					<div class="eg-care-field">
-						<label for="reg_bank_name"><?php esc_html_e( 'Bank Name *', 'eg-care' ); ?></label>
-						<select name="reg_bank_name" id="reg_bank_name" required>
+						<label for="reg_bank_name"><?php esc_html_e( 'Bank Name', 'eg-care' ); ?></label>
+						<select name="reg_bank_name" id="reg_bank_name">
 							<option value=""><?php esc_html_e( 'Select your bank name', 'eg-care' ); ?></option>
 							<option value="Sonali Bank">Sonali Bank</option>
 							<option value="BRAC Bank">BRAC Bank</option>
@@ -208,27 +208,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</select>
 					</div>
 					<div class="eg-care-field">
-						<label for="reg_bank_branch"><?php esc_html_e( 'Branch Name *', 'eg-care' ); ?></label>
-						<input type="text" name="reg_bank_branch" id="reg_bank_branch" required placeholder="<?php esc_attr_e( 'Enter your branch name', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_bank_branch'] ) ? esc_attr( $_POST['reg_bank_branch'] ) : ''; ?>">
+						<label for="reg_bank_branch"><?php esc_html_e( 'Branch Name', 'eg-care' ); ?></label>
+						<input type="text" name="reg_bank_branch" id="reg_bank_branch" placeholder="<?php esc_attr_e( 'Enter your branch name', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_bank_branch'] ) ? esc_attr( $_POST['reg_bank_branch'] ) : ''; ?>">
 					</div>
 					<div class="eg-care-field">
-						<label for="reg_bank_no"><?php esc_html_e( 'Account Number *', 'eg-care' ); ?></label>
-						<input type="text" name="reg_bank_no" id="reg_bank_no" required placeholder="<?php esc_attr_e( 'Enter your account number', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_bank_no'] ) ? esc_attr( $_POST['reg_bank_no'] ) : ''; ?>">
+						<label for="reg_bank_no"><?php esc_html_e( 'Account Number', 'eg-care' ); ?></label>
+						<input type="text" name="reg_bank_no" id="reg_bank_no" placeholder="<?php esc_attr_e( 'Enter your account number', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_bank_no'] ) ? esc_attr( $_POST['reg_bank_no'] ) : ''; ?>">
 					</div>
 					<div class="eg-care-field">
-						<label for="reg_bank_acc_name"><?php esc_html_e( 'Account Name *', 'eg-care' ); ?></label>
-						<input type="text" name="reg_bank_acc_name" id="reg_bank_acc_name" required placeholder="<?php esc_attr_e( 'Enter account name', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_bank_acc_name'] ) ? esc_attr( $_POST['reg_bank_acc_name'] ) : ''; ?>">
+						<label for="reg_bank_acc_name"><?php esc_html_e( 'Account Name', 'eg-care' ); ?></label>
+						<input type="text" name="reg_bank_acc_name" id="reg_bank_acc_name" placeholder="<?php esc_attr_e( 'Enter account name', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_bank_acc_name'] ) ? esc_attr( $_POST['reg_bank_acc_name'] ) : ''; ?>">
 					</div>
 					<div class="eg-care-field">
-						<label for="reg_bank_routing"><?php esc_html_e( 'Routing Number *', 'eg-care' ); ?></label>
-						<input type="text" name="reg_bank_routing" id="reg_bank_routing" required placeholder="<?php esc_attr_e( 'Enter routing number', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_bank_routing'] ) ? esc_attr( $_POST['reg_bank_routing'] ) : ''; ?>">
+						<label for="reg_bank_routing"><?php esc_html_e( 'Routing Number', 'eg-care' ); ?></label>
+						<input type="text" name="reg_bank_routing" id="reg_bank_routing" placeholder="<?php esc_attr_e( 'Enter routing number', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_bank_routing'] ) ? esc_attr( $_POST['reg_bank_routing'] ) : ''; ?>">
 					</div>
 				</div>
 
 				<!-- Mobile Banking Sub-Form (Hidden by default) -->
 				<div class="eg-care-fields-grid payout-fields" id="sec_acc_mobile" style="display: none;">
 					<div class="eg-care-field">
-						<label for="reg_m_wallet"><?php esc_html_e( 'Mobile Payout Wallet *', 'eg-care' ); ?></label>
+						<label for="reg_m_wallet"><?php esc_html_e( 'Mobile Payout Wallet', 'eg-care' ); ?></label>
 						<select name="reg_m_wallet" id="reg_m_wallet">
 							<option value="bkash"><?php esc_html_e( 'bKash', 'eg-care' ); ?></option>
 							<option value="nagad"><?php esc_html_e( 'Nagad', 'eg-care' ); ?></option>
@@ -236,7 +236,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</select>
 					</div>
 					<div class="eg-care-field">
-						<label for="reg_m_no"><?php esc_html_e( 'Mobile Wallet Number *', 'eg-care' ); ?></label>
+						<label for="reg_m_no"><?php esc_html_e( 'Mobile Wallet Number', 'eg-care' ); ?></label>
 						<input type="text" name="reg_m_no" id="reg_m_no" placeholder="<?php esc_attr_e( 'Enter mobile wallet number', 'eg-care' ); ?>" value="<?php echo isset( $_POST['reg_m_no'] ) ? esc_attr( $_POST['reg_m_no'] ) : ''; ?>">
 					</div>
 				</div>
@@ -259,7 +259,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 							<label for="reg_certificate" class="eg-care-modern-upload-label" style="margin-left: 10px; margin-right: 10px;">
 								<?php esc_html_e( 'Choose File', 'eg-care' ); ?>
 							</label>
-							<input type="file" name="reg_certificate" id="reg_certificate" accept=".pdf,image/*" required class="eg-care-hidden-file-input">
+							<input type="file" name="reg_certificate" id="reg_certificate" accept=".pdf,image/*" class="eg-care-hidden-file-input">
 							<span class="eg-care-file-name" id="reg_certificate_name"><?php esc_html_e( 'No file chosen', 'eg-care' ); ?></span>
 						</div>
 						<p class="eg-care-attachment-help" style="margin-top: 10px;"><?php esc_html_e( 'Upload any certificate or document (maximum file size: 2 MB)', 'eg-care' ); ?></p>
