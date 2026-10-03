@@ -113,6 +113,17 @@ foreach ( $appointments as $appt ) {
 		</div>
 	</div>
 
+	<?php
+	/**
+	 * After the stats, before the consultation sections. Other plugins put
+	 * their own part of the patient's account here (E-Care Health Services adds
+	 * a tab bar for its lab test, caregiver and ambulance bookings).
+	 *
+	 * @param int $user_id The signed-in patient.
+	 */
+	do_action( 'eg_care_patient_dashboard_after_stats', $user_id );
+	?>
+
 	<!-- 1. Active / Today's Consultations -->
 	<div class="eg-care-dashboard-section" style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 25px; margin-bottom: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
 		<h3 style="margin: 0 0 20px; font-size: 18px; color: #1e293b; font-weight: 700; border-left: 4px solid #0f766e; padding-left: 10px;">
@@ -336,5 +347,14 @@ foreach ( $appointments as $appt ) {
 			</div>
 		</div>
 	</div>
+
+	<?php
+	/**
+	 * The end of the patient dashboard, for other plugins' sections.
+	 *
+	 * @param int $user_id The signed-in patient.
+	 */
+	do_action( 'eg_care_patient_dashboard_end', $user_id );
+	?>
 </div>
 
