@@ -72,6 +72,7 @@ $user = wp_get_current_user();
 		</button>
 		<button type="button" class="tab-trigger" data-tab="upcoming"><?php esc_html_e( 'Upcoming Consultations', 'eg-care' ); ?></button>
 		<button type="button" class="tab-trigger" data-tab="slots"><?php esc_html_e( 'Schedules & Slots', 'eg-care' ); ?></button>
+		<button type="button" class="tab-trigger" data-tab="prescriptions"><?php esc_html_e( 'Prescriptions', 'eg-care' ); ?></button>
 		<button type="button" class="tab-trigger" data-tab="profile"><?php esc_html_e( 'Profile Settings', 'eg-care' ); ?></button>
 	</div>
 
@@ -167,6 +168,8 @@ $user = wp_get_current_user();
 				<button type="submit" class="eg-care-btn-register cyan-btn" style="margin-top:20px;">Save Schedule Grid</button>
 			</form>
 		</div>
+
+		<?php require EG_CARE_PATH . 'templates/partials/doctor-prescription-pane.php'; ?>
 
 		<!-- Pane: Profile Settings -->
 		<div class="tab-pane" id="pane-profile">

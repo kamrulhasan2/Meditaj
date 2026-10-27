@@ -1,0 +1,94 @@
+<?php
+/**
+ * The doctor's prescription pane.
+ *
+ * Two views live in here: the list of consultations waiting to be written up,
+ * and the form for one of them. assets/js/doctor-prescription.js swaps between
+ * them; the markup is printed here rather than built in JavaScript so that the
+ * labels stay translatable and the fields exist before the script runs.
+ *
+ * @package EG Care
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
+?>
+<!-- Pane: Prescriptions -->
+<div class="tab-pane" id="pane-prescriptions">
+
+	<div id="rx-list-view">
+		<h3><?php esc_html_e( 'Prescriptions', 'eg-care' ); ?></h3>
+		<p class="eg-care-pane-lede">
+			<?php esc_html_e( 'Write the prescription here. It goes to a reviewer first, and reaches the patient only after the reviewer approves it.', 'eg-care' ); ?>
+		</p>
+		<div class="eg-care-table-responsive" id="rx-list-target">
+			<p class="eg-care-no-data"><?php esc_html_e( 'Loading consultations...', 'eg-care' ); ?></p>
+		</div>
+	</div>
+
+	<div id="rx-form-view" hidden>
+		<button type="button" class="eg-care-btn-small rx-back" id="rx-back">&larr; <?php esc_html_e( 'Back to list', 'eg-care' ); ?></button>
+
+		<div class="rx-patient-head">
+			<div>
+				<span class="rx-head-label"><?php esc_html_e( 'Patient', 'eg-care' ); ?></span>
+				<strong id="rx-patient"></strong>
+			</div>
+			<div>
+				<span class="rx-head-label"><?php esc_html_e( 'Consultation', 'eg-care' ); ?></span>
+				<strong id="rx-when"></strong>
+			</div>
+		</div>
+
+		<p class="rx-symptoms" id="rx-symptoms" hidden></p>
+		<p class="rx-reports" id="rx-reports" hidden></p>
+
+		<div class="rx-returned-note" id="rx-returned-note" hidden></div>
+
+		<div class="eg-care-field">
+			<label for="rx-complaints"><?php esc_html_e( 'Chief complaints', 'eg-care' ); ?></label>
+			<textarea id="rx-complaints" rows="2" placeholder="<?php esc_attr_e( 'What the patient came with', 'eg-care' ); ?>"></textarea>
+		</div>
+
+		<div class="eg-care-field">
+			<label for="rx-diagnosis"><?php esc_html_e( 'Diagnosis', 'eg-care' ); ?></label>
+			<textarea id="rx-diagnosis" rows="2"></textarea>
+		</div>
+
+		<h4 class="rx-section-title">Rx</h4>
+
+		<div class="eg-care-table-responsive">
+			<table class="eg-care-dashboard-table rx-medicines-table">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'Medicine', 'eg-care' ); ?></th>
+						<th><?php esc_html_e( 'Dose', 'eg-care' ); ?></th>
+						<th><?php esc_html_e( 'Duration', 'eg-care' ); ?></th>
+						<th><?php esc_html_e( 'Instruction', 'eg-care' ); ?></th>
+						<th><span class="screen-reader-text"><?php esc_html_e( 'Remove', 'eg-care' ); ?></span></th>
+					</tr>
+				</thead>
+				<tbody id="rx-medicines"></tbody>
+			</table>
+		</div>
+
+		<button type="button" class="eg-care-btn-small" id="rx-add-medicine">+ <?php esc_html_e( 'Add medicine', 'eg-care' ); ?></button>
+
+		<div class="eg-care-field">
+			<label for="rx-advice"><?php esc_html_e( 'Advice', 'eg-care' ); ?></label>
+			<textarea id="rx-advice" rows="3" placeholder="<?php esc_attr_e( 'Rest, diet, warning signs - Bangla is fine in this box', 'eg-care' ); ?>"></textarea>
+		</div>
+
+		<div class="eg-care-field rx-followup">
+			<label for="rx-followup"><?php esc_html_e( 'Follow-up date', 'eg-care' ); ?></label>
+			<input type="date" id="rx-followup">
+		</div>
+
+		<div class="rx-form-footer">
+			<span class="rx-save-state" id="rx-save-state"></span>
+			<button type="button" class="eg-care-btn-register cyan-btn" id="rx-submit"><?php esc_html_e( 'Submit for review', 'eg-care' ); ?></button>
+		</div>
+	</div>
+</div>

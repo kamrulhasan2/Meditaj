@@ -3722,3 +3722,159 @@ button.eg-care-linkish[hidden] {
 	}
 
 }
+
+
+/* ===== Prescriptions (doctor dashboard) ===== */
+/* The prescription screen reuses the dashboard table, so it inherits the
+   stacked card layout on phones for free. These are only the pieces the
+   dashboard did not already have. */
+
+.eg-care-btn-small {
+	display: inline-block;
+	padding: 7px 14px;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.3;
+	color: #0369a1;
+	background: #e0f2fe;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	transition: background .18s ease;
+}
+
+.eg-care-btn-small:hover { background: #bae6fd; }
+.eg-care-btn-small:disabled { opacity: .5; cursor: not-allowed; }
+
+#rx-back { margin-bottom: 16px; }
+
+.rx-badge {
+	display: inline-block;
+	padding: 3px 10px;
+	font-size: 11.5px;
+	font-weight: 700;
+	letter-spacing: .3px;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+
+.rx-badge-none     { background: #f1f5f9; color: #64748b; }
+.rx-badge-draft    { background: #fef3c7; color: #92400e; }
+.rx-badge-waiting  { background: #dbeafe; color: #1d4ed8; }
+.rx-badge-returned { background: #fee2e2; color: #b91c1c; }
+.rx-badge-sent     { background: #dcfce7; color: #15803d; }
+
+.rx-patient-head {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px 36px;
+	padding: 14px 16px;
+	margin-bottom: 14px;
+	background: #f8fafc;
+	border-left: 4px solid #0f766e;
+	border-radius: 6px;
+}
+
+.rx-head-label {
+	display: block;
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: .5px;
+	color: #64748b;
+}
+
+.rx-patient-head strong { font-size: 15px; color: #0f172a; }
+
+.rx-symptoms,
+.rx-reports {
+	margin: 0 0 12px;
+	font-size: 13px;
+	color: #475569;
+}
+
+.rx-reports a { color: #0369a1; }
+
+/* A returned prescription is the one thing on this screen the doctor must
+   not scroll past, so it is loud on purpose. */
+.rx-returned-note {
+	padding: 12px 14px;
+	margin-bottom: 16px;
+	font-size: 14px;
+	color: #7f1d1d;
+	background: #fef2f2;
+	border: 1px solid #fecaca;
+	border-radius: 6px;
+}
+
+.rx-returned-note::before {
+	content: "Reviewer's note: ";
+	font-weight: 700;
+}
+
+.rx-section-title {
+	margin: 22px 0 10px;
+	font-size: 20px;
+	font-weight: 700;
+	color: #0f766e;
+}
+
+.rx-medicines-table input {
+	width: 100%;
+	min-width: 0;
+	padding: 7px 9px;
+	font-size: 14px;
+	border: 1px solid #cbd5e1;
+	border-radius: 5px;
+}
+
+.rx-medicines-table input:focus {
+	outline: none;
+	border-color: #0f766e;
+	box-shadow: 0 0 0 2px rgba(15, 118, 110, .15);
+}
+
+.rx-remove {
+	padding: 2px 9px;
+	font-size: 18px;
+	line-height: 1.2;
+	color: #b91c1c;
+	background: transparent;
+	border: none;
+	border-radius: 5px;
+	cursor: pointer;
+}
+
+.rx-remove:hover { background: #fee2e2; }
+
+.rx-followup input { max-width: 220px; }
+
+.rx-form-footer {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-top: 24px;
+	padding-top: 16px;
+	border-top: 1px solid #e2e8f0;
+}
+
+/* Whether the draft is safe is the question a doctor asks every few seconds,
+   so the answer sits next to the button and never moves. */
+.rx-save-state { font-size: 13px; color: #64748b; }
+.rx-save-state.rx-ok      { color: #15803d; }
+.rx-save-state.rx-pending { color: #92400e; }
+.rx-save-state.rx-error   { color: #b91c1c; font-weight: 600; }
+
+.rx-readonly .rx-medicines-table input,
+.rx-readonly textarea,
+.rx-readonly input[type="date"] {
+	background: #f8fafc;
+	color: #475569;
+}
+
+@media (max-width: 782px) {
+	.rx-medicines-table input { font-size: 16px; } /* no zoom-on-focus in iOS Safari */
+	.rx-form-footer { flex-direction: column; align-items: stretch; }
+	.rx-form-footer .eg-care-btn-register { width: 100%; }
+}

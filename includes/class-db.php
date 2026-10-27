@@ -17,7 +17,7 @@ class DB {
 	/**
 	 * Current database schema version.
 	 */
-	const DB_VERSION = '1.6.0';
+	const DB_VERSION = '1.7.0';
 
 	/**
 	 * Get custom table names.
@@ -34,6 +34,7 @@ class DB {
 			'transactions' => $wpdb->prefix . 'eg_care_transactions',
 			'family_members' => $wpdb->prefix . 'eg_care_family_members',
 			'instant_requests' => $wpdb->prefix . 'eg_care_instant_requests',
+			'prescriptions' => $wpdb->prefix . 'eg_care_prescriptions',
 		);
 	}
 
@@ -251,6 +252,32 @@ class DB {
 		// name that already exists it would emit a duplicate-key error and leave
 		// the old definition in place.
 		self::upgrade_indexes( $tables );
+
+		// 8. wp_eg_care_prescriptions
+		//
+		// A prescription is held here until a moderator releases it, so `status`
+		// is the point of this table rather than a detail of it. The four review
+		// columns are created now, unused, so that adding the review screen later
+		// is not a migration over a table that by then holds medical records.
+		$sql[] = "CREATE TABLE {$tables['prescriptions']} (
+  id bigint(20) NOT NULL AUTO_INCREMENT,
+  appointment_id bigint(20) NOT NULL,
+  doctor_id bigint(20) NOT NULL,
+  patient_user_id bigint(20) DEFAULT NULL,
+  status enum('draft','submitted','returned','sent') DEFAULT 'draft' NOT NULL,
+  content longtext NOT NULL,
+  moderator_note text DEFAULT NULL,
+  reviewed_by bigint(20) DEFAULT NULL,
+  reviewed_at datetime DEFAULT NULL,
+  sent_at datetime DEFAULT NULL,
+  created_at datetime NOT NULL,
+  updated_at datetime NOT NULL,
+  PRIMARY KEY  (id),
+  KEY appointment_id (appointment_id),
+  KEY doctor_id (doctor_id),
+  KEY patient_user_id (patient_user_id),
+  KEY status (status)
+) $charset_collate;";
 
 		foreach ( $sql as $query ) {
 			dbDelta( $query );

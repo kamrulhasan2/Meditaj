@@ -43,5 +43,8 @@ class RestApi {
 
 		$family = new RestControllerFamily();
 		$family->register_routes();
+
+		$prescriptions = new RestControllerPrescriptions();
+		$prescriptions->register_routes();
 	}
 }
