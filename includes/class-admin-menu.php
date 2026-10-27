@@ -14,11 +14,12 @@ class AdminMenu {
 	 */
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'register_menus' ) );
-		add_action( 'admin_head', array( __CLASS__, 'hide_edit_doctor_item' ) );
+		add_action( 'admin_head', array( __CLASS__, 'hide_routed_only_pages' ) );
 	}
 
 	/**
-	 * Take Edit Doctor out of the sidebar, without taking away access to it.
+	 * Take the routed-only screens out of the sidebar, without taking away
+	 * access to them.
 	 *
 	 * Calling remove_submenu_page() during admin_menu would do more than hide
 	 * the item. wp-admin/admin.php works out which page was asked for by looking
@@ -30,8 +31,9 @@ class AdminMenu {
 	 * admin_head fires after that check and before menu-header.php draws the
 	 * sidebar, which is exactly the window this needs.
 	 */
-	public static function hide_edit_doctor_item() {
+	public static function hide_routed_only_pages() {
 		remove_submenu_page( 'eg-care', \EGCare\AdminDoctors::EDIT_PAGE );
+		remove_submenu_page( 'eg-care', \EGCare\AdminPrescriptions::REVIEW_PAGE );
 	}
 
 	/**
@@ -93,7 +95,7 @@ class AdminMenu {
 		// Reachable from the Doctor List and Pending Verifications rows, but not
 		// a menu item: an Edit link with no doctor chosen would only lead to an
 		// error. It is registered under the real parent and hidden later, on
-		// admin_head - see hide_edit_doctor_item() for why it cannot be hidden
+		// admin_head - see hide_routed_only_pages() for why it cannot be hidden
 		// here.
 		add_submenu_page(
 			'eg-care',
@@ -120,6 +122,27 @@ class AdminMenu {
 			'manage_options',
 			'eg-care-appointments',
 			array( __CLASS__, 'render_appointments_page' )
+		);
+
+		add_submenu_page(
+			'eg-care',
+			__( 'Prescriptions', 'eg-care' ),
+			__( 'Prescriptions', 'eg-care' ),
+			'manage_options',
+			\EGCare\AdminPrescriptions::LIST_PAGE,
+			array( '\\EGCare\\AdminPrescriptions', 'render_list_page' )
+		);
+
+		// Registered so that wp-admin will route to it, then taken out of
+		// the sidebar on admin_head. Removing it here instead would break
+		// the page outright - see hide_routed_only_pages() above.
+		add_submenu_page(
+			'eg-care',
+			__( 'Review prescription', 'eg-care' ),
+			__( 'Review prescription', 'eg-care' ),
+			'manage_options',
+			\EGCare\AdminPrescriptions::REVIEW_PAGE,
+			array( '\\EGCare\\AdminPrescriptions', 'render_review_page' )
 		);
 
 		add_submenu_page(

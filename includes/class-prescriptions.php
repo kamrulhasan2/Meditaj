@@ -499,6 +499,211 @@ class Prescriptions {
 	}
 
 	/**
+	 * The capability a reviewer needs.
+	 *
+	 * Administrators only for now. A dedicated moderator role would be a few
+	 * lines in Roles plus a different string here, and nothing else would
+	 * change, because every review screen asks this one question.
+	 *
+	 * @return bool
+	 */
+	public static function can_review() {
+		/**
+		 * Filters the capability required to review a prescription.
+		 *
+		 * @param string $capability Capability name.
+		 */
+		$capability = apply_filters( 'eg_care_prescription_review_capability', 'manage_options' );
+
+		return current_user_can( $capability );
+	}
+
+	/**
+	 * Whether a reviewer may act on a prescription in this status.
+	 *
+	 * Only one that has actually been handed over. A draft still belongs to
+	 * the doctor, a returned one is back with them, and a sent one is the
+	 * patient's record.
+	 *
+	 * @param string $status Status.
+	 * @return bool
+	 */
+	public static function is_reviewable( $status ) {
+		return self::STATUS_SUBMITTED === $status;
+	}
+
+	/**
+	 * Release a prescription to the patient.
+	 *
+	 * The reviewer's corrections, if they made any, are saved as part of the
+	 * same step - approving one thing and storing another is the failure mode
+	 * worth designing out.
+	 *
+	 * @param int        $id      Prescription id.
+	 * @param array|null $content Sanitized content to store first, or null to
+	 *                            approve what the doctor wrote unchanged.
+	 * @return true|\WP_Error
+	 */
+	public static function approve( $id, $content = null ) {
+		global $wpdb;
+
+		$row = self::get( $id );
+
+		if ( ! $row ) {
+			return new \WP_Error( 'eg_care_prescription_missing', __( 'That prescription no longer exists.', 'eg-care' ), array( 'status' => 404 ) );
+		}
+
+		if ( ! self::is_reviewable( $row->status ) ) {
+			return new \WP_Error(
+				'eg_care_prescription_not_reviewable',
+				self::STATUS_SENT === $row->status
+					? __( 'This prescription has already been sent to the patient.', 'eg-care' )
+					: __( 'This prescription is not waiting for review.', 'eg-care' ),
+				array( 'status' => 409 )
+			);
+		}
+
+		$fields = array(
+			'status'         => self::STATUS_SENT,
+			'moderator_note' => null,
+			'reviewed_by'    => get_current_user_id(),
+			'reviewed_at'    => current_time( 'mysql' ),
+			'sent_at'        => current_time( 'mysql' ),
+			'updated_at'     => current_time( 'mysql' ),
+		);
+		$formats = array( '%s', '%s', '%d', '%s', '%s', '%s' );
+
+		if ( null !== $content ) {
+			$encoded = wp_json_encode( $content );
+
+			if ( false === $encoded ) {
+				return new \WP_Error( 'eg_care_prescription_encode_failed', __( 'The prescription could not be saved.', 'eg-care' ), array( 'status' => 500 ) );
+			}
+
+			if ( ! self::has_substance( $content ) ) {
+				return new \WP_Error(
+					'eg_care_prescription_empty',
+					__( 'A prescription needs a diagnosis or at least one medicine before it can be sent.', 'eg-care' ),
+					array( 'status' => 400 )
+				);
+			}
+
+			$fields['content'] = $encoded;
+			$formats[]         = '%s';
+		}
+
+		$ok = $wpdb->update( self::table(), $fields, array( 'id' => intval( $row->id ) ), $formats, array( '%d' ) );
+
+		if ( false === $ok ) {
+			return new \WP_Error( 'eg_care_prescription_save_failed', __( 'The prescription could not be approved.', 'eg-care' ), array( 'status' => 500 ) );
+		}
+
+		/**
+		 * Fires when a prescription is released to the patient.
+		 *
+		 * Delivery - the printable page and the email - hangs off this, so
+		 * nothing in the review screen needs to know how a patient is reached.
+		 *
+		 * @param int    $prescription_id Prescription id.
+		 * @param object $row             The row as it was before approval.
+		 */
+		do_action( 'eg_care_prescription_sent', intval( $row->id ), $row );
+
+		return true;
+	}
+
+	/**
+	 * Hand a prescription back to the doctor with a reason.
+	 *
+	 * The note is required. "Rejected" with no reason gives the doctor nothing
+	 * to act on and guarantees a second round trip.
+	 *
+	 * @param int    $id   Prescription id.
+	 * @param string $note What needs changing.
+	 * @return true|\WP_Error
+	 */
+	public static function send_back( $id, $note ) {
+		global $wpdb;
+
+		$row = self::get( $id );
+
+		if ( ! $row ) {
+			return new \WP_Error( 'eg_care_prescription_missing', __( 'That prescription no longer exists.', 'eg-care' ), array( 'status' => 404 ) );
+		}
+
+		if ( ! self::is_reviewable( $row->status ) ) {
+			return new \WP_Error(
+				'eg_care_prescription_not_reviewable',
+				__( 'This prescription is not waiting for review.', 'eg-care' ),
+				array( 'status' => 409 )
+			);
+		}
+
+		$note = self::cap( sanitize_textarea_field( (string) $note ), self::MAX_FREETEXT );
+
+		if ( '' === $note ) {
+			return new \WP_Error(
+				'eg_care_prescription_note_required',
+				__( 'Tell the doctor what needs changing before sending it back.', 'eg-care' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$ok = $wpdb->update(
+			self::table(),
+			array(
+				'status'         => self::STATUS_RETURNED,
+				'moderator_note' => $note,
+				'reviewed_by'    => get_current_user_id(),
+				'reviewed_at'    => current_time( 'mysql' ),
+				'updated_at'     => current_time( 'mysql' ),
+			),
+			array( 'id' => intval( $row->id ) ),
+			array( '%s', '%s', '%d', '%s', '%s' ),
+			array( '%d' )
+		);
+
+		if ( false === $ok ) {
+			return new \WP_Error( 'eg_care_prescription_save_failed', __( 'The prescription could not be returned.', 'eg-care' ), array( 'status' => 500 ) );
+		}
+
+		/**
+		 * Fires when a prescription goes back to the doctor.
+		 *
+		 * @param int    $prescription_id Prescription id.
+		 * @param string $note            The reviewer's note.
+		 */
+		do_action( 'eg_care_prescription_returned', intval( $row->id ), $note );
+
+		return true;
+	}
+
+	/**
+	 * How many prescriptions sit in each status.
+	 *
+	 * One grouped query, used for the counts beside the review screen's view
+	 * links.
+	 *
+	 * @return array<string,int>
+	 */
+	public static function status_counts() {
+		global $wpdb;
+
+		$table = self::table();
+		$rows  = $wpdb->get_results( "SELECT status, COUNT(id) AS total FROM $table GROUP BY status" ); // phpcs:ignore WordPress.DB.PreparedSQL
+
+		$counts = array_fill_keys( self::statuses(), 0 );
+
+		foreach ( (array) $rows as $row ) {
+			if ( isset( $counts[ $row->status ] ) ) {
+				$counts[ $row->status ] = intval( $row->total );
+			}
+		}
+
+		return $counts;
+	}
+
+	/**
 	 * A short label for a status, for the doctor's screen.
 	 *
 	 * @param string $status Status.

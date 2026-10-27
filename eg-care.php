@@ -166,6 +166,7 @@ add_action(
 \EGCare\SecureUploads::init();
 \EGCare\AdminMenu::init();
 \EGCare\AdminDoctors::init();
+\EGCare\AdminPrescriptions::init();
 \EGCare\RestApi::init();
 \EGCare\Cron::init();
 
