@@ -164,6 +164,8 @@ add_action(
 \EGCare\SearchRedirect::init();
 \EGCare\Cache::init();
 \EGCare\SecureUploads::init();
+\EGCare\PrescriptionView::init();
+\EGCare\Notifications::init();
 \EGCare\AdminMenu::init();
 \EGCare\AdminDoctors::init();
 \EGCare\AdminPrescriptions::init();

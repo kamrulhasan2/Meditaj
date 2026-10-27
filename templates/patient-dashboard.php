@@ -51,6 +51,39 @@ $eg_care_report_links = static function ( $app ) {
 	return '<div class="eg-care-report-links" style="font-size:12px;margin-top:4px;">&#128206; ' . implode( ', ', $links ) . '</div>';
 };
 
+// Prescriptions a reviewer has released. One query for the whole page, and
+// only the released ones: a prescription still being written or still in
+// review is simply not in this map, which is how the dashboard is unable to
+// show one early even by accident.
+$eg_care_sent_prescriptions = array();
+
+if ( $appointments ) {
+	$eg_care_appt_ids = implode( ',', array_map( 'intval', wp_list_pluck( $appointments, 'id' ) ) );
+	$eg_care_rx_table = Prescriptions::table();
+
+	$eg_care_rx_rows = $wpdb->get_results(
+		$wpdb->prepare(
+			"SELECT id, appointment_id FROM {$eg_care_rx_table}
+			  WHERE appointment_id IN ( {$eg_care_appt_ids} ) AND status = %s",
+			Prescriptions::STATUS_SENT
+		)
+	);
+
+	foreach ( (array) $eg_care_rx_rows as $eg_care_rx_row ) {
+		$eg_care_sent_prescriptions[ intval( $eg_care_rx_row->appointment_id ) ] = intval( $eg_care_rx_row->id );
+	}
+}
+
+$eg_care_prescription_link = static function ( $app ) use ( $eg_care_sent_prescriptions ) {
+	if ( ! isset( $eg_care_sent_prescriptions[ intval( $app->id ) ] ) ) {
+		return '';
+	}
+
+	return '<div class="eg-care-prescription-link" style="font-size:12px;margin-top:4px;">&#128138; <a href="'
+		. esc_url( PrescriptionView::url( $eg_care_sent_prescriptions[ intval( $app->id ) ] ) ) . '" target="_blank" rel="noopener">'
+		. esc_html__( 'Prescription', 'eg-care' ) . '</a></div>';
+};
+
 // Categorize appointments
 $active_consultations = array();
 $upcoming_bookings    = array();
@@ -158,7 +191,7 @@ foreach ( $appointments as $appt ) {
 						?>
 							<tr style="border-bottom: 1px solid #f1f5f9;">
 								<td data-label="<?php esc_attr_e( 'Doctor', 'eg-care' ); ?>" style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
-								<td data-label="<?php esc_attr_e( 'Patient Name', 'eg-care' ); ?>"><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?> (<?php echo esc_html( $app->family_member_relation ? $app->family_member_relation : 'Self' ); ?>)<?php echo $eg_care_report_links( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+								<td data-label="<?php esc_attr_e( 'Patient Name', 'eg-care' ); ?>"><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?> (<?php echo esc_html( $app->family_member_relation ? $app->family_member_relation : 'Self' ); ?>)<?php echo $eg_care_report_links( $app ) . $eg_care_prescription_link( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
 								<td data-label="<?php esc_attr_e( 'Schedule Time', 'eg-care' ); ?>"><?php echo esc_html( $time_val ); ?></td>
 								<td data-label="<?php esc_attr_e( 'Type', 'eg-care' ); ?>">
 									<span style="font-size: 11px; background: <?php echo 'instant' === $app->appointment_type ? '#e0f2fe; color: #0369a1;' : '#f0fdf4; color: #166534;'; ?> padding: 2px 8px; border-radius: 12px; font-weight: 600;">
@@ -204,7 +237,7 @@ foreach ( $appointments as $appt ) {
 						?>
 							<tr style="border-bottom: 1px solid #f1f5f9;">
 								<td data-label="<?php esc_attr_e( 'Doctor', 'eg-care' ); ?>" style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
-								<td data-label="<?php esc_attr_e( 'Patient Name', 'eg-care' ); ?>"><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?><?php echo $eg_care_report_links( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+								<td data-label="<?php esc_attr_e( 'Patient Name', 'eg-care' ); ?>"><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?><?php echo $eg_care_report_links( $app ) . $eg_care_prescription_link( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
 								<td data-label="<?php esc_attr_e( 'Date & Time', 'eg-care' ); ?>"><?php echo esc_html( $date_val . ' @ ' . $time_val ); ?></td>
 								<td data-label="<?php esc_attr_e( 'Fee paid', 'eg-care' ); ?>"><?php echo esc_html( $app->amount ); ?> BDT</td>
 								<td data-label="<?php esc_attr_e( 'Status', 'eg-care' ); ?>">
@@ -250,7 +283,7 @@ foreach ( $appointments as $appt ) {
 						?>
 							<tr style="border-bottom: 1px solid #f1f5f9;">
 								<td data-label="<?php esc_attr_e( 'Doctor', 'eg-care' ); ?>" style="padding: 15px 0; font-weight: 600; color: #0f172a;"><?php echo esc_html( get_the_title( $app->doctor_id ) ); ?></td>
-								<td data-label="<?php esc_attr_e( 'Patient Name', 'eg-care' ); ?>"><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?><?php echo $eg_care_report_links( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+								<td data-label="<?php esc_attr_e( 'Patient Name', 'eg-care' ); ?>"><?php echo esc_html( $app->family_member_name ? $app->family_member_name : wp_get_current_user()->display_name ); ?><?php echo $eg_care_report_links( $app ) . $eg_care_prescription_link( $app ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
 								<td data-label="<?php esc_attr_e( 'Date & Time', 'eg-care' ); ?>"><?php echo esc_html( $date_val . ' @ ' . $time_val ); ?></td>
 								<td data-label="<?php esc_attr_e( 'Paid Amount', 'eg-care' ); ?>"><?php echo esc_html( $app->amount ); ?> BDT</td>
 								<td data-label="<?php esc_attr_e( 'Status', 'eg-care' ); ?>">

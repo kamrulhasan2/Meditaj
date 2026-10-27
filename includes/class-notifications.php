@@ -16,6 +16,86 @@ class Notifications {
 	 * @param string $name  Doctor display name.
 	 * @return bool Whether the email was sent successfully.
 	 */
+	/**
+	 * Tell the patient their prescription is ready.
+	 *
+	 * Hooked to the moment a reviewer releases one, so there is no second
+	 * place in the code that decides when a patient may be told.
+	 *
+	 * The email carries a link and not the prescription itself. An inbox is a
+	 * poor place for someone's diagnosis: it is forwarded, it is read on shared
+	 * phones, and it keeps a copy that no later correction can reach. The link
+	 * always shows the current record, and only to someone who may see it.
+	 *
+	 * @param int $prescription_id Prescription id.
+	 * @return bool Whether an email went out.
+	 */
+	public static function send_prescription_email( $prescription_id ) {
+		$row = \EGCare\Prescriptions::get( $prescription_id );
+
+		if ( ! $row || ! \EGCare\Prescriptions::is_visible_to_patient( $row->status ) ) {
+			return false;
+		}
+
+		// A consultation booked without an account has nobody to write to. The
+		// prescription is still there to be read from the dashboard later.
+		if ( empty( $row->patient_user_id ) ) {
+			return false;
+		}
+
+		$user = get_userdata( intval( $row->patient_user_id ) );
+
+		if ( ! $user || ! is_email( $user->user_email ) ) {
+			return false;
+		}
+
+		$context     = \EGCare\PrescriptionView::build_context( $row );
+		$doctor_name = $context['doctor_name'];
+		$for         = $context['patient_name'];
+		$link        = \EGCare\PrescriptionView::url( $row->id );
+
+		$subject = sprintf( '[%s] %s', get_bloginfo( 'name' ), __( 'Your prescription is ready', 'eg-care' ) );
+
+		/* translators: %s: the account holder's name. */
+		$body  = sprintf( __( 'Dear %s,', 'eg-care' ), $user->display_name ) . "\r\n\r\n";
+
+		if ( $for && $for !== $user->display_name ) {
+			/* translators: 1: patient name, 2: doctor name. */
+			$body .= sprintf( __( 'The prescription for %1$s from %2$s has been reviewed and is ready.', 'eg-care' ), $for, $doctor_name ) . "\r\n\r\n";
+		} else {
+			/* translators: %s: doctor name. */
+			$body .= sprintf( __( 'Your prescription from %s has been reviewed and is ready.', 'eg-care' ), $doctor_name ) . "\r\n\r\n";
+		}
+
+		$body .= __( 'You can read it, print it or save it as a PDF here:', 'eg-care' ) . "\r\n";
+		$body .= $link . "\r\n\r\n";
+		$body .= __( 'You will be asked to sign in first. Only you and your doctor can open this link.', 'eg-care' ) . "\r\n\r\n";
+		$body .= __( 'Regards,', 'eg-care' ) . "\r\n";
+		$body .= get_bloginfo( 'name' ) . ' ' . __( 'Team', 'eg-care' );
+
+		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
+
+		/**
+		 * Filters what rides along with the prescription email.
+		 *
+		 * Empty on purpose. A generated PDF can be attached here later without
+		 * this method changing.
+		 *
+		 * @param array  $attachments Absolute file paths.
+		 * @param object $row         Prescription row.
+		 */
+		$attachments = apply_filters( 'eg_care_prescription_email_attachments', array(), $row );
+
+		return wp_mail( $user->user_email, $subject, $body, $headers, $attachments );
+	}
+
+	/**
+	 * Hook the notifications that fire on their own.
+	 */
+	public static function init() {
+		add_action( 'eg_care_prescription_sent', array( __CLASS__, 'send_prescription_email' ) );
+	}
+
 	public static function send_doctor_approval_email( $email, $name ) {
 		$subject = sprintf( '[%s] %s', get_bloginfo( 'name' ), __( 'Your Doctor Profile Has Been Approved!', 'eg-care' ) );
 
