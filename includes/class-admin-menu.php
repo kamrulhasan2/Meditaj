@@ -302,6 +302,13 @@ class AdminMenu {
 			if ( '●●●●●●●●' !== $new_agora_app_crt && '' !== $new_agora_app_crt ) {
 				update_option( 'eg_care_agora_app_certificate', $new_agora_app_crt, 'no' );
 			}
+			if ( isset( $_POST[ \EGCare\Prescriptions::MEDICINE_OPTION ] ) ) {
+				update_option(
+					\EGCare\Prescriptions::MEDICINE_OPTION,
+					sanitize_textarea_field( wp_unslash( $_POST[ \EGCare\Prescriptions::MEDICINE_OPTION ] ) )
+				);
+			}
+
 			echo '<div class="notice notice-success is-dismissible" style="max-width: 600px; margin: 15px 0;"><p>' . esc_html__( 'Settings successfully saved!', 'eg-care' ) . '</p></div>';
 		}
 
@@ -314,6 +321,8 @@ class AdminMenu {
 		$instant_fee    = \EGCare\Fees::instant_request_fee();
 		$agora_app_id  = get_option( 'eg_care_agora_app_id', '' );
 		$agora_app_crt = get_option( 'eg_care_agora_app_certificate', '' );
+
+		$common_medicines = (string) get_option( \EGCare\Prescriptions::MEDICINE_OPTION, '' );
 
 		$masked_store_passwd = ! empty( $store_passwd ) ? '●●●●●●●●' : '';
 		$masked_agora_app_crt = ! empty( $agora_app_crt ) ? '●●●●●●●●' : '';
@@ -400,6 +409,20 @@ class AdminMenu {
 						<td>
 							<input name="eg_care_commission_percentage" type="number" id="eg_care_commission_percentage" value="<?php echo esc_attr( $commission ); ?>" min="0" max="100" step="0.5" class="small-text" required>
 							<p class="description"><?php esc_html_e( 'Withheld from the doctor at payout. This is a different number from the service charge above: one is charged to the patient, the other is deducted from the doctor.', 'eg-care' ); ?></p>
+						</td>
+					</tr>
+				</table>
+
+				<h3 style="margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;"><?php esc_html_e( 'Prescriptions', 'eg-care' ); ?></h3>
+
+				<table class="form-table">
+					<tr>
+						<th scope="row"><label for="<?php echo esc_attr( \EGCare\Prescriptions::MEDICINE_OPTION ); ?>"><?php esc_html_e( 'Common medicines', 'eg-care' ); ?></label></th>
+						<td>
+							<textarea name="<?php echo esc_attr( \EGCare\Prescriptions::MEDICINE_OPTION ); ?>" id="<?php echo esc_attr( \EGCare\Prescriptions::MEDICINE_OPTION ); ?>" rows="8" class="large-text code" placeholder="Napa 500mg&#10;Seclo 20mg&#10;Monas 10mg"><?php echo esc_textarea( $common_medicines ); ?></textarea>
+							<p class="description">
+								<?php esc_html_e( 'One medicine per line. These are offered to every doctor as a starting point. Each doctor also gets suggestions built from what they have prescribed before, which come first and need no setup here - so this box can stay empty.', 'eg-care' ); ?>
+							</p>
 						</td>
 					</tr>
 				</table>

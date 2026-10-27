@@ -6,6 +6,12 @@
  * never lose a line to a dropped connection, and because "did that save?" is
  * the question that makes people distrust a tool.
  *
+ * Most of this file is about saving the doctor keystrokes: their own
+ * prescribing history offered back to them, the dose they usually write filled
+ * in for them, the common doses one tap away, and whole prescriptions they can
+ * save and reuse. None of it is a drug database, and none of it needs setting
+ * up - it is built from what this doctor has already done.
+ *
  * Nothing here decides who may see a prescription. The server does that; this
  * file only shows what the server returns.
  */
@@ -26,6 +32,11 @@ document.addEventListener('DOMContentLoaded', function () {
 	const addRowBtn  = document.getElementById('rx-add-medicine');
 	const noteBox    = document.getElementById('rx-returned-note');
 
+	const templateBar    = document.getElementById('rx-template-bar');
+	const templatePick   = document.getElementById('rx-template-pick');
+	const templateSave   = document.getElementById('rx-template-save');
+	const templateDelete = document.getElementById('rx-template-delete');
+
 	const fields = {
 		complaints:    document.getElementById('rx-complaints'),
 		diagnosis:     document.getElementById('rx-diagnosis'),
@@ -38,6 +49,12 @@ document.addEventListener('DOMContentLoaded', function () {
 	let saveTimer    = null;
 	let dirty        = false;
 	let saving       = false;
+
+	// Filled from the server when a prescription is opened.
+	let suggestions = [];      // [{name, dose, duration, instruction}]
+	let byName      = {};      // lowercase name -> suggestion
+	let doseChips   = [];
+	let templates   = [];
 
 	function escapeHtml(text) {
 		const div = document.createElement('div');
@@ -142,13 +159,53 @@ document.addEventListener('DOMContentLoaded', function () {
 	function loadList() {
 		listTarget.innerHTML = '<p class="eg-care-no-data">Loading consultations&hellip;</p>';
 
-		api('doctor/me/prescriptions')
+		return api('doctor/me/prescriptions')
 			.then(function (data) {
 				renderList(data.consultations || []);
+				return data.consultations || [];
 			})
 			.catch(function (error) {
 				listTarget.innerHTML = '<p class="eg-care-no-data">' + escapeHtml(error.message) + '</p>';
+				return [];
 			});
+	}
+
+	// --------------------------------------------------------- suggestions
+
+	function fillDatalist(id, values) {
+		const list = document.getElementById(id);
+
+		if (!list) {
+			return;
+		}
+
+		list.innerHTML = '';
+
+		values.forEach(function (value) {
+			if (!value) {
+				return;
+			}
+			const option = document.createElement('option');
+			option.value = value;
+			list.appendChild(option);
+		});
+	}
+
+	function loadSuggestions(data) {
+		suggestions = data.suggestions || [];
+		doseChips   = data.dose_chips || [];
+
+		byName = {};
+		suggestions.forEach(function (entry) {
+			byName[entry.name.toLowerCase()] = entry;
+		});
+
+		const options = data.options || {};
+
+		fillDatalist('rx-dl-medicine', suggestions.map(function (s) { return s.name; }));
+		fillDatalist('rx-dl-dose', options.dose || []);
+		fillDatalist('rx-dl-duration', options.duration || []);
+		fillDatalist('rx-dl-instruction', options.instruction || []);
 	}
 
 	// ------------------------------------------------------------ medicines
@@ -157,18 +214,28 @@ document.addEventListener('DOMContentLoaded', function () {
 		const tr = document.createElement('tr');
 		const m  = medicine || { name: '', dose: '', duration: '', instruction: '' };
 
+		const chips = doseChips.map(function (value) {
+			return '<button type="button" class="rx-chip" data-dose="' + escapeHtml(value) + '">' + escapeHtml(value) + '</button>';
+		}).join('');
+
 		tr.className = 'rx-medicine-row';
 		tr.innerHTML = ''
-			+ '<td data-label="Medicine"><input type="text" class="rx-m-name" placeholder="e.g. Napa 500mg" autocomplete="off"></td>'
-			+ '<td data-label="Dose"><input type="text" class="rx-m-dose" placeholder="1+0+1" autocomplete="off"></td>'
-			+ '<td data-label="Duration"><input type="text" class="rx-m-duration" placeholder="7 days" autocomplete="off"></td>'
-			+ '<td data-label="Instruction"><input type="text" class="rx-m-instruction" placeholder="After meals" autocomplete="off"></td>'
+			+ '<td data-label="Medicine"><input type="text" class="rx-m-name" list="rx-dl-medicine" placeholder="e.g. Napa 500mg" autocomplete="off"></td>'
+			+ '<td data-label="Dose"><input type="text" class="rx-m-dose" list="rx-dl-dose" placeholder="1+0+1" autocomplete="off">'
+			+ (chips ? '<div class="rx-chips">' + chips + '</div>' : '') + '</td>'
+			+ '<td data-label="Duration"><input type="text" class="rx-m-duration" list="rx-dl-duration" placeholder="7 days" autocomplete="off"></td>'
+			+ '<td data-label="Instruction"><input type="text" class="rx-m-instruction" list="rx-dl-instruction" placeholder="After meals" autocomplete="off"></td>'
 			+ '<td data-label=""><button type="button" class="rx-remove" aria-label="Remove this medicine">&times;</button></td>';
 
-		tr.querySelector('.rx-m-name').value        = m.name || '';
-		tr.querySelector('.rx-m-dose').value        = m.dose || '';
-		tr.querySelector('.rx-m-duration').value    = m.duration || '';
-		tr.querySelector('.rx-m-instruction').value = m.instruction || '';
+		const name        = tr.querySelector('.rx-m-name');
+		const dose        = tr.querySelector('.rx-m-dose');
+		const duration    = tr.querySelector('.rx-m-duration');
+		const instruction = tr.querySelector('.rx-m-instruction');
+
+		name.value        = m.name || '';
+		dose.value        = m.dose || '';
+		duration.value    = m.duration || '';
+		instruction.value = m.instruction || '';
 
 		tr.querySelector('.rx-remove').addEventListener('click', function () {
 			tr.remove();
@@ -178,8 +245,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
 		// Typing into the last row opens the next one, so adding medicines is
 		// just typing - no hunting for a button between each.
-		tr.querySelector('.rx-m-name').addEventListener('input', function () {
+		//
+		// And once the name matches something this doctor has prescribed
+		// before, the dose they usually write appears with it. Only into empty
+		// boxes: a dose they have already typed is a decision, not a gap.
+		name.addEventListener('input', function () {
+			const match = byName[name.value.trim().toLowerCase()];
+
+			if (match) {
+				if (!dose.value && match.dose) { dose.value = match.dose; }
+				if (!duration.value && match.duration) { duration.value = match.duration; }
+				if (!instruction.value && match.instruction) { instruction.value = match.instruction; }
+			}
+
 			ensureTrailingRow();
+		});
+
+		tr.querySelectorAll('.rx-chip').forEach(function (chip) {
+			chip.addEventListener('click', function () {
+				dose.value = chip.getAttribute('data-dose');
+				touched();
+			});
 		});
 
 		return tr;
@@ -230,6 +316,43 @@ document.addEventListener('DOMContentLoaded', function () {
 		return out;
 	}
 
+	// ------------------------------------------------------------ templates
+
+	function renderTemplates() {
+		if (!templatePick) {
+			return;
+		}
+
+		templatePick.innerHTML = '<option value="">Load a saved prescription&hellip;</option>';
+
+		templates.forEach(function (template) {
+			const option = document.createElement('option');
+			option.value       = template.id;
+			option.textContent = template.name;
+			templatePick.appendChild(option);
+		});
+
+		templatePick.disabled    = !templates.length;
+		templateDelete.hidden    = true;
+		templateBar.hidden       = !current || !current.editable;
+	}
+
+	function applyTemplate(id) {
+		const template = templates.filter(function (t) { return t.id === id; })[0];
+
+		if (!template) {
+			return;
+		}
+
+		// Everything except the follow-up date, which belongs to this patient
+		// on this day and never to a saved pattern.
+		const content = Object.assign({}, template.content, { followup_date: fields.followup_date.value });
+
+		fillForm(content);
+		touched();
+		say('Loaded "' + template.name + '". Change whatever this patient needs.', 'ok');
+	}
+
 	// ----------------------------------------------------------------- form
 
 	function readForm() {
@@ -266,13 +389,14 @@ document.addEventListener('DOMContentLoaded', function () {
 			input.disabled = readOnly;
 		});
 
-		rows.querySelectorAll('.rx-remove').forEach(function (button) {
+		rows.querySelectorAll('.rx-remove, .rx-chip').forEach(function (button) {
 			button.disabled = readOnly;
 		});
 
 		addRowBtn.disabled = readOnly;
 		submitBtn.disabled = readOnly;
 		submitBtn.hidden   = readOnly;
+		templateBar.hidden = readOnly;
 	}
 
 	function say(message, kind) {
@@ -336,6 +460,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
 				maxMedicines = data.max_medicines || 30;
 
+				loadSuggestions(data);
+				templates = data.templates || [];
+
 				document.getElementById('rx-patient').textContent = data.patient_name
 					+ (data.relation ? ' (' + data.relation + ')' : '')
 					+ (data.age ? ', ' + data.age + ' years' : '');
@@ -359,6 +486,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 				fillForm(data.content || {});
 				setReadOnly(!current.editable);
+				renderTemplates();
 
 				if (!current.editable) {
 					say(rx ? rx.status_label : '', 'ok');
@@ -413,6 +541,67 @@ document.addEventListener('DOMContentLoaded', function () {
 
 		rows.appendChild(medicineRow(null));
 	});
+
+	if (templatePick) {
+		templatePick.addEventListener('change', function () {
+			templateDelete.hidden = !templatePick.value;
+
+			if (templatePick.value) {
+				applyTemplate(templatePick.value);
+			}
+		});
+	}
+
+	if (templateSave) {
+		templateSave.addEventListener('click', function () {
+			const content = readForm();
+
+			if (!content.medicines.length && !content.diagnosis.trim()) {
+				say('Write the prescription first, then save it as a template.', 'error');
+				return;
+			}
+
+			const name = window.prompt('Save this prescription as:', content.diagnosis.trim().slice(0, 60));
+
+			if (!name) {
+				return;
+			}
+
+			api('doctor/me/prescription-templates', {
+				method: 'POST',
+				body:   { name: name, content: content }
+			})
+				.then(function (data) {
+					templates = data.templates || [];
+					renderTemplates();
+					say('Saved as "' + data.saved.name + '". It is in the list above.', 'ok');
+				})
+				.catch(function (error) {
+					say('Not saved — ' + error.message, 'error');
+				});
+		});
+	}
+
+	if (templateDelete) {
+		templateDelete.addEventListener('click', function () {
+			const id       = templatePick.value;
+			const template = templates.filter(function (t) { return t.id === id; })[0];
+
+			if (!template || !window.confirm('Delete the saved prescription "' + template.name + '"?')) {
+				return;
+			}
+
+			api('doctor/me/prescription-templates/' + encodeURIComponent(id), { method: 'DELETE' })
+				.then(function (data) {
+					templates = data.templates || [];
+					renderTemplates();
+					say('Deleted.', 'ok');
+				})
+				.catch(function (error) {
+					say(error.message, 'error');
+				});
+		});
+	}
 
 	backBtn.addEventListener('click', function () {
 		if (dirty && current && current.editable) {
@@ -469,6 +658,16 @@ document.addEventListener('DOMContentLoaded', function () {
 	// does not pay for it on every page load.
 	let loaded = false;
 
+	function openTab() {
+		document.querySelectorAll('.tab-trigger').forEach(function (tab) {
+			tab.classList.toggle('active', tab.getAttribute('data-tab') === 'prescriptions');
+		});
+
+		document.querySelectorAll('.tab-pane').forEach(function (p) {
+			p.classList.toggle('active', p.id === 'pane-prescriptions');
+		});
+	}
+
 	document.querySelectorAll('.tab-trigger').forEach(function (tab) {
 		tab.addEventListener('click', function () {
 			if (tab.getAttribute('data-tab') !== 'prescriptions' || loaded) {
@@ -478,5 +677,24 @@ document.addEventListener('DOMContentLoaded', function () {
 			loaded = true;
 			loadList();
 		});
+	});
+
+	// The call has just finished. The prescription is the next thing the
+	// doctor has to do, so put them in front of it rather than making them
+	// find the tab. video-call.js fires this on the same page.
+	document.addEventListener('eg-care:call-completed', function (event) {
+		if (egCareSettings.userType !== 'doctor') {
+			return;
+		}
+
+		const appointmentId = event.detail && event.detail.appointmentId;
+
+		if (!appointmentId) {
+			return;
+		}
+
+		loaded = true;
+		openTab();
+		openForm(appointmentId);
 	});
 });

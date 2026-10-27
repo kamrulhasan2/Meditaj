@@ -3878,3 +3878,66 @@ button.eg-care-linkish[hidden] {
 	.rx-form-footer { flex-direction: column; align-items: stretch; }
 	.rx-form-footer .eg-care-btn-register { width: 100%; }
 }
+
+
+/* ----- Prescriptions: the parts that save the doctor typing ----- */
+
+.rx-template-bar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 12px;
+	margin-bottom: 14px;
+	background: #f8fafc;
+	border: 1px dashed #cbd5e1;
+	border-radius: 8px;
+}
+
+.rx-template-bar select {
+	flex: 1 1 220px;
+	min-width: 0;
+	padding: 7px 9px;
+	font-size: 14px;
+	border: 1px solid #cbd5e1;
+	border-radius: 5px;
+	background: #fff;
+}
+
+.rx-template-bar select:disabled { color: #94a3b8; }
+
+/* One tap for the dose a doctor writes twenty times a day. The dropdown on
+   the field itself still holds the rest. */
+.rx-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-top: 5px;
+}
+
+.rx-chip {
+	padding: 3px 8px;
+	font-size: 11.5px;
+	font-weight: 600;
+	line-height: 1.4;
+	color: #0f766e;
+	background: #f0fdfa;
+	border: 1px solid #99f6e4;
+	border-radius: 999px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background .15s ease;
+}
+
+.rx-chip:hover { background: #ccfbf1; }
+.rx-chip:disabled { opacity: .45; cursor: not-allowed; }
+
+.rx-readonly .rx-chips { display: none; }
+
+@media (max-width: 782px) {
+	/* Thumb-sized on a phone, where these matter most. */
+	.rx-chip { padding: 6px 12px; font-size: 13px; }
+	.rx-template-bar { flex-direction: column; align-items: stretch; }
+	.rx-template-bar select,
+	.rx-template-bar .eg-care-btn-small { width: 100%; }
+}

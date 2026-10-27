@@ -69,6 +69,36 @@ class RestControllerPrescriptions extends WP_REST_Controller {
 
 		register_rest_route(
 			$namespace,
+			'/doctor/me/prescription-templates',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'save_template' ),
+					'permission_callback' => array( $this, 'check_doctor_permission' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			$namespace,
+			'/doctor/me/prescription-templates/(?P<template_id>[A-Za-z0-9_\-]+)',
+			array(
+				'args' => array(
+					'template_id' => array(
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_key',
+					),
+				),
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'delete_template' ),
+					'permission_callback' => array( $this, 'check_doctor_permission' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			$namespace,
 			'/doctor/me/prescriptions/(?P<appointment_id>\d+)/submit',
 			array(
 				'args' => array(
@@ -275,11 +305,65 @@ class RestControllerPrescriptions extends WP_REST_Controller {
 
 		$existing = \EGCare\Prescriptions::get_for_appointment( $appointment_id );
 
-		$payload                 = $this->shape_row( $appointment, $existing );
-		$payload['content']      = \EGCare\Prescriptions::content_of( $existing );
+		$payload                  = $this->shape_row( $appointment, $existing );
+		$payload['content']       = \EGCare\Prescriptions::content_of( $existing );
 		$payload['max_medicines'] = \EGCare\Prescriptions::MAX_MEDICINES;
 
+		// Everything the form needs to be useful comes down with it, so
+		// opening a prescription is one request and not four.
+		$payload['suggestions'] = \EGCare\Prescriptions::suggestions( $this->current_doctor_id() );
+		$payload['templates']   = \EGCare\Prescriptions::get_templates( get_current_user_id() );
+		$payload['options']     = \EGCare\Prescriptions::field_options();
+		$payload['dose_chips']  = \EGCare\Prescriptions::dose_chips();
+		$payload['max_templates'] = \EGCare\Prescriptions::MAX_TEMPLATES;
+
 		return new WP_REST_Response( $payload, 200 );
+	}
+
+	/**
+	 * Save what is on screen as a reusable prescription.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function save_template( $request ) {
+		$content = \EGCare\Prescriptions::sanitize_content( $request->get_param( 'content' ) );
+		$name    = (string) $request->get_param( 'name' );
+
+		$saved = \EGCare\Prescriptions::save_template( get_current_user_id(), $name, $content );
+
+		if ( is_wp_error( $saved ) ) {
+			return $saved;
+		}
+
+		return new WP_REST_Response(
+			array(
+				'saved'     => $saved,
+				'templates' => \EGCare\Prescriptions::get_templates( get_current_user_id() ),
+			),
+			200
+		);
+	}
+
+	/**
+	 * Remove one of the doctor's saved prescriptions.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response
+	 */
+	public function delete_template( $request ) {
+		$removed = \EGCare\Prescriptions::delete_template(
+			get_current_user_id(),
+			(string) $request['template_id']
+		);
+
+		return new WP_REST_Response(
+			array(
+				'removed'   => $removed,
+				'templates' => \EGCare\Prescriptions::get_templates( get_current_user_id() ),
+			),
+			200
+		);
 	}
 
 	/**

@@ -499,6 +499,400 @@ class Prescriptions {
 	}
 
 	/**
+	 * Where an administrator keeps a starter list of medicines.
+	 */
+	const MEDICINE_OPTION = 'eg_care_common_medicines';
+
+	/**
+	 * Where a doctor's own saved prescriptions live, on their user record.
+	 */
+	const TEMPLATES_META = '_eg_care_rx_templates';
+
+	/**
+	 * How many a doctor may keep. Enough for the cases they see every week;
+	 * past that a list stops being faster than typing.
+	 */
+	const MAX_TEMPLATES = 20;
+
+	/**
+	 * How far back to look when working out what this doctor prescribes.
+	 */
+	const HISTORY_DEPTH = 120;
+
+	/**
+	 * The dose, duration and instruction values offered in the form.
+	 *
+	 * Writing a dose out by hand thirty times a day is the part of this job a
+	 * computer should be doing, so the common ones are one tap away. Filters
+	 * are here because what is common differs by practice.
+	 *
+	 * @return array<string,string[]>
+	 */
+	public static function field_options() {
+		return array(
+			'dose' => apply_filters(
+				'eg_care_prescription_dose_options',
+				array( '1+0+1', '1+1+1', '0+0+1', '1+0+0', '0+1+0', '1/2+0+1/2', 'SOS' )
+			),
+			'duration' => apply_filters(
+				'eg_care_prescription_duration_options',
+				array( '3 days', '5 days', '7 days', '10 days', '14 days', '1 month', 'Continue' )
+			),
+			'instruction' => apply_filters(
+				'eg_care_prescription_instruction_options',
+				array( 'After meals', 'Before meals', 'At bedtime', 'Empty stomach', 'With water' )
+			),
+		);
+	}
+
+	/**
+	 * The dose values shown as one-tap buttons in each row.
+	 *
+	 * A short list on purpose: a row of five buttons is faster than a row of
+	 * fifteen, and the rest are still in the dropdown.
+	 *
+	 * @return string[]
+	 */
+	public static function dose_chips() {
+		$doses = self::field_options()['dose'];
+
+		return array_slice( $doses, 0, 5 );
+	}
+
+	/**
+	 * The starter list an administrator typed into Settings.
+	 *
+	 * One medicine per line. Blank lines and duplicates are dropped so that a
+	 * sloppy paste does not show up as a sloppy dropdown.
+	 *
+	 * @return string[]
+	 */
+	public static function common_medicines() {
+		$raw = (string) get_option( self::MEDICINE_OPTION, '' );
+
+		if ( '' === trim( $raw ) ) {
+			return array();
+		}
+
+		$names = preg_split( '/\r\n|\r|\n/', $raw );
+		$out   = array();
+		$seen  = array();
+
+		foreach ( (array) $names as $name ) {
+			$name = self::cap( sanitize_text_field( $name ), self::MAX_MEDICINE );
+			$key  = strtolower( $name );
+
+			if ( '' === $name || isset( $seen[ $key ] ) ) {
+				continue;
+			}
+
+			$seen[ $key ] = true;
+			$out[]        = $name;
+		}
+
+		return $out;
+	}
+
+	/**
+	 * What this doctor has actually prescribed before.
+	 *
+	 * The useful suggestion list is not a drug database - it is the twenty or
+	 * so things this particular doctor writes most weeks, with the dose they
+	 * usually write beside each. That needs no licence, no external service,
+	 * and it gets better the more the doctor uses the form.
+	 *
+	 * Drafts are left out: a line someone started typing and abandoned is not
+	 * a prescribing decision.
+	 *
+	 * @param int $doctor_id Doctor CPT post id.
+	 * @return array<int,array{name:string,dose:string,duration:string,instruction:string,uses:int}>
+	 */
+	public static function doctor_medicine_history( $doctor_id ) {
+		global $wpdb;
+
+		$table = self::table();
+
+		$rows = $wpdb->get_col( // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare(
+				"SELECT content FROM $table
+				  WHERE doctor_id = %d AND status IN ( %s, %s )
+			   ORDER BY id DESC
+				  LIMIT %d",
+				intval( $doctor_id ),
+				self::STATUS_SUBMITTED,
+				self::STATUS_SENT,
+				self::HISTORY_DEPTH
+			)
+		);
+
+		$tally = array();
+
+		foreach ( (array) $rows as $json ) {
+			$decoded = json_decode( (string) $json, true );
+
+			if ( ! is_array( $decoded ) || empty( $decoded['medicines'] ) || ! is_array( $decoded['medicines'] ) ) {
+				continue;
+			}
+
+			foreach ( $decoded['medicines'] as $medicine ) {
+				if ( ! is_array( $medicine ) || empty( $medicine['name'] ) ) {
+					continue;
+				}
+
+				$name = self::cap( sanitize_text_field( (string) $medicine['name'] ), self::MAX_MEDICINE );
+				$key  = strtolower( $name );
+
+				if ( '' === $name ) {
+					continue;
+				}
+
+				if ( ! isset( $tally[ $key ] ) ) {
+					$tally[ $key ] = array(
+						'name'  => $name,
+						'uses'  => 0,
+						'dose'  => array(),
+						'durat' => array(),
+						'instr' => array(),
+					);
+				}
+
+				$tally[ $key ]['uses']++;
+
+				foreach ( array( 'dose' => 'dose', 'duration' => 'durat', 'instruction' => 'instr' ) as $field => $bucket ) {
+					$value = isset( $medicine[ $field ] ) && is_scalar( $medicine[ $field ] ) ? trim( (string) $medicine[ $field ] ) : '';
+
+					if ( '' === $value ) {
+						continue;
+					}
+
+					if ( ! isset( $tally[ $key ][ $bucket ][ $value ] ) ) {
+						$tally[ $key ][ $bucket ][ $value ] = 0;
+					}
+
+					$tally[ $key ][ $bucket ][ $value ]++;
+				}
+			}
+		}
+
+		// Most prescribed first, so the dropdown opens on what they reach for.
+		uasort(
+			$tally,
+			static function ( $a, $b ) {
+				return $b['uses'] <=> $a['uses'];
+			}
+		);
+
+		$out = array();
+
+		foreach ( $tally as $entry ) {
+			$out[] = array(
+				'name'        => $entry['name'],
+				'dose'        => self::most_common( $entry['dose'] ),
+				'duration'    => self::most_common( $entry['durat'] ),
+				'instruction' => self::most_common( $entry['instr'] ),
+				'uses'        => $entry['uses'],
+			);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * The most frequent value in a tally, or an empty string.
+	 *
+	 * Ties go to the most recent, because the rows were read newest first and
+	 * so that is the order the keys went in. The loop below is deliberate
+	 * rather than an arsort(): sorting only resolves a tie this way on PHP 8
+	 * and later, and a doctor's suggestions should not depend on which PHP
+	 * the host happens to be running.
+	 *
+	 * @param array<string,int> $tally Value => count, newest value first.
+	 * @return string
+	 */
+	private static function most_common( $tally ) {
+		$best  = '';
+		$count = 0;
+
+		foreach ( $tally as $value => $uses ) {
+			if ( $uses > $count ) {
+				$best  = (string) $value;
+				$count = $uses;
+			}
+		}
+
+		return $best;
+	}
+
+	/**
+	 * Everything the medicine box should offer this doctor.
+	 *
+	 * Their own history first, then anything from the administrator's list
+	 * they have not used yet. Nothing is cached: the query is one indexed read
+	 * of their last hundred-odd prescriptions, and a stale suggestion list is
+	 * a worse bug than a cheap query.
+	 *
+	 * @param int $doctor_id Doctor CPT post id.
+	 * @return array<int,array{name:string,dose:string,duration:string,instruction:string}>
+	 */
+	public static function suggestions( $doctor_id ) {
+		$out  = array();
+		$seen = array();
+
+		foreach ( self::doctor_medicine_history( $doctor_id ) as $entry ) {
+			$seen[ strtolower( $entry['name'] ) ] = true;
+
+			$out[] = array(
+				'name'        => $entry['name'],
+				'dose'        => $entry['dose'],
+				'duration'    => $entry['duration'],
+				'instruction' => $entry['instruction'],
+			);
+		}
+
+		foreach ( self::common_medicines() as $name ) {
+			if ( isset( $seen[ strtolower( $name ) ] ) ) {
+				continue;
+			}
+
+			$out[] = array(
+				'name'        => $name,
+				'dose'        => '',
+				'duration'    => '',
+				'instruction' => '',
+			);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * A doctor's saved prescriptions.
+	 *
+	 * Kept on their user record rather than in a table: it is a short list,
+	 * it belongs to one person, and nothing else ever queries it.
+	 *
+	 * @param int $user_id WordPress user id.
+	 * @return array<int,array{id:string,name:string,content:array}>
+	 */
+	public static function get_templates( $user_id ) {
+		$stored = get_user_meta( intval( $user_id ), self::TEMPLATES_META, true );
+
+		if ( ! is_array( $stored ) ) {
+			return array();
+		}
+
+		$out = array();
+
+		foreach ( $stored as $template ) {
+			if ( ! is_array( $template ) || empty( $template['id'] ) || empty( $template['name'] ) ) {
+				continue;
+			}
+
+			$out[] = array(
+				'id'      => sanitize_key( $template['id'] ),
+				'name'    => self::cap( sanitize_text_field( $template['name'] ), 80 ),
+				'content' => self::sanitize_content( isset( $template['content'] ) ? $template['content'] : array() ),
+			);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Save one, replacing any template of the same name.
+	 *
+	 * @param int    $user_id WordPress user id.
+	 * @param string $name    What the doctor called it.
+	 * @param array  $content Sanitized content.
+	 * @return array|\WP_Error The stored template.
+	 */
+	public static function save_template( $user_id, $name, $content ) {
+		$name = self::cap( sanitize_text_field( (string) $name ), 80 );
+
+		if ( '' === $name ) {
+			return new \WP_Error(
+				'eg_care_template_name_required',
+				__( 'Give the template a name you will recognise later.', 'eg-care' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		if ( ! self::has_substance( $content ) ) {
+			return new \WP_Error(
+				'eg_care_template_empty',
+				__( 'There is nothing in this prescription to save yet.', 'eg-care' ),
+				array( 'status' => 400 )
+			);
+		}
+
+		$templates = self::get_templates( $user_id );
+		$key       = strtolower( $name );
+		$replaced  = false;
+
+		foreach ( $templates as $index => $template ) {
+			if ( strtolower( $template['name'] ) === $key ) {
+				$templates[ $index ]['content'] = $content;
+				$saved                          = $templates[ $index ];
+				$replaced                       = true;
+				break;
+			}
+		}
+
+		if ( ! $replaced ) {
+			if ( count( $templates ) >= self::MAX_TEMPLATES ) {
+				return new \WP_Error(
+					'eg_care_template_limit',
+					sprintf(
+						/* translators: %d: how many templates are allowed. */
+						__( 'You already have %d saved prescriptions. Delete one to make room.', 'eg-care' ),
+						self::MAX_TEMPLATES
+					),
+					array( 'status' => 400 )
+				);
+			}
+
+			$saved = array(
+				'id'      => sanitize_key( uniqid( 'rx', false ) ),
+				'name'    => $name,
+				'content' => $content,
+			);
+
+			$templates[] = $saved;
+		}
+
+		update_user_meta( intval( $user_id ), self::TEMPLATES_META, $templates );
+
+		return $saved;
+	}
+
+	/**
+	 * Remove one.
+	 *
+	 * @param int    $user_id WordPress user id.
+	 * @param string $id      Template id.
+	 * @return bool Whether anything was removed.
+	 */
+	public static function delete_template( $user_id, $id ) {
+		$id        = sanitize_key( $id );
+		$templates = self::get_templates( $user_id );
+		$kept      = array();
+
+		foreach ( $templates as $template ) {
+			if ( $template['id'] !== $id ) {
+				$kept[] = $template;
+			}
+		}
+
+		if ( count( $kept ) === count( $templates ) ) {
+			return false;
+		}
+
+		update_user_meta( intval( $user_id ), self::TEMPLATES_META, $kept );
+
+		return true;
+	}
+
+	/**
 	 * The capability a reviewer needs.
 	 *
 	 * Administrators only for now. A dedicated moderator role would be a few

@@ -31,6 +31,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	<div id="rx-form-view" hidden>
 		<button type="button" class="eg-care-btn-small rx-back" id="rx-back">&larr; <?php esc_html_e( 'Back to list', 'eg-care' ); ?></button>
 
+		<!--
+			A doctor sees the same handful of cases every week. Saving one and
+			loading it next time turns a two-minute form into a ten-second one.
+		-->
+		<div class="rx-template-bar" id="rx-template-bar" hidden>
+			<label class="screen-reader-text" for="rx-template-pick"><?php esc_html_e( 'Saved prescriptions', 'eg-care' ); ?></label>
+			<select id="rx-template-pick"></select>
+			<button type="button" class="eg-care-btn-small" id="rx-template-delete" hidden><?php esc_html_e( 'Delete', 'eg-care' ); ?></button>
+			<button type="button" class="eg-care-btn-small" id="rx-template-save"><?php esc_html_e( 'Save as template', 'eg-care' ); ?></button>
+		</div>
+
 		<div class="rx-patient-head">
 			<div>
 				<span class="rx-head-label"><?php esc_html_e( 'Patient', 'eg-care' ); ?></span>
@@ -91,4 +102,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<button type="button" class="eg-care-btn-register cyan-btn" id="rx-submit"><?php esc_html_e( 'Submit for review', 'eg-care' ); ?></button>
 		</div>
 	</div>
+
+	<!--
+		Filled in from the server when a prescription is opened: the doctor's
+		own prescribing history first, then whatever the administrator listed.
+		A native datalist rather than a hand-built dropdown, so it behaves the
+		way the phone's own keyboard expects and there is no widget to break.
+	-->
+	<datalist id="rx-dl-medicine"></datalist>
+	<datalist id="rx-dl-dose"></datalist>
+	<datalist id="rx-dl-duration"></datalist>
+	<datalist id="rx-dl-instruction"></datalist>
 </div>
