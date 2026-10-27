@@ -23,6 +23,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<p class="eg-care-pane-lede">
 			<?php esc_html_e( 'Write the prescription here. It goes to a reviewer first, and reaches the patient only after the reviewer approves it.', 'eg-care' ); ?>
 		</p>
+		<!--
+			The signature appears above the doctor's name on every prescription
+			they issue. It is optional: the page says the prescription was
+			issued electronically, so it is a nicety rather than what makes it
+			valid.
+		-->
+		<div class="rx-signature-strip">
+			<span class="rx-sig-label"><?php esc_html_e( 'Your signature', 'eg-care' ); ?></span>
+			<img id="rx-sig-preview" src="" alt="" hidden>
+			<span id="rx-sig-none" class="rx-sig-none"><?php esc_html_e( 'none yet', 'eg-care' ); ?></span>
+			<input type="file" id="rx-sig-file" accept="image/png,image/jpeg,image/webp" hidden>
+			<button type="button" class="eg-care-btn-small" id="rx-sig-upload"><?php esc_html_e( 'Upload', 'eg-care' ); ?></button>
+			<button type="button" class="eg-care-btn-small" id="rx-sig-remove" hidden><?php esc_html_e( 'Remove', 'eg-care' ); ?></button>
+			<span class="rx-sig-state" id="rx-sig-state"></span>
+		</div>
+
 		<div class="eg-care-table-responsive" id="rx-list-target">
 			<p class="eg-care-no-data"><?php esc_html_e( 'Loading consultations...', 'eg-care' ); ?></p>
 		</div>
@@ -99,7 +115,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 		<div class="rx-form-footer">
 			<span class="rx-save-state" id="rx-save-state"></span>
-			<button type="button" class="eg-care-btn-register cyan-btn" id="rx-submit"><?php esc_html_e( 'Submit for review', 'eg-care' ); ?></button>
+			<span class="rx-footer-actions">
+				<a id="rx-view" class="eg-care-btn-small" href="#" target="_blank" rel="noopener" hidden><?php esc_html_e( 'Open the issued copy', 'eg-care' ); ?></a>
+				<!--
+					A sent prescription is never edited in place; correcting one
+					makes a new version that goes back through review, and the
+					patient is then pointed at the newer copy.
+				-->
+				<button type="button" class="eg-care-btn-small" id="rx-revise" hidden><?php esc_html_e( 'Write a correction', 'eg-care' ); ?></button>
+				<button type="button" class="eg-care-btn-register cyan-btn" id="rx-submit"><?php esc_html_e( 'Submit for review', 'eg-care' ); ?></button>
+			</span>
 		</div>
 	</div>
 

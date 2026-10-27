@@ -302,6 +302,16 @@ class AdminMenu {
 			if ( '●●●●●●●●' !== $new_agora_app_crt && '' !== $new_agora_app_crt ) {
 				update_option( 'eg_care_agora_app_certificate', $new_agora_app_crt, 'no' );
 			}
+			update_option( \EGCare\Sms::ENABLED_OPTION, isset( $_POST[ \EGCare\Sms::ENABLED_OPTION ] ) ? '1' : '0' );
+
+			if ( isset( $_POST[ \EGCare\Sms::ENDPOINT_OPTION ] ) ) {
+				update_option( \EGCare\Sms::ENDPOINT_OPTION, esc_url_raw( trim( wp_unslash( $_POST[ \EGCare\Sms::ENDPOINT_OPTION ] ) ) ) );
+			}
+
+			if ( isset( $_POST[ \EGCare\Sms::BODY_OPTION ] ) ) {
+				update_option( \EGCare\Sms::BODY_OPTION, sanitize_textarea_field( wp_unslash( $_POST[ \EGCare\Sms::BODY_OPTION ] ) ) );
+			}
+
 			if ( isset( $_POST[ \EGCare\Prescriptions::MEDICINE_OPTION ] ) ) {
 				update_option(
 					\EGCare\Prescriptions::MEDICINE_OPTION,
@@ -323,6 +333,9 @@ class AdminMenu {
 		$agora_app_crt = get_option( 'eg_care_agora_app_certificate', '' );
 
 		$common_medicines = (string) get_option( \EGCare\Prescriptions::MEDICINE_OPTION, '' );
+		$sms_enabled      = '1' === (string) get_option( \EGCare\Sms::ENABLED_OPTION, '0' );
+		$sms_endpoint     = (string) get_option( \EGCare\Sms::ENDPOINT_OPTION, '' );
+		$sms_body         = (string) get_option( \EGCare\Sms::BODY_OPTION, '' );
 
 		$masked_store_passwd = ! empty( $store_passwd ) ? '●●●●●●●●' : '';
 		$masked_agora_app_crt = ! empty( $agora_app_crt ) ? '●●●●●●●●' : '';
@@ -423,6 +436,32 @@ class AdminMenu {
 							<p class="description">
 								<?php esc_html_e( 'One medicine per line. These are offered to every doctor as a starting point. Each doctor also gets suggestions built from what they have prescribed before, which come first and need no setup here - so this box can stay empty.', 'eg-care' ); ?>
 							</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Text the patient too', 'eg-care' ); ?></th>
+						<td>
+							<label>
+								<input name="<?php echo esc_attr( \EGCare\Sms::ENABLED_OPTION ); ?>" type="checkbox" value="1" <?php checked( $sms_enabled ); ?>>
+								<?php esc_html_e( 'Send an SMS when a prescription is released', 'eg-care' ); ?>
+							</label>
+							<p class="description"><?php esc_html_e( 'A text reaches a patient here far more reliably than an email does. Nothing is sent until the address below is filled in.', 'eg-care' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="<?php echo esc_attr( \EGCare\Sms::ENDPOINT_OPTION ); ?>"><?php esc_html_e( 'SMS gateway address', 'eg-care' ); ?></label></th>
+						<td>
+							<input name="<?php echo esc_attr( \EGCare\Sms::ENDPOINT_OPTION ); ?>" id="<?php echo esc_attr( \EGCare\Sms::ENDPOINT_OPTION ); ?>" type="url" class="large-text code" value="<?php echo esc_attr( $sms_endpoint ); ?>" placeholder="https://api.example.com/sendsms?api_key=YOURKEY&#38;senderid=Meditaj&#38;msisdn={number}&#38;message={message}">
+							<p class="description">
+								<?php esc_html_e( 'Paste the URL from your gateway\'s own documentation, with your key in it, and write {number} and {message} where the phone number and the text belong. Any Bangladeshi gateway that accepts a plain web request works; none is built in, so you are not waiting on us to support yours.', 'eg-care' ); ?>
+							</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="<?php echo esc_attr( \EGCare\Sms::BODY_OPTION ); ?>"><?php esc_html_e( 'POST body (optional)', 'eg-care' ); ?></label></th>
+						<td>
+							<textarea name="<?php echo esc_attr( \EGCare\Sms::BODY_OPTION ); ?>" id="<?php echo esc_attr( \EGCare\Sms::BODY_OPTION ); ?>" rows="3" class="large-text code" placeholder='{"api_key":"YOURKEY","to":"{number}","msg":"{message}"}'><?php echo esc_textarea( $sms_body ); ?></textarea>
+							<p class="description"><?php esc_html_e( 'Leave empty and the address above is requested directly. Fill it in and it is sent as a POST instead, with this as the body - JSON if it starts with a brace, otherwise form fields.', 'eg-care' ); ?></p>
 						</td>
 					</tr>
 				</table>

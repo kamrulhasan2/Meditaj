@@ -69,6 +69,41 @@ class RestControllerPrescriptions extends WP_REST_Controller {
 
 		register_rest_route(
 			$namespace,
+			'/doctor/me/prescriptions/(?P<appointment_id>\d+)/revise',
+			array(
+				'args' => array(
+					'appointment_id' => array(
+						'required'          => true,
+						'sanitize_callback' => 'absint',
+					),
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'revise_prescription' ),
+					'permission_callback' => array( $this, 'check_doctor_permission' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			$namespace,
+			'/doctor/me/signature',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'save_signature' ),
+					'permission_callback' => array( $this, 'check_doctor_permission' ),
+				),
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'delete_signature' ),
+					'permission_callback' => array( $this, 'check_doctor_permission' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			$namespace,
 			'/doctor/me/prescription-templates',
 			array(
 				array(
@@ -260,8 +295,18 @@ class RestControllerPrescriptions extends WP_REST_Controller {
 			)
 		);
 
+		// The signature strip sits above this list, so it rides along rather
+		// than costing a request of its own.
+		$signature = \EGCare\PrescriptionView::signature( get_current_user_id() );
+
 		if ( ! $appointments ) {
-			return new WP_REST_Response( array( 'consultations' => array() ), 200 );
+			return new WP_REST_Response(
+				array(
+					'consultations' => array(),
+					'signature'     => $signature,
+				),
+				200
+			);
 		}
 
 		// One query for every prescription in the batch rather than one per
@@ -286,7 +331,13 @@ class RestControllerPrescriptions extends WP_REST_Controller {
 			$out[] = $this->shape_row( $appointment, $existing );
 		}
 
-		return new WP_REST_Response( array( 'consultations' => $out ), 200 );
+		return new WP_REST_Response(
+			array(
+				'consultations' => $out,
+				'signature'     => $signature,
+			),
+			200
+		);
 	}
 
 	/**
@@ -316,8 +367,96 @@ class RestControllerPrescriptions extends WP_REST_Controller {
 		$payload['options']     = \EGCare\Prescriptions::field_options();
 		$payload['dose_chips']  = \EGCare\Prescriptions::dose_chips();
 		$payload['max_templates'] = \EGCare\Prescriptions::MAX_TEMPLATES;
+		$payload['signature']     = \EGCare\PrescriptionView::signature( get_current_user_id() );
+
+		if ( $existing && \EGCare\Prescriptions::STATUS_SENT === $existing->status ) {
+			$payload['view_url'] = \EGCare\PrescriptionView::url( $existing->id );
+		}
 
 		return new WP_REST_Response( $payload, 200 );
+	}
+
+	/**
+	 * Begin a correction to a prescription that has already gone out.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function revise_prescription( $request ) {
+		$appointment_id = absint( $request['appointment_id'] );
+		$appointment    = \EGCare\Prescriptions::writable_appointment( $appointment_id, $this->current_doctor_id() );
+
+		if ( ! $appointment ) {
+			return $this->not_yours();
+		}
+
+		$started = \EGCare\Prescriptions::start_revision( $appointment );
+
+		if ( is_wp_error( $started ) ) {
+			return $started;
+		}
+
+		return new WP_REST_Response(
+			array(
+				'started' => true,
+				'id'      => $started['id'],
+				'status'  => $started['status'],
+			),
+			200
+		);
+	}
+
+	/**
+	 * Point the doctor's signature at an image they have uploaded.
+	 *
+	 * The attachment has to be their own. Otherwise any doctor could put
+	 * another doctor's signature on their prescriptions by guessing an id.
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function save_signature( $request ) {
+		$attachment_id = absint( $request->get_param( 'attachment_id' ) );
+		$user_id       = get_current_user_id();
+
+		if ( ! $attachment_id || 'attachment' !== get_post_type( $attachment_id ) ) {
+			return new WP_Error( 'eg_care_signature_missing', __( 'That image could not be found.', 'eg-care' ), array( 'status' => 400 ) );
+		}
+
+		if ( ! wp_attachment_is_image( $attachment_id ) ) {
+			return new WP_Error( 'eg_care_signature_not_image', __( 'A signature has to be an image.', 'eg-care' ), array( 'status' => 400 ) );
+		}
+
+		if ( (int) get_post_field( 'post_author', $attachment_id ) !== (int) $user_id ) {
+			return new WP_Error( 'eg_care_signature_not_yours', __( 'That image is not yours to use.', 'eg-care' ), array( 'status' => 403 ) );
+		}
+
+		update_user_meta( $user_id, \EGCare\PrescriptionView::SIGNATURE_META, $attachment_id );
+
+		return new WP_REST_Response(
+			array( 'signature' => \EGCare\PrescriptionView::signature( $user_id ) ),
+			200
+		);
+	}
+
+	/**
+	 * Remove the signature.
+	 *
+	 * Worth being plain about what this does: the page reads the signature
+	 * when it is opened, so removing it takes it off prescriptions that have
+	 * already been issued as well as future ones. That is a deliberate
+	 * trade - keeping a historical copy of the image would mean storing it
+	 * against every prescription - and it is acceptable here because the
+	 * footer of the page says the prescription was issued electronically and
+	 * needs no handwritten signature. The signature is decoration on top of
+	 * that, not what makes it valid.
+	 *
+	 * @return \WP_REST_Response
+	 */
+	public function delete_signature() {
+		delete_user_meta( get_current_user_id(), \EGCare\PrescriptionView::SIGNATURE_META );
+
+		return new WP_REST_Response( array( 'signature' => null ), 200 );
 	}
 
 	/**

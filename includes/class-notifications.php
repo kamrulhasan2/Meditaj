@@ -90,10 +90,74 @@ class Notifications {
 	}
 
 	/**
+	 * Text the patient that their prescription is ready.
+	 *
+	 * In Bangladesh this arrives where an email often does not. The message is
+	 * deliberately bare - a name, and a link - because an SMS is read on a
+	 * lock screen in front of whoever is standing there.
+	 *
+	 * @param int $prescription_id Prescription id.
+	 * @return bool Whether a text went out.
+	 */
+	public static function send_prescription_sms( $prescription_id ) {
+		global $wpdb;
+
+		if ( ! \EGCare\Sms::enabled() ) {
+			return false;
+		}
+
+		$row = \EGCare\Prescriptions::get( $prescription_id );
+
+		if ( ! $row || ! \EGCare\Prescriptions::is_visible_to_patient( $row->status ) ) {
+			return false;
+		}
+
+		$appointments = \EGCare\DB::get_table( 'appointments' );
+
+		$number = $wpdb->get_var(
+			$wpdb->prepare( "SELECT contact_number FROM $appointments WHERE id = %d", intval( $row->appointment_id ) )
+		);
+
+		if ( empty( $number ) ) {
+			return false;
+		}
+
+		$message = sprintf(
+			/* translators: 1: site name, 2: link to the prescription. */
+			__( '%1$s: your prescription is ready. %2$s', 'eg-care' ),
+			get_bloginfo( 'name' ),
+			\EGCare\PrescriptionView::url( $row->id )
+		);
+
+		/**
+		 * Filters the text that is sent.
+		 *
+		 * @param string $message The message.
+		 * @param object $row     Prescription row.
+		 */
+		$message = apply_filters( 'eg_care_prescription_sms_message', $message, $row );
+
+		return \EGCare\Sms::send( $number, $message );
+	}
+
+	/**
+	 * Everything the patient is told when a prescription is released.
+	 *
+	 * Both channels are tried; neither depends on the other working, because
+	 * a failing mail server should not cost the patient their text message.
+	 *
+	 * @param int $prescription_id Prescription id.
+	 */
+	public static function notify_patient_of_prescription( $prescription_id ) {
+		self::send_prescription_email( $prescription_id );
+		self::send_prescription_sms( $prescription_id );
+	}
+
+	/**
 	 * Hook the notifications that fire on their own.
 	 */
 	public static function init() {
-		add_action( 'eg_care_prescription_sent', array( __CLASS__, 'send_prescription_email' ) );
+		add_action( 'eg_care_prescription_sent', array( __CLASS__, 'notify_patient_of_prescription' ) );
 	}
 
 	public static function send_doctor_approval_email( $email, $name ) {

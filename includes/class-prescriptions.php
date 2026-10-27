@@ -438,6 +438,99 @@ class Prescriptions {
 	}
 
 	/**
+	 * Start a correction to a prescription that has already gone out.
+	 *
+	 * A sent prescription is the patient's record and is never edited in
+	 * place - what they printed last week has to keep saying what it said.
+	 * A correction is a new prescription for the same consultation, starting
+	 * from a copy of the old one, and it goes back through review like any
+	 * other. The patient then sees the newest, and the old copy tells anyone
+	 * holding its link that it has been superseded.
+	 *
+	 * @param object $appointment Appointment row, ownership already checked.
+	 * @return array{id:int,status:string}|\WP_Error
+	 */
+	public static function start_revision( $appointment ) {
+		global $wpdb;
+
+		$latest = self::get_for_appointment( $appointment->id );
+
+		if ( ! $latest ) {
+			return new \WP_Error(
+				'eg_care_prescription_missing',
+				__( 'There is no prescription here to correct yet.', 'eg-care' ),
+				array( 'status' => 404 )
+			);
+		}
+
+		if ( self::STATUS_SENT !== $latest->status ) {
+			return new \WP_Error(
+				'eg_care_prescription_not_sent',
+				self::is_editable( $latest->status )
+					? __( 'This prescription has not been sent yet - edit it instead.', 'eg-care' )
+					: __( 'This prescription is with the reviewer.', 'eg-care' ),
+				array( 'status' => 409 )
+			);
+		}
+
+		$now = current_time( 'mysql' );
+
+		$ok = $wpdb->insert(
+			self::table(),
+			array(
+				'appointment_id'  => intval( $appointment->id ),
+				'doctor_id'       => intval( $appointment->doctor_id ),
+				'patient_user_id' => $appointment->patient_user_id ? intval( $appointment->patient_user_id ) : null,
+				'status'          => self::STATUS_DRAFT,
+				'content'         => (string) $latest->content,
+				'created_at'      => $now,
+				'updated_at'      => $now,
+			),
+			array( '%d', '%d', '%d', '%s', '%s', '%s', '%s' )
+		);
+
+		if ( false === $ok ) {
+			return new \WP_Error( 'eg_care_prescription_save_failed', __( 'The correction could not be started.', 'eg-care' ), array( 'status' => 500 ) );
+		}
+
+		return array(
+			'id'     => intval( $wpdb->insert_id ),
+			'status' => self::STATUS_DRAFT,
+		);
+	}
+
+	/**
+	 * A later released prescription for the same consultation, if there is one.
+	 *
+	 * This is what lets an old copy say so, rather than quietly presenting
+	 * itself as current to whoever still has the link.
+	 *
+	 * @param object $row Prescription row.
+	 * @return object|null
+	 */
+	public static function superseded_by( $row ) {
+		global $wpdb;
+
+		if ( ! $row || empty( $row->appointment_id ) ) {
+			return null;
+		}
+
+		$table = self::table();
+
+		return $wpdb->get_row( // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$wpdb->prepare(
+				"SELECT * FROM $table
+				  WHERE appointment_id = %d AND status = %s AND id > %d
+			   ORDER BY id DESC
+				  LIMIT 1",
+				intval( $row->appointment_id ),
+				self::STATUS_SENT,
+				intval( $row->id )
+			)
+		);
+	}
+
+	/**
 	 * Hand a draft to the reviewers.
 	 *
 	 * @param int $id Prescription id.

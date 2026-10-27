@@ -3941,3 +3941,56 @@ button.eg-care-linkish[hidden] {
 	.rx-template-bar select,
 	.rx-template-bar .eg-care-btn-small { width: 100%; }
 }
+
+
+/* ----- Prescriptions: signature and corrections ----- */
+
+.rx-signature-strip {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 14px;
+	margin-bottom: 16px;
+	background: #fff;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+}
+
+.rx-sig-label {
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: .4px;
+	color: #64748b;
+}
+
+#rx-sig-preview {
+	max-height: 42px;
+	max-width: 180px;
+	object-fit: contain;
+}
+
+.rx-sig-none { font-size: 13px; color: #94a3b8; font-style: italic; }
+
+.rx-sig-state { font-size: 12.5px; color: #64748b; }
+.rx-sig-state.rx-ok      { color: #15803d; }
+.rx-sig-state.rx-pending { color: #92400e; }
+.rx-sig-state.rx-error   { color: #b91c1c; font-weight: 600; }
+
+.rx-footer-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+}
+
+/* An anchor styled as a button needs the padding back that the button rule
+   gives, and no underline. */
+a#rx-view { text-decoration: none; line-height: 1.3; }
+
+@media (max-width: 782px) {
+	.rx-signature-strip { align-items: flex-start; }
+	.rx-footer-actions { width: 100%; flex-direction: column; align-items: stretch; }
+	.rx-footer-actions > * { width: 100%; text-align: center; }
+}

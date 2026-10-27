@@ -32,6 +32,16 @@ document.addEventListener('DOMContentLoaded', function () {
 	const addRowBtn  = document.getElementById('rx-add-medicine');
 	const noteBox    = document.getElementById('rx-returned-note');
 
+	const reviseBtn  = document.getElementById('rx-revise');
+	const viewLink   = document.getElementById('rx-view');
+
+	const sigPreview = document.getElementById('rx-sig-preview');
+	const sigNone    = document.getElementById('rx-sig-none');
+	const sigFile    = document.getElementById('rx-sig-file');
+	const sigUpload  = document.getElementById('rx-sig-upload');
+	const sigRemove  = document.getElementById('rx-sig-remove');
+	const sigState   = document.getElementById('rx-sig-state');
+
 	const templateBar    = document.getElementById('rx-template-bar');
 	const templatePick   = document.getElementById('rx-template-pick');
 	const templateSave   = document.getElementById('rx-template-save');
@@ -162,12 +172,110 @@ document.addEventListener('DOMContentLoaded', function () {
 		return api('doctor/me/prescriptions')
 			.then(function (data) {
 				renderList(data.consultations || []);
+				renderSignature(data.signature);
 				return data.consultations || [];
 			})
 			.catch(function (error) {
 				listTarget.innerHTML = '<p class="eg-care-no-data">' + escapeHtml(error.message) + '</p>';
 				return [];
 			});
+	}
+
+	// ----------------------------------------------------------- signature
+
+	function renderSignature(signature) {
+		const has = !!(signature && signature.url);
+
+		sigPreview.hidden = !has;
+		sigNone.hidden    = has;
+		sigRemove.hidden  = !has;
+
+		if (has) {
+			sigPreview.src = signature.url;
+		}
+	}
+
+	function sigSay(message, kind) {
+		sigState.textContent = message || '';
+		sigState.className   = 'rx-sig-state' + (kind ? ' rx-' + kind : '');
+	}
+
+	if (sigUpload) {
+		sigUpload.addEventListener('click', function () {
+			sigFile.click();
+		});
+	}
+
+	if (sigFile) {
+		sigFile.addEventListener('change', function () {
+			const file = sigFile.files[0];
+
+			if (!file) {
+				return;
+			}
+
+			if (file.size > 2 * 1024 * 1024) {
+				sigSay('That image is over 2MB. A signature only needs to be small.', 'error');
+				sigFile.value = '';
+				return;
+			}
+
+			sigSay('Uploading\u2026', 'pending');
+
+			// Into the media library first, exactly as the profile photo goes,
+			// then the id is pointed at. The server checks the image is this
+			// doctor's own before it will use it.
+			fetch(egCareSettings.restUrl.replace('eg-care/v1/', 'wp/v2/media'), {
+				method: 'POST',
+				headers: {
+					'X-WP-Nonce': egCareSettings.nonce,
+					'Content-Disposition': 'attachment; filename="' + encodeURIComponent(file.name) + '"',
+					'Content-Type': file.type
+				},
+				body: file
+			})
+				.then(function (response) {
+					return response.json().then(function (data) {
+						if (!response.ok) {
+							throw new Error((data && data.message) || 'Upload failed.');
+						}
+						return data;
+					});
+				})
+				.then(function (media) {
+					return api('doctor/me/signature', {
+						method: 'POST',
+						body:   { attachment_id: media.id }
+					});
+				})
+				.then(function (data) {
+					renderSignature(data.signature);
+					sigSay('Saved. It will appear on prescriptions from now on.', 'ok');
+				})
+				.catch(function (error) {
+					sigSay(error.message, 'error');
+				})
+				.then(function () {
+					sigFile.value = '';
+				});
+		});
+	}
+
+	if (sigRemove) {
+		sigRemove.addEventListener('click', function () {
+			if (!window.confirm('Remove your signature?\n\nIt will come off prescriptions you have already issued as well as new ones.')) {
+				return;
+			}
+
+			api('doctor/me/signature', { method: 'DELETE' })
+				.then(function (data) {
+					renderSignature(data.signature);
+					sigSay('Removed.', 'ok');
+				})
+				.catch(function (error) {
+					sigSay(error.message, 'error');
+				});
+		});
 	}
 
 	// --------------------------------------------------------- suggestions
@@ -488,6 +596,15 @@ document.addEventListener('DOMContentLoaded', function () {
 				setReadOnly(!current.editable);
 				renderTemplates();
 
+				const isSent = !!rx && rx.status === 'sent';
+
+				reviseBtn.hidden = !isSent;
+				viewLink.hidden  = !isSent || !data.view_url;
+
+				if (data.view_url) {
+					viewLink.href = data.view_url;
+				}
+
 				if (!current.editable) {
 					say(rx ? rx.status_label : '', 'ok');
 				} else {
@@ -598,6 +715,33 @@ document.addEventListener('DOMContentLoaded', function () {
 					say('Deleted.', 'ok');
 				})
 				.catch(function (error) {
+					say(error.message, 'error');
+				});
+		});
+	}
+
+	if (reviseBtn) {
+		reviseBtn.addEventListener('click', function () {
+			if (!current) {
+				return;
+			}
+
+			if (!window.confirm('Write a correction?\n\nThe copy the patient already has stays as it is and will say it has been replaced. The correction goes back to the reviewer before it reaches them.')) {
+				return;
+			}
+
+			reviseBtn.disabled = true;
+			say('Starting a correction\u2026', 'pending');
+
+			const appointmentId = current.appointment_id;
+
+			api('doctor/me/prescriptions/' + appointmentId + '/revise', { method: 'POST' })
+				.then(function () {
+					reviseBtn.disabled = false;
+					openForm(appointmentId);
+				})
+				.catch(function (error) {
+					reviseBtn.disabled = false;
 					say(error.message, 'error');
 				});
 		});

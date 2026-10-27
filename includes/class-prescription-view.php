@@ -33,6 +33,36 @@ class PrescriptionView {
 	const ACTION = 'eg_care_view_prescription';
 
 	/**
+	 * Where a doctor's signature image id lives, on their user record.
+	 */
+	const SIGNATURE_META = '_eg_care_signature_id';
+
+	/**
+	 * The signature image a doctor has uploaded, if any.
+	 *
+	 * @param int $user_id The doctor's WordPress user id.
+	 * @return array{id:int,url:string}|null
+	 */
+	public static function signature( $user_id ) {
+		$attachment_id = (int) get_user_meta( intval( $user_id ), self::SIGNATURE_META, true );
+
+		if ( ! $attachment_id || ! wp_attachment_is_image( $attachment_id ) ) {
+			return null;
+		}
+
+		$url = wp_get_attachment_image_url( $attachment_id, 'medium' );
+
+		if ( ! $url ) {
+			return null;
+		}
+
+		return array(
+			'id'  => $attachment_id,
+			'url' => $url,
+		);
+	}
+
+	/**
 	 * Hook the handler, for signed-in and signed-out visitors alike. The
 	 * signed-out case exists only so the link in an email leads to the login
 	 * form and then back here, instead of to a blank page.
@@ -188,6 +218,8 @@ class PrescriptionView {
 			'patient_age'  => $appointment && $appointment->family_member_age ? intval( $appointment->family_member_age ) : 0,
 			'relation'     => $appointment && $appointment->family_member_relation ? $appointment->family_member_relation : '',
 			'issued_on'    => $row->sent_at ? $row->sent_at : $row->updated_at,
+			'signature'    => $doctor && ! empty( $doctor->user_id ) ? self::signature( $doctor->user_id ) : null,
+			'superseded'   => \EGCare\Prescriptions::superseded_by( $row ),
 		);
 	}
 
@@ -264,7 +296,17 @@ class PrescriptionView {
 		.num { width: 28px; color: var(--muted); font-weight: 400 !important; }
 		.footer { margin-top: 26px; font-size: 12px; color: var(--muted); }
 		.sign { margin-top: 36px; text-align: right; }
+		.sign .sig { display: block; max-height: 70px; max-width: 220px; margin: 0 0 2px auto; object-fit: contain; }
 		.sign .rule { display: inline-block; width: 220px; border-top: 1px solid var(--ink); padding-top: 6px; font-size: 13px; }
+		/* An old copy says so before anything else on the page, and keeps
+		   saying it on paper - somebody holding the printout needs to know. */
+		.superseded {
+			max-width: 820px; margin: 0 auto 14px; padding: 12px 16px;
+			background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;
+			color: #7f1d1d; font-size: 14px;
+		}
+		.superseded a { color: #7f1d1d; }
+		.sheet.is-superseded { opacity: .92; }
 		.toolbar { max-width: 820px; margin: 0 auto 14px; display: flex; justify-content: flex-end; gap: 10px; }
 		.btn {
 			padding: 9px 18px; font: inherit; font-weight: 600; color: #fff;
@@ -276,6 +318,7 @@ class PrescriptionView {
 			.sheet { max-width: none; box-shadow: none; border-radius: 0; padding: 0; }
 			.toolbar { display: none; }
 			section { break-inside: avoid; }
+			.superseded { max-width: none; border-width: 2px; }
 		}
 	</style>
 </head>
@@ -286,7 +329,15 @@ class PrescriptionView {
 		<button type="button" class="btn" onclick="window.print()"><?php esc_html_e( 'Print / Save as PDF', 'eg-care' ); ?></button>
 	</div>
 
-	<div class="sheet">
+	<?php if ( $context['superseded'] ) : ?>
+		<div class="superseded">
+			<strong><?php esc_html_e( 'This copy has been replaced.', 'eg-care' ); ?></strong>
+			<?php esc_html_e( 'The doctor issued a corrected prescription for this consultation.', 'eg-care' ); ?>
+			<a href="<?php echo esc_url( self::url( $context['superseded']->id ) ); ?>"><?php esc_html_e( 'Open the current one', 'eg-care' ); ?></a>
+		</div>
+	<?php endif; ?>
+
+	<div class="sheet<?php echo $context['superseded'] ? ' is-superseded' : ''; ?>">
 
 		<div class="masthead">
 			<div>
@@ -398,6 +449,9 @@ class PrescriptionView {
 		<?php endif; ?>
 
 		<div class="sign">
+			<?php if ( $context['signature'] ) : ?>
+				<img class="sig" src="<?php echo esc_url( $context['signature']['url'] ); ?>" alt="">
+			<?php endif; ?>
 			<div class="rule"><?php echo esc_html( $context['doctor_name'] ); ?></div>
 		</div>
 
