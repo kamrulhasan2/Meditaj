@@ -427,6 +427,9 @@ class AdminMenu {
 				</table>
 
 				<h3 style="margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;"><?php esc_html_e( 'Prescriptions', 'eg-care' ); ?></h3>
+				<p class="description" style="max-width: 700px; margin: 10px 0 0;">
+					<?php esc_html_e( 'An approved prescription is always emailed to the patient, with a link to it. That needs no setting here - only a working mail setup. Everything below is extra.', 'eg-care' ); ?>
+				</p>
 
 				<table class="form-table">
 					<tr>
@@ -445,7 +448,7 @@ class AdminMenu {
 								<input name="<?php echo esc_attr( \EGCare\Sms::ENABLED_OPTION ); ?>" type="checkbox" value="1" <?php checked( $sms_enabled ); ?>>
 								<?php esc_html_e( 'Send an SMS when a prescription is released', 'eg-care' ); ?>
 							</label>
-							<p class="description"><?php esc_html_e( 'A text reaches a patient here far more reliably than an email does. Nothing is sent until the address below is filled in.', 'eg-care' ); ?></p>
+							<p class="description"><?php esc_html_e( 'As well as the email, never instead of it. A text reaches a patient here more reliably than an email does, so it is worth having, but it is off unless you switch it on and fill in the address below.', 'eg-care' ); ?></p>
 						</td>
 					</tr>
 					<tr>
