@@ -1309,7 +1309,7 @@ class AdminDoctors {
 
 						<div class="eg-care-form-grid" id="sec_bank_fields"<?php echo 'bank' === $payout_type ? '' : ' style="display: none;"'; ?>>
 							<div class="eg-care-form-field span-2">
-								<label for="bank_branch"><?php esc_html_e( 'Bank Name &amp; Branch', 'eg-care' ); ?></label>
+								<label for="bank_branch"><?php esc_html_e( 'Bank Name & Branch', 'eg-care' ); ?></label>
 								<input type="text" name="bank_branch" id="bank_branch" value="<?php echo esc_attr( self::field_value( 'bank_branch', $doctor->bank_branch_name ) ); ?>">
 								<p class="description"><?php esc_html_e( 'One box, because the record keeps one line for it.', 'eg-care' ); ?></p>
 							</div>

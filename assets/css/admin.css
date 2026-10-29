@@ -345,3 +345,69 @@
 	font-weight: 600;
 }
 
+
+
+/* ----- The prescription review queue ----- */
+/*
+ * The queue is a working screen: somebody opens it, reads what is waiting,
+ * and decides. So the thing they came to do is a button in a column of its
+ * own rather than a row action, which WordPress only reveals on hover and a
+ * touch screen never reveals at all.
+ */
+
+.eg-care-admin-wrap .wp-list-table.eg_care_prescriptions th,
+.eg-care-admin-wrap .wp-list-table.eg_care_prescriptions td {
+	vertical-align: middle;
+	padding-top: 12px;
+	padding-bottom: 12px;
+}
+
+.eg-care-admin-wrap .wp-list-table.eg_care_prescriptions tbody tr:hover { background: #f6f9fc; }
+
+.eg-care-admin-wrap .wp-list-table.eg_care_prescriptions .column-id      { width: 70px; }
+.eg-care-admin-wrap .wp-list-table.eg_care_prescriptions .column-review  { width: 290px; }
+.eg-care-admin-wrap .wp-list-table.eg_care_prescriptions .column-updated { width: 160px; }
+/* Wide enough that 'Returned for changes' stays on one line and the row
+   does not grow a second storey. */
+.eg-care-admin-wrap .wp-list-table.eg_care_prescriptions .column-status  { width: 200px; }
+
+.eg-care-admin-wrap .wp-list-table.eg_care_prescriptions .column-patient strong a {
+	font-size: 14px;
+	text-decoration: none;
+}
+
+.eg-care-admin-wrap .wp-list-table.eg_care_prescriptions .column-updated {
+	color: #6b7a8c;
+	font-variant-numeric: tabular-nums;
+}
+
+.eg-care-rx-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.eg-care-rx-actions .eg-care-rx-action { white-space: nowrap; }
+
+/* The shortcut is a quieter green than the primary button beside it: it is
+   the faster path, not the main one, and sending a prescription to a patient
+   should not be the easiest thing on the row to hit by accident. */
+.eg-care-rx-actions .eg-care-rx-approve {
+	color: #15803d;
+	border-color: #86efac;
+	background: #f0fdf4;
+}
+
+.eg-care-rx-actions .eg-care-rx-approve:hover,
+.eg-care-rx-actions .eg-care-rx-approve:focus {
+	color: #14532d;
+	border-color: #15803d;
+	background: #dcfce7;
+}
+
+@media screen and (max-width: 782px) {
+	/* WordPress stacks list tables on narrow screens; the buttons should fill
+	   the width rather than sitting in a 240px column that no longer exists. */
+	.eg-care-rx-actions { width: 100%; }
+	.eg-care-rx-actions .eg-care-rx-action { flex: 1 1 auto; text-align: center; }
+}

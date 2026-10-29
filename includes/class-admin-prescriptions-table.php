@@ -66,12 +66,12 @@ class AdminPrescriptionsTable extends \WP_List_Table {
 	 */
 	public function get_columns() {
 		return array(
-			'id'          => __( 'ID', 'eg-care' ),
-			'patient'     => __( 'Patient', 'eg-care' ),
-			'doctor'      => __( 'Doctor', 'eg-care' ),
-			'summary'     => __( 'Prescription', 'eg-care' ),
-			'updated'     => __( 'Last change', 'eg-care' ),
-			'status'      => __( 'Status', 'eg-care' ),
+			'id'      => __( 'ID', 'eg-care' ),
+			'patient' => __( 'Patient', 'eg-care' ),
+			'doctor'  => __( 'Doctor', 'eg-care' ),
+			'review'  => __( 'Review', 'eg-care' ),
+			'updated' => __( 'Last change', 'eg-care' ),
+			'status'  => __( 'Status', 'eg-care' ),
 		);
 	}
 
@@ -140,68 +140,46 @@ class AdminPrescriptionsTable extends \WP_List_Table {
 			$name .= ' <span style="color:#64748b;">(' . esc_html( $item->family_member_relation ) . ')</span>';
 		}
 
-		$actions = array(
-			'review' => sprintf(
-				'<a href="%s">%s</a>',
+		return sprintf(
+			'<strong><a href="%s">%s</a></strong>',
+			esc_url( \EGCare\AdminPrescriptions::review_url( $item->id ) ),
+			$name // Already escaped above.
+		);
+	}
+
+	/**
+	 * The two things a reviewer can do, as buttons rather than row actions.
+	 *
+	 * WordPress only reveals row actions when the pointer is over the row,
+	 * which on a touch screen means never, and on a desktop means the one
+	 * link that matters is invisible until you happen to hover the right
+	 * place. For a queue whose entire purpose is "open this and decide", the
+	 * action belongs in a column of its own.
+	 *
+	 * @param object $item Row.
+	 * @return string
+	 */
+	protected function column_review( $item ) {
+		$buttons = array(
+			sprintf(
+				'<a href="%s" class="button button-primary button-small eg-care-rx-action">%s</a>',
 				esc_url( \EGCare\AdminPrescriptions::review_url( $item->id ) ),
-				esc_html__( 'Review', 'eg-care' )
+				\EGCare\Prescriptions::is_reviewable( $item->status )
+					? esc_html__( 'Read &amp; decide', 'eg-care' )
+					: esc_html__( 'Open', 'eg-care' )
 			),
 		);
 
-		// The one-click path, for a prescription that needs no correcting.
+		// The shortcut, for a prescription that plainly needs no correcting.
 		if ( \EGCare\Prescriptions::is_reviewable( $item->status ) ) {
-			$actions['approve'] = sprintf(
-				'<a href="%s" style="color:#15803d;font-weight:600;">%s</a>',
+			$buttons[] = sprintf(
+				'<a href="%s" class="button button-small eg-care-rx-action eg-care-rx-approve">%s</a>',
 				\EGCare\AdminPrescriptions::approve_url( $item->id ),
 				esc_html__( 'Approve &amp; send', 'eg-care' )
 			);
 		}
 
-		return sprintf(
-			'<strong><a href="%s">%s</a></strong>%s',
-			esc_url( \EGCare\AdminPrescriptions::review_url( $item->id ) ),
-			$name, // Already escaped above.
-			$this->row_actions( $actions )
-		);
-	}
-
-	/**
-	 * A glance at what is in the prescription, so an obvious one can be
-	 * approved without opening it.
-	 *
-	 * @param object $item Row.
-	 * @return string
-	 */
-	protected function column_summary( $item ) {
-		$content = \EGCare\Prescriptions::content_of( $item );
-		$bits    = array();
-
-		if ( '' !== $content['diagnosis'] ) {
-			$bits[] = '<strong>' . esc_html( wp_trim_words( $content['diagnosis'], 8, '&hellip;' ) ) . '</strong>';
-		}
-
-		$count = count( $content['medicines'] );
-
-		if ( $count ) {
-			$names = wp_list_pluck( array_slice( $content['medicines'], 0, 3 ), 'name' );
-			$line  = esc_html( implode( ', ', $names ) );
-
-			if ( $count > 3 ) {
-				$line .= sprintf(
-					/* translators: %d: how many more medicines. */
-					esc_html__( ' +%d more', 'eg-care' ),
-					$count - 3
-				);
-			}
-
-			$bits[] = $line;
-		}
-
-		if ( ! $bits ) {
-			return '<span style="color:#94a3b8;">' . esc_html__( 'Empty', 'eg-care' ) . '</span>';
-		}
-
-		return implode( '<br>', $bits );
+		return '<div class="eg-care-rx-actions">' . implode( '', $buttons ) . '</div>';
 	}
 
 	/**

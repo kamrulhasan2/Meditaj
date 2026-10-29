@@ -33,7 +33,7 @@ class AdminMenu {
 	 */
 	public static function hide_routed_only_pages() {
 		remove_submenu_page( 'eg-care', \EGCare\AdminDoctors::EDIT_PAGE );
-		remove_submenu_page( 'eg-care', \EGCare\AdminPrescriptions::REVIEW_PAGE );
+		remove_submenu_page( \EGCare\AdminPrescriptions::MENU_PARENT, \EGCare\AdminPrescriptions::REVIEW_PAGE );
 	}
 
 	/**
@@ -124,8 +124,10 @@ class AdminMenu {
 			array( __CLASS__, 'render_appointments_page' )
 		);
 
+		// Prescriptions live under Doctors, not here - see the note on
+		// AdminPrescriptions::MENU_PARENT.
 		add_submenu_page(
-			'eg-care',
+			\EGCare\AdminPrescriptions::MENU_PARENT,
 			__( 'Prescriptions', 'eg-care' ),
 			__( 'Prescriptions', 'eg-care' ),
 			'manage_options',
@@ -137,7 +139,7 @@ class AdminMenu {
 		// the sidebar on admin_head. Removing it here instead would break
 		// the page outright - see hide_routed_only_pages() above.
 		add_submenu_page(
-			'eg-care',
+			\EGCare\AdminPrescriptions::MENU_PARENT,
 			__( 'Review prescription', 'eg-care' ),
 			__( 'Review prescription', 'eg-care' ),
 			'manage_options',

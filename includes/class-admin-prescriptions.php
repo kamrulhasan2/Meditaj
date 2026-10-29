@@ -23,6 +23,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 class AdminPrescriptions {
 
 	/**
+	 * Which admin menu these screens hang under.
+	 *
+	 * The Doctors menu rather than EG Care's own: prescriptions are something
+	 * the doctors on this site produce, and that is where whoever reviews them
+	 * goes looking. One constant, because the parent decides both where the
+	 * item appears and what the page's URL is - get those two out of step and
+	 * every link 404s.
+	 */
+	const MENU_PARENT = 'edit.php?post_type=doctors';
+
+	/**
 	 * The queue.
 	 */
 	const LIST_PAGE = 'eg-care-prescriptions';
@@ -41,13 +52,37 @@ class AdminPrescriptions {
 	}
 
 	/**
+	 * The address of one of these screens.
+	 *
+	 * A page registered under a parent other than admin.php is served from
+	 * that parent, so the URL has to carry it. Everything builds its links
+	 * through here rather than writing admin.php by hand.
+	 *
+	 * @param string $page Page slug.
+	 * @param array  $args Extra query arguments.
+	 * @return string
+	 */
+	public static function page_url( $page, $args = array() ) {
+		return add_query_arg(
+			array_merge(
+				array(
+					'post_type' => 'doctors',
+					'page'      => $page,
+				),
+				$args
+			),
+			admin_url( 'edit.php' )
+		);
+	}
+
+	/**
 	 * Link to the review screen for one prescription.
 	 *
 	 * @param int $id Prescription id.
 	 * @return string
 	 */
 	public static function review_url( $id ) {
-		return admin_url( 'admin.php?page=' . self::REVIEW_PAGE . '&id=' . (int) $id );
+		return self::page_url( self::REVIEW_PAGE, array( 'id' => (int) $id ) );
 	}
 
 	/**
@@ -57,9 +92,10 @@ class AdminPrescriptions {
 	 * @return string
 	 */
 	public static function list_url( $message = '' ) {
-		$url = admin_url( 'admin.php?page=' . self::LIST_PAGE );
-
-		return $message ? add_query_arg( 'eg_care_message', $message, $url ) : $url;
+		return self::page_url(
+			self::LIST_PAGE,
+			$message ? array( 'eg_care_message' => $message ) : array()
+		);
 	}
 
 	/**
@@ -73,13 +109,12 @@ class AdminPrescriptions {
 	 */
 	public static function approve_url( $id ) {
 		return wp_nonce_url(
-			add_query_arg(
+			self::page_url(
+				self::LIST_PAGE,
 				array(
-					'page'            => self::LIST_PAGE,
 					'eg_care_rx'      => 'approve',
 					'prescription_id' => (int) $id,
-				),
-				admin_url( 'admin.php' )
+				)
 			),
 			'eg_care_approve_prescription_' . (int) $id
 		);
@@ -307,6 +342,7 @@ class AdminPrescriptions {
 			<?php self::print_notice(); ?>
 
 			<form method="get" action="">
+				<input type="hidden" name="post_type" value="doctors" />
 				<input type="hidden" name="page" value="<?php echo esc_attr( self::LIST_PAGE ); ?>" />
 				<?php
 				$table->search_box( __( 'Search patients', 'eg-care' ), 'eg_care_search_rx' );
@@ -511,7 +547,7 @@ class AdminPrescriptions {
 				<?php if ( $reviewable ) : ?>
 				<p class="submit" style="display:flex;gap:12px;align-items:center;">
 					<button type="submit" name="eg_care_rx_approve" class="button button-primary button-large">
-						<?php esc_html_e( 'Approve &amp; send to patient', 'eg-care' ); ?>
+						<?php esc_html_e( 'Approve & send to patient', 'eg-care' ); ?>
 					</button>
 					<button type="submit" name="eg_care_rx_send_back" class="button button-large">
 						<?php esc_html_e( 'Send back to doctor', 'eg-care' ); ?>
