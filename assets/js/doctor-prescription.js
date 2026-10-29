@@ -328,12 +328,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
 		tr.className = 'rx-medicine-row';
 		tr.innerHTML = ''
-			+ '<td data-label="Medicine"><input type="text" class="rx-m-name" list="rx-dl-medicine" placeholder="e.g. Napa 500mg" autocomplete="off"></td>'
+			+ '<td class="rx-num" data-label="#"></td>'
+			+ '<td data-label="Medicine"><input type="text" class="rx-m-name" list="rx-dl-medicine" placeholder="e.g. Napa 500mg" autocomplete="off">'
+			+ '<span class="rx-row-warning">Add a medicine name, or this line will not be saved.</span></td>'
 			+ '<td data-label="Dose"><input type="text" class="rx-m-dose" list="rx-dl-dose" placeholder="1+0+1" autocomplete="off">'
 			+ (chips ? '<div class="rx-chips">' + chips + '</div>' : '') + '</td>'
 			+ '<td data-label="Duration"><input type="text" class="rx-m-duration" list="rx-dl-duration" placeholder="7 days" autocomplete="off"></td>'
 			+ '<td data-label="Instruction"><input type="text" class="rx-m-instruction" list="rx-dl-instruction" placeholder="After meals" autocomplete="off"></td>'
-			+ '<td data-label=""><button type="button" class="rx-remove" aria-label="Remove this medicine">&times;</button></td>';
+			+ '<td class="rx-act" data-label="Remove"><button type="button" class="rx-remove" aria-label="Remove this medicine" title="Remove this medicine">&times;</button></td>';
 
 		const name        = tr.querySelector('.rx-m-name');
 		const dose        = tr.querySelector('.rx-m-dose');
@@ -347,7 +349,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 		tr.querySelector('.rx-remove').addEventListener('click', function () {
 			tr.remove();
-			ensureTrailingRow();
+			syncRows();
 			touched();
 		});
 
@@ -366,7 +368,13 @@ document.addEventListener('DOMContentLoaded', function () {
 				if (!instruction.value && match.instruction) { instruction.value = match.instruction; }
 			}
 
-			ensureTrailingRow();
+			syncRows();
+		});
+
+		// A dose with no medicine beside it is dropped on save. Say so while it
+		// is being typed rather than letting it disappear quietly.
+		[dose, duration, instruction].forEach(function (input) {
+			input.addEventListener('input', syncRows);
 		});
 
 		tr.querySelectorAll('.rx-chip').forEach(function (chip) {
@@ -386,21 +394,52 @@ document.addEventListener('DOMContentLoaded', function () {
 			&& !tr.querySelector('.rx-m-instruction').value.trim();
 	}
 
-	function ensureTrailingRow() {
-		const all = rows.querySelectorAll('.rx-medicine-row');
+	/**
+	 * Put the table back into its one valid shape.
+	 *
+	 * Exactly one blank row at the bottom, waiting to be typed into, and that
+	 * row carries no cross - there is nothing to remove, and a cross that
+	 * removes a row only for it to reappear is what made the old version feel
+	 * broken.
+	 *
+	 * Also renumbers, and flags any line that has a dose but no medicine,
+	 * because that line is dropped when the prescription is saved.
+	 */
+	function syncRows() {
+		let all = Array.prototype.slice.call(rows.querySelectorAll('.rx-medicine-row'));
 
-		if (!all.length) {
+		// Collapse any run of blank rows at the bottom down to one.
+		while (all.length > 1 && rowIsEmpty(all[all.length - 1]) && rowIsEmpty(all[all.length - 2])) {
+			all.pop().remove();
+		}
+
+		all = Array.prototype.slice.call(rows.querySelectorAll('.rx-medicine-row'));
+
+		const room = all.length < maxMedicines;
+
+		if (!all.length || (room && !rowIsEmpty(all[all.length - 1]))) {
 			rows.appendChild(medicineRow(null));
-			return;
+			all = Array.prototype.slice.call(rows.querySelectorAll('.rx-medicine-row'));
 		}
 
-		if (all.length >= maxMedicines) {
-			return;
-		}
+		all.forEach(function (tr, index) {
+			tr.querySelector('.rx-num').textContent = (index + 1) + '.';
 
-		if (!rowIsEmpty(all[all.length - 1])) {
-			rows.appendChild(medicineRow(null));
-		}
+			const isTrailingBlank = index === all.length - 1 && rowIsEmpty(tr);
+			tr.querySelector('.rx-remove').hidden = isTrailingBlank;
+
+			const name  = tr.querySelector('.rx-m-name').value.trim();
+			const other = tr.querySelector('.rx-m-dose').value.trim()
+				|| tr.querySelector('.rx-m-duration').value.trim()
+				|| tr.querySelector('.rx-m-instruction').value.trim();
+
+			tr.classList.toggle('is-incomplete', !name && !!other);
+		});
+	}
+
+	/** Lines that would be thrown away on save. */
+	function incompleteRows() {
+		return rows.querySelectorAll('.rx-medicine-row.is-incomplete');
 	}
 
 	function readMedicines() {
@@ -483,7 +522,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		(content.medicines || []).forEach(function (medicine) {
 			rows.appendChild(medicineRow(medicine));
 		});
-		ensureTrailingRow();
+		syncRows();
 	}
 
 	function setReadOnly(readOnly) {
@@ -650,13 +689,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
 	rows.addEventListener('input', touched);
 
+	// There is always a blank row waiting, so this button's job is to put the
+	// cursor in it - not to add a second blank row below the first.
 	addRowBtn.addEventListener('click', function () {
 		if (rows.querySelectorAll('.rx-medicine-row').length >= maxMedicines) {
 			say('That is as many medicines as one prescription can hold.', 'error');
 			return;
 		}
 
-		rows.appendChild(medicineRow(null));
+		syncRows();
+
+		const last = rows.querySelector('.rx-medicine-row:last-child .rx-m-name');
+
+		if (last) {
+			last.focus();
+			last.scrollIntoView({ block: 'center', behavior: 'smooth' });
+		}
 	});
 
 	if (templatePick) {
@@ -762,6 +810,18 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 
 		const content = readForm();
+
+		// readForm() throws away a line with no medicine name. Better to stop
+		// and point at it than to send a prescription missing something the
+		// doctor thought they had written.
+		const unnamed = incompleteRows();
+
+		if (unnamed.length) {
+			say('One line has a dose but no medicine. Add the name, or clear the line.', 'error');
+			unnamed[0].querySelector('.rx-m-name').focus();
+			unnamed[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+			return;
+		}
 
 		if (!content.medicines.length && !content.diagnosis.trim()) {
 			say('Add a diagnosis or at least one medicine before submitting.', 'error');

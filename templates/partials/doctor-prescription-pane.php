@@ -90,6 +90,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<table class="eg-care-dashboard-table rx-medicines-table">
 				<thead>
 					<tr>
+						<th class="rx-num-col">#</th>
 						<th><?php esc_html_e( 'Medicine', 'eg-care' ); ?></th>
 						<th><?php esc_html_e( 'Dose', 'eg-care' ); ?></th>
 						<th><?php esc_html_e( 'Duration', 'eg-care' ); ?></th>

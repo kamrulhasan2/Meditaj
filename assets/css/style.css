@@ -3799,11 +3799,16 @@ button.eg-care-linkish[hidden] {
 
 /* ---------- the dose chips ----------------------------------------------- */
 
+/* Hidden until the row is being edited - see the note further down. */
 .eg-care-dashboard-wrapper #pane-prescriptions .rx-chips {
-	display: flex;
+	display: none;
 	flex-wrap: wrap;
 	gap: 4px;
 	margin-top: 5px;
+}
+
+.eg-care-dashboard-wrapper #pane-prescriptions .rx-medicine-row:focus-within .rx-chips {
+	display: flex;
 }
 
 .eg-care-dashboard-wrapper #pane-prescriptions .rx-chip {
@@ -4066,8 +4071,93 @@ button.eg-care-linkish[hidden] {
 	#pane-prescriptions .rx-footer-actions > * { width: 100%; text-align: center; }
 
 	#pane-prescriptions .rx-template-bar { flex-direction: column; align-items: stretch; }
-	.eg-care-dashboard-wrapper #pane-prescriptions .rx-template-bar select,
+
+	/* flex-basis runs down the main axis, and the main axis is now vertical:
+	   `flex: 1 1 220px` was making this dropdown 220px TALL. */
+	.eg-care-dashboard-wrapper #pane-prescriptions .rx-template-bar select {
+		flex: 0 0 auto;
+		width: 100%;
+	}
+
 	.eg-care-dashboard-wrapper #pane-prescriptions .rx-template-bar .eg-care-btn-small { width: 100%; }
+
+	/* Stacked into cards, the number is the card's heading and the cross goes
+	   with it - neither needs a label of its own spelling out "#" or "Remove". */
+	#pane-prescriptions .rx-medicines-table tbody td.rx-num::before,
+	#pane-prescriptions .rx-medicines-table tbody td.rx-act::before { content: none; }
+
+	#pane-prescriptions .rx-medicines-table tbody td.rx-num {
+		font-weight: 700;
+		color: var(--rx-ink);
+	}
+
+	#pane-prescriptions .rx-medicines-table tbody td.rx-act { text-align: right; }
 
 	#pane-prescriptions .rx-signature-strip { align-items: flex-start; }
 }
+
+/* ---------- the medicine table, made calmer ------------------------------
+ *
+ * Two changes that came out of watching the form being used:
+ *
+ * The bottom row is always blank and waiting, so it carries no cross. A cross
+ * that removes a row only for it to reappear a frame later is worse than no
+ * cross at all, and that is what the first version did.
+ *
+ * The dose buttons only show for the row being edited. Five of them under
+ * every row turned a three-medicine prescription into fifteen buttons, which
+ * is what made the screen feel busy.
+ * ------------------------------------------------------------------------- */
+
+#pane-prescriptions .rx-num-col { width: 34px; }
+
+#pane-prescriptions .rx-medicines-table .rx-num {
+	width: 34px;
+	color: var(--rx-muted);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+#pane-prescriptions .rx-medicines-table .rx-act { width: 44px; text-align: center; }
+
+#pane-prescriptions .rx-remove[hidden] { display: none; }
+
+/* A line with a dose but no medicine is dropped when the prescription is
+   saved, so it says so rather than disappearing quietly. */
+#pane-prescriptions .rx-row-warning {
+	display: none;
+	margin-top: 4px;
+	font-size: 11.5px;
+	line-height: 1.35;
+	color: #92400e;
+}
+
+#pane-prescriptions .rx-medicine-row.is-incomplete .rx-row-warning { display: block; }
+
+#pane-prescriptions .rx-medicine-row.is-incomplete .rx-m-name {
+	border-color: #f59e0b;
+	background: #fffbeb;
+}
+
+@media (max-width: 782px) {
+	/* Stacked into cards, the number is the row's heading and the cross sits
+	   with it rather than alone on a line of its own. */
+	#pane-prescriptions .rx-medicines-table .rx-num,
+	#pane-prescriptions .rx-medicines-table .rx-act { width: auto; }
+
+	/* On a touch screen there is no hover to discover these with, so the row
+	   being typed into keeps them - which is what focus-within already does. */
+}
+
+/* ---------- hidden means hidden -------------------------------------------
+ *
+ * The browser hides a [hidden] element with `display: none` from its own
+ * stylesheet, and any author rule that sets `display` outranks it. The
+ * `display: inline-block` on .eg-care-btn-small a few hundred lines up was
+ * doing exactly that, so "Open the issued copy" and "Write a correction"
+ * showed on a prescription that had never been sent.
+ *
+ * Last rule in the block, so it settles the matter for everything above it.
+ * ------------------------------------------------------------------------- */
+
+.eg-care-dashboard-wrapper #pane-prescriptions [hidden] { display: none; }
