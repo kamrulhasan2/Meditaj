@@ -165,7 +165,7 @@ class AdminPrescriptionsTable extends \WP_List_Table {
 				'<a href="%s" class="button button-primary button-small eg-care-rx-action">%s</a>',
 				esc_url( \EGCare\AdminPrescriptions::review_url( $item->id ) ),
 				\EGCare\Prescriptions::is_reviewable( $item->status )
-					? esc_html__( 'Read &amp; decide', 'eg-care' )
+					? esc_html__( 'Read & decide', 'eg-care' )
 					: esc_html__( 'Open', 'eg-care' )
 			),
 		);
@@ -175,7 +175,7 @@ class AdminPrescriptionsTable extends \WP_List_Table {
 			$buttons[] = sprintf(
 				'<a href="%s" class="button button-small eg-care-rx-action eg-care-rx-approve">%s</a>',
 				\EGCare\AdminPrescriptions::approve_url( $item->id ),
-				esc_html__( 'Approve &amp; send', 'eg-care' )
+				esc_html__( 'Approve & send', 'eg-care' )
 			);
 		}
 
