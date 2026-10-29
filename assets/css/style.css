@@ -3723,32 +3723,152 @@ button.eg-care-linkish[hidden] {
 
 }
 
+/* ===== Prescriptions (doctor dashboard) =====================================
+ *
+ * Every rule here is scoped to `.eg-care-dashboard-wrapper #pane-prescriptions`
+ * on purpose. The theme styles bare `button` elements, and that selector beats
+ * a plain `.rx-chip`, so the first version of this file lost the fight: the
+ * same class came out light-on-navy as a <button> and navy-on-light as an <a>,
+ * which is why the screen looked like three different toolkits. Scoping wins
+ * the cascade honestly, without a single !important.
+ *
+ * The colours are the site's own tokens, read from the theme, with the plain
+ * dashboard colours as fallbacks so this still looks deliberate on a site that
+ * does not define them.
+ *
+ * Every state sets `color` AND `-webkit-text-fill-color`. That is not belt and
+ * braces: a theme that sets text-fill can blank a label on hover while `color`
+ * still reads correctly, which is exactly the "the writing disappears when I
+ * hover" complaint.
+ * ------------------------------------------------------------------------- */
 
-/* ===== Prescriptions (doctor dashboard) ===== */
-/* The prescription screen reuses the dashboard table, so it inherits the
-   stacked card layout on phones for free. These are only the pieces the
-   dashboard did not already have. */
+.eg-care-dashboard-wrapper #pane-prescriptions {
+	--rx-ink:     var(--mdt-navy-deep, #0f766e);
+	--rx-ink-2:   var(--mdt-blue, #0b5d57);
+	--rx-line:    var(--mdt-line, #cbd5e1);
+	--rx-field:   var(--mdt-field, #f8fafc);
+	--rx-muted:   var(--mdt-muted, #64748b);
+	--rx-ok:      var(--mdt-green, #15803d);
+	--rx-danger:  #b91c1c;
+}
 
-.eg-care-btn-small {
+/* ---------- buttons ------------------------------------------------------ */
+
+.eg-care-dashboard-wrapper #pane-prescriptions .eg-care-btn-small {
 	display: inline-block;
 	padding: 7px 14px;
 	font-size: 13px;
 	font-weight: 600;
 	line-height: 1.3;
-	color: #0369a1;
-	background: #e0f2fe;
-	border: none;
+	color: var(--rx-ink);
+	background: var(--rx-field);
+	border: 1px solid var(--rx-line);
 	border-radius: 6px;
 	cursor: pointer;
-	transition: background .18s ease;
+	text-decoration: none;
+	text-shadow: none;
+	box-shadow: none;
+	opacity: 1;
+	-webkit-text-fill-color: currentColor;
+	transition: background .18s ease, color .18s ease, border-color .18s ease;
 }
 
-.eg-care-btn-small:hover { background: #bae6fd; }
-.eg-care-btn-small:disabled { opacity: .5; cursor: not-allowed; }
+.eg-care-dashboard-wrapper #pane-prescriptions .eg-care-btn-small:hover,
+.eg-care-dashboard-wrapper #pane-prescriptions .eg-care-btn-small:focus,
+.eg-care-dashboard-wrapper #pane-prescriptions .eg-care-btn-small:active {
+	color: #fff;
+	background: var(--rx-ink);
+	border-color: var(--rx-ink);
+	text-decoration: none;
+	box-shadow: none;
+	opacity: 1;
+	-webkit-text-fill-color: #fff;
+}
 
-#rx-back { margin-bottom: 16px; }
+.eg-care-dashboard-wrapper #pane-prescriptions .eg-care-btn-small:disabled,
+.eg-care-dashboard-wrapper #pane-prescriptions .eg-care-btn-small[disabled] {
+	color: var(--rx-muted);
+	background: var(--rx-field);
+	border-color: var(--rx-line);
+	cursor: not-allowed;
+	opacity: .6;
+	-webkit-text-fill-color: var(--rx-muted);
+}
 
-.rx-badge {
+#pane-prescriptions #rx-back { margin-bottom: 16px; }
+
+/* ---------- the dose chips ----------------------------------------------- */
+
+.eg-care-dashboard-wrapper #pane-prescriptions .rx-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin-top: 5px;
+}
+
+.eg-care-dashboard-wrapper #pane-prescriptions .rx-chip {
+	padding: 4px 10px;
+	font-size: 11.5px;
+	font-weight: 600;
+	line-height: 1.4;
+	color: var(--rx-ink);
+	background: #fff;
+	border: 1px solid var(--rx-line);
+	border-radius: 999px;
+	cursor: pointer;
+	white-space: nowrap;
+	text-shadow: none;
+	box-shadow: none;
+	opacity: 1;
+	-webkit-text-fill-color: currentColor;
+	transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+.eg-care-dashboard-wrapper #pane-prescriptions .rx-chip:hover,
+.eg-care-dashboard-wrapper #pane-prescriptions .rx-chip:focus {
+	color: #fff;
+	background: var(--rx-ink);
+	border-color: var(--rx-ink);
+	-webkit-text-fill-color: #fff;
+}
+
+.eg-care-dashboard-wrapper #pane-prescriptions .rx-chip:disabled {
+	opacity: .45;
+	cursor: not-allowed;
+}
+
+.eg-care-dashboard-wrapper #pane-prescriptions.rx-readonly .rx-chips,
+.eg-care-dashboard-wrapper #pane-prescriptions .rx-readonly .rx-chips { display: none; }
+
+/* ---------- removing a medicine ------------------------------------------ */
+
+.eg-care-dashboard-wrapper #pane-prescriptions .rx-remove {
+	padding: 2px 9px;
+	font-size: 18px;
+	line-height: 1.2;
+	color: var(--rx-muted);
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 5px;
+	cursor: pointer;
+	text-shadow: none;
+	box-shadow: none;
+	opacity: 1;
+	-webkit-text-fill-color: currentColor;
+	transition: background .15s ease, color .15s ease;
+}
+
+.eg-care-dashboard-wrapper #pane-prescriptions .rx-remove:hover,
+.eg-care-dashboard-wrapper #pane-prescriptions .rx-remove:focus {
+	color: var(--rx-danger);
+	background: #fef2f2;
+	border-color: #fecaca;
+	-webkit-text-fill-color: var(--rx-danger);
+}
+
+/* ---------- status badges ------------------------------------------------ */
+
+#pane-prescriptions .rx-badge {
 	display: inline-block;
 	padding: 3px 10px;
 	font-size: 11.5px;
@@ -3758,45 +3878,47 @@ button.eg-care-linkish[hidden] {
 	white-space: nowrap;
 }
 
-.rx-badge-none     { background: #f1f5f9; color: #64748b; }
-.rx-badge-draft    { background: #fef3c7; color: #92400e; }
-.rx-badge-waiting  { background: #dbeafe; color: #1d4ed8; }
-.rx-badge-returned { background: #fee2e2; color: #b91c1c; }
-.rx-badge-sent     { background: #dcfce7; color: #15803d; }
+#pane-prescriptions .rx-badge-none     { background: #f1f5f9; color: #64748b; }
+#pane-prescriptions .rx-badge-draft    { background: #fef3c7; color: #92400e; }
+#pane-prescriptions .rx-badge-waiting  { background: #e6edf7; color: var(--rx-ink); }
+#pane-prescriptions .rx-badge-returned { background: #fee2e2; color: #b91c1c; }
+#pane-prescriptions .rx-badge-sent     { background: #dcfce7; color: #15803d; }
 
-.rx-patient-head {
+/* ---------- the form ----------------------------------------------------- */
+
+#pane-prescriptions .rx-patient-head {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 10px 36px;
 	padding: 14px 16px;
 	margin-bottom: 14px;
-	background: #f8fafc;
-	border-left: 4px solid #0f766e;
+	background: var(--rx-field);
+	border-left: 4px solid var(--rx-ink);
 	border-radius: 6px;
 }
 
-.rx-head-label {
+#pane-prescriptions .rx-head-label {
 	display: block;
 	font-size: 11px;
 	text-transform: uppercase;
 	letter-spacing: .5px;
-	color: #64748b;
+	color: var(--rx-muted);
 }
 
-.rx-patient-head strong { font-size: 15px; color: #0f172a; }
+#pane-prescriptions .rx-patient-head strong { font-size: 15px; color: #0f172a; }
 
-.rx-symptoms,
-.rx-reports {
+#pane-prescriptions .rx-symptoms,
+#pane-prescriptions .rx-reports {
 	margin: 0 0 12px;
 	font-size: 13px;
-	color: #475569;
+	color: var(--rx-muted);
 }
 
-.rx-reports a { color: #0369a1; }
+#pane-prescriptions .rx-reports a { color: var(--rx-ink); }
 
-/* A returned prescription is the one thing on this screen the doctor must
-   not scroll past, so it is loud on purpose. */
-.rx-returned-note {
+/* A returned prescription is the one thing on this screen the doctor must not
+   scroll past, so it is loud on purpose. */
+#pane-prescriptions .rx-returned-note {
 	padding: 12px 14px;
 	margin-bottom: 16px;
 	font-size: 14px;
@@ -3806,49 +3928,36 @@ button.eg-care-linkish[hidden] {
 	border-radius: 6px;
 }
 
-.rx-returned-note::before {
+#pane-prescriptions .rx-returned-note::before {
 	content: "Reviewer's note: ";
 	font-weight: 700;
 }
 
-.rx-section-title {
+#pane-prescriptions .rx-section-title {
 	margin: 22px 0 10px;
 	font-size: 20px;
 	font-weight: 700;
-	color: #0f766e;
+	color: var(--rx-ink);
 }
 
-.rx-medicines-table input {
+#pane-prescriptions .rx-medicines-table input {
 	width: 100%;
 	min-width: 0;
 	padding: 7px 9px;
 	font-size: 14px;
-	border: 1px solid #cbd5e1;
+	border: 1px solid var(--rx-line);
 	border-radius: 5px;
 }
 
-.rx-medicines-table input:focus {
+#pane-prescriptions .rx-medicines-table input:focus {
 	outline: none;
-	border-color: #0f766e;
-	box-shadow: 0 0 0 2px rgba(15, 118, 110, .15);
+	border-color: var(--rx-ink);
+	box-shadow: 0 0 0 2px rgba(18, 55, 110, .15);
 }
 
-.rx-remove {
-	padding: 2px 9px;
-	font-size: 18px;
-	line-height: 1.2;
-	color: #b91c1c;
-	background: transparent;
-	border: none;
-	border-radius: 5px;
-	cursor: pointer;
-}
+#pane-prescriptions .rx-followup input { max-width: 220px; }
 
-.rx-remove:hover { background: #fee2e2; }
-
-.rx-followup input { max-width: 220px; }
-
-.rx-form-footer {
+#pane-prescriptions .rx-form-footer {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
@@ -3856,96 +3965,60 @@ button.eg-care-linkish[hidden] {
 	gap: 12px;
 	margin-top: 24px;
 	padding-top: 16px;
-	border-top: 1px solid #e2e8f0;
+	border-top: 1px solid var(--rx-line);
+}
+
+#pane-prescriptions .rx-footer-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
 }
 
 /* Whether the draft is safe is the question a doctor asks every few seconds,
    so the answer sits next to the button and never moves. */
-.rx-save-state { font-size: 13px; color: #64748b; }
-.rx-save-state.rx-ok      { color: #15803d; }
-.rx-save-state.rx-pending { color: #92400e; }
-.rx-save-state.rx-error   { color: #b91c1c; font-weight: 600; }
+#pane-prescriptions .rx-save-state { font-size: 13px; color: var(--rx-muted); }
+#pane-prescriptions .rx-save-state.rx-ok      { color: var(--rx-ok); }
+#pane-prescriptions .rx-save-state.rx-pending { color: #92400e; }
+#pane-prescriptions .rx-save-state.rx-error   { color: var(--rx-danger); font-weight: 600; }
 
-.rx-readonly .rx-medicines-table input,
-.rx-readonly textarea,
-.rx-readonly input[type="date"] {
-	background: #f8fafc;
+#pane-prescriptions .rx-readonly .rx-medicines-table input,
+#pane-prescriptions .rx-readonly textarea,
+#pane-prescriptions .rx-readonly input[type="date"] {
+	background: var(--rx-field);
 	color: #475569;
 }
 
-@media (max-width: 782px) {
-	.rx-medicines-table input { font-size: 16px; } /* no zoom-on-focus in iOS Safari */
-	.rx-form-footer { flex-direction: column; align-items: stretch; }
-	.rx-form-footer .eg-care-btn-register { width: 100%; }
-}
+/* ---------- saved prescriptions ------------------------------------------ */
 
-
-/* ----- Prescriptions: the parts that save the doctor typing ----- */
-
-.rx-template-bar {
+#pane-prescriptions .rx-template-bar {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 8px;
 	padding: 10px 12px;
 	margin-bottom: 14px;
-	background: #f8fafc;
-	border: 1px dashed #cbd5e1;
+	background: var(--rx-field);
+	border: 1px dashed var(--rx-line);
 	border-radius: 8px;
 }
 
-.rx-template-bar select {
+.eg-care-dashboard-wrapper #pane-prescriptions .rx-template-bar select {
 	flex: 1 1 220px;
 	min-width: 0;
 	padding: 7px 9px;
 	font-size: 14px;
-	border: 1px solid #cbd5e1;
-	border-radius: 5px;
+	color: var(--rx-ink);
 	background: #fff;
+	border: 1px solid var(--rx-line);
+	border-radius: 5px;
 }
 
-.rx-template-bar select:disabled { color: #94a3b8; }
+.eg-care-dashboard-wrapper #pane-prescriptions .rx-template-bar select:disabled { color: var(--rx-muted); }
 
-/* One tap for the dose a doctor writes twenty times a day. The dropdown on
-   the field itself still holds the rest. */
-.rx-chips {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 4px;
-	margin-top: 5px;
-}
+/* ---------- signature ----------------------------------------------------- */
 
-.rx-chip {
-	padding: 3px 8px;
-	font-size: 11.5px;
-	font-weight: 600;
-	line-height: 1.4;
-	color: #0f766e;
-	background: #f0fdfa;
-	border: 1px solid #99f6e4;
-	border-radius: 999px;
-	cursor: pointer;
-	white-space: nowrap;
-	transition: background .15s ease;
-}
-
-.rx-chip:hover { background: #ccfbf1; }
-.rx-chip:disabled { opacity: .45; cursor: not-allowed; }
-
-.rx-readonly .rx-chips { display: none; }
-
-@media (max-width: 782px) {
-	/* Thumb-sized on a phone, where these matter most. */
-	.rx-chip { padding: 6px 12px; font-size: 13px; }
-	.rx-template-bar { flex-direction: column; align-items: stretch; }
-	.rx-template-bar select,
-	.rx-template-bar .eg-care-btn-small { width: 100%; }
-}
-
-
-/* ----- Prescriptions: signature and corrections ----- */
-
-.rx-signature-strip {
+#pane-prescriptions .rx-signature-strip {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
@@ -3953,44 +4026,48 @@ button.eg-care-linkish[hidden] {
 	padding: 10px 14px;
 	margin-bottom: 16px;
 	background: #fff;
-	border: 1px solid #e2e8f0;
+	border: 1px solid var(--rx-line);
 	border-radius: 8px;
 }
 
-.rx-sig-label {
+#pane-prescriptions .rx-sig-label {
 	font-size: 12px;
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: .4px;
-	color: #64748b;
+	color: var(--rx-muted);
 }
 
-#rx-sig-preview {
+#pane-prescriptions #rx-sig-preview {
 	max-height: 42px;
 	max-width: 180px;
 	object-fit: contain;
 }
 
-.rx-sig-none { font-size: 13px; color: #94a3b8; font-style: italic; }
+#pane-prescriptions .rx-sig-none { font-size: 13px; color: #94a3b8; font-style: italic; }
 
-.rx-sig-state { font-size: 12.5px; color: #64748b; }
-.rx-sig-state.rx-ok      { color: #15803d; }
-.rx-sig-state.rx-pending { color: #92400e; }
-.rx-sig-state.rx-error   { color: #b91c1c; font-weight: 600; }
+#pane-prescriptions .rx-sig-state { font-size: 12.5px; color: var(--rx-muted); }
+#pane-prescriptions .rx-sig-state.rx-ok      { color: var(--rx-ok); }
+#pane-prescriptions .rx-sig-state.rx-pending { color: #92400e; }
+#pane-prescriptions .rx-sig-state.rx-error   { color: var(--rx-danger); font-weight: 600; }
 
-.rx-footer-actions {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 10px;
-}
-
-/* An anchor styled as a button needs the padding back that the button rule
-   gives, and no underline. */
-a#rx-view { text-decoration: none; line-height: 1.3; }
+/* ---------- phones -------------------------------------------------------- */
 
 @media (max-width: 782px) {
-	.rx-signature-strip { align-items: flex-start; }
-	.rx-footer-actions { width: 100%; flex-direction: column; align-items: stretch; }
-	.rx-footer-actions > * { width: 100%; text-align: center; }
+	/* 16px stops iOS Safari zooming the page when a field takes focus. */
+	#pane-prescriptions .rx-medicines-table input { font-size: 16px; }
+
+	/* Thumb-sized, where these matter most. */
+	.eg-care-dashboard-wrapper #pane-prescriptions .rx-chip { padding: 7px 13px; font-size: 13px; }
+
+	#pane-prescriptions .rx-form-footer { flex-direction: column; align-items: stretch; }
+	#pane-prescriptions .rx-form-footer .eg-care-btn-register { width: 100%; }
+	#pane-prescriptions .rx-footer-actions { width: 100%; flex-direction: column; align-items: stretch; }
+	#pane-prescriptions .rx-footer-actions > * { width: 100%; text-align: center; }
+
+	#pane-prescriptions .rx-template-bar { flex-direction: column; align-items: stretch; }
+	.eg-care-dashboard-wrapper #pane-prescriptions .rx-template-bar select,
+	.eg-care-dashboard-wrapper #pane-prescriptions .rx-template-bar .eg-care-btn-small { width: 100%; }
+
+	#pane-prescriptions .rx-signature-strip { align-items: flex-start; }
 }
